@@ -17,7 +17,7 @@ void array_append(array* arr, scamval* v) {
     arr->root = realloc(arr->root, sizeof(scamval*) * new_sz);
     if (arr->root) {
         arr->count = new_sz;
-        arr->root[new_sz] = v;
+        arr->root[new_sz - 1] = v;
     } else {
         arr->count = 0;
     }

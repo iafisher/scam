@@ -1,8 +1,10 @@
 #pragma once
+#define FIRST_COL 0
+#define FIRST_LINE 1
 
 enum { STREAM_STR, STREAM_FILE };
 typedef struct {
-    int type;
+    int type; // STREAM_STR or STREAM_FILE
     int line, col;
     int mem_flag; // -1 if not remembering, > -1 otherwise
     int mem_len, mem_line, mem_col;
@@ -21,18 +23,16 @@ Stream* stream_from_file(const char*);
 // Return 1 if the stream can still be read from
 int stream_good(Stream*);
 
-// Get the current character from the stream and advance to the next one
+// Get the current character from the stream and advance the stream forward
 char stream_getchar(Stream*);
-
-// Put the last character back on the stream, effectively negating a previous
-// call to getchar
-// Putting characters is disabled in memory mode
-void stream_putchar(Stream*);
 
 // Turn memory mode on
 void stream_mark(Stream*);
 
 // Recall all characters since memory mode was turned on
+// The return value begins with the last character seen before stream_mark was
+// called, and ends with the character before the last call to stream_getchar
+// The next call to stream_getchar will repeat the same character
 char* stream_recall(Stream*);
 
 // Free all stream resources, including the pointer itself

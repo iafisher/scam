@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "parse.h"
 #include "stream.h"
 #include "tokenize.h"
 
@@ -10,14 +11,14 @@
 
 void stream_repl(char*, size_t, Stream**);
 void tokenize_repl(char*, size_t);
+void parse_repl(char*);
 
 void stream_tests();
-
 
 enum { REPL_EVAL, REPL_PARSE, REPL_TOKENIZE, REPL_STREAM };
 int main(int argc, char** argv) {
     // Run tests
-    stream_tests();
+    //stream_tests();
     // set mode based on the command line argument
     int mode = REPL_EVAL;
     if (argc == 2) {
@@ -59,6 +60,8 @@ int main(int argc, char** argv) {
             stream_repl(buffer, s_len, &strm);
         } else if (mode == REPL_TOKENIZE) {
             tokenize_repl(buffer, s_len);
+        } else if (mode == REPL_PARSE) {
+            parse_repl(buffer);
         }
     }
     if (buffer) free(buffer);
@@ -80,6 +83,7 @@ void stream_repl(char* command, size_t s_len, Stream** strm) {
             printf("'%c'\n", stream_getchar(*strm));
         } else if (strcmp(command, "mark") == 0) {
             stream_mark(*strm);
+            printf("Set mem_flag to %d\n", (*strm)->mem_flag);
         } else if (strcmp(command, "recall") == 0) {
             char* s = stream_recall(*strm);
             printf("\"%s\"\n", s);
@@ -110,6 +114,12 @@ void tokenize_repl(char* command, size_t s_len) {
     }
 }
 
+void parse_repl(char* command) {
+    scamval* ast = parse_line(command);
+    scamval_println(ast);
+    scamval_free(ast);
+}
+
 void stream_test_103_27(Stream* strm) {
     assert(stream_good(strm));
     // token: (
@@ -136,7 +146,6 @@ void stream_test_103_27(Stream* strm) {
     assert(stream_getchar(strm) == '7');
     assert(stream_getchar(strm) == ')');
     s = stream_recall(strm);
-    stream_putchar(strm);
     assert(strcmp(s, "27") == 0);
     free(s);
     // token: )

@@ -8,8 +8,8 @@ Stream* stream_init(int type) {
     Stream* ret = malloc(sizeof(Stream));
     if (ret) {
         ret->type = type;
-        ret->col = ret->mem_col = 0;
-        ret->line = ret->mem_line = 1;
+        ret->col = ret->mem_col = FIRST_COL;
+        ret->line = ret->mem_line = FIRST_LINE;
         ret->mem_flag = -1;
         // initialize all type-dependent members to 0
         ret->s = NULL;
@@ -45,7 +45,7 @@ Stream* stream_from_file(const char* fp) {
 
 int stream_good(Stream* strm) {
     if (strm->type == STREAM_STR) {
-        return strm->col < strm->s_len;
+        return strm->col <= strm->s_len;
     } else {
         return strm->fp && !ferror(strm->fp) && !feof(strm->fp);
     }
@@ -61,7 +61,7 @@ char stream_getchar(Stream* strm) {
         strm->last_pos = ftell(strm->fp);
         char c = fgetc(strm->fp);
         if (c == '\n') {
-            strm->col = 0;
+            strm->col = FIRST_COL;
             strm->line++;
         } else {
             strm->col++;
@@ -70,14 +70,20 @@ char stream_getchar(Stream* strm) {
     }
 }
 
-void stream_putchar(Stream* strm) {
+// Retreat the stream backwards by one character
+void stream_retreat(Stream* strm) {
     if (strm->mem_flag == -1) {
         if (strm->type == STREAM_STR) {
-            if (strm->col > 0) {
+            if (strm->col > FIRST_COL) {
                 strm->col--;
             }
         } else {
             fseek(strm->fp, strm->last_pos, SEEK_SET);
+            // note that this may give inaccurate results if the stream is
+            // currently on the first character of the line
+            if (strm->col > FIRST_COL) {
+                strm->col--;
+            }
         }
     }
 }
@@ -86,7 +92,7 @@ void stream_mark(Stream* strm) {
     strm->mem_col = strm->col;
     strm->mem_line = strm->line;
     if (strm->type == STREAM_STR) {
-        if (strm->col > 0)
+        if (strm->col > FIRST_COL)
             strm->mem_flag = strm->col - 1;
     } else {
         strm->mem_flag = strm->last_pos;
@@ -109,6 +115,7 @@ char* stream_recall(Stream* strm) {
         }
         strm->mem_flag = -1;
         strm->mem_len = 0;
+        stream_retreat(strm);
         return ret;
     } else {
         return NULL;

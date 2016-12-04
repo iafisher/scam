@@ -82,7 +82,12 @@ int is_decimal(char* s) {
 
 // Return 1 if the character is a token
 int is_token(char c) {
-    return c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']';
+    return strchr("(){}[]", c) != NULL;
+}
+
+// Return 1 if the character is a token boundary
+int is_token_boundary(char c) {
+    return is_token(c)  || isspace(c) || c == '\0';
 }
 
 // Return the token type of the given string
@@ -96,6 +101,18 @@ int token_type_from_str(char* s) {
         return TKN_STR;
     } else if (is_symbol(s)) {
         return TKN_SYM;
+    } else if (strcmp(s, "(") == 0) {
+        return TKN_LPAREN;
+    } else if (strcmp(s, ")") == 0) {
+        return TKN_RPAREN;
+    } else if (strcmp(s, "[") == 0) {
+        return TKN_LBRACKET;
+    } else if (strcmp(s, "]") == 0) {
+        return TKN_RBRACKET;
+    } else if (strcmp(s, "{") == 0) {
+        return TKN_LBRACE;
+    } else if (strcmp(s, "}") == 0) {
+        return TKN_RBRACE;
     } else {
         return TKN_UNKNOWN;
     }
@@ -108,27 +125,6 @@ void set_token_from_stream_memory(Tokenizer* tz) {
     if (tz->tkn->val) free(tz->tkn->val);
     tz->tkn->val = stream_recall(tz->strm);
     tz->tkn->type = token_type_from_str(tz->tkn->val);
-}
-
-// Set the tkn member based on the given character
-void set_token_from_char(Tokenizer* tz, char c) {
-    tz->tkn->line = tz->strm->line;
-    tz->tkn->col = tz->strm->col - 1;
-    if (tz->tkn->val) free(tz->tkn->val);
-    tz->tkn->val = malloc(2);
-    if (tz->tkn->val) {
-        tz->tkn->val[0] = c;
-        tz->tkn->val[1] = '\0';
-    }
-    switch (c) {
-        case '(': tz->tkn->type = TKN_LPAREN; break;
-        case ')': tz->tkn->type = TKN_RPAREN; break;
-        case '{': tz->tkn->type = TKN_LBRACE; break;
-        case '}': tz->tkn->type = TKN_RBRACE; break;
-        case '[': tz->tkn->type = TKN_LBRACKET; break;
-        case ']': tz->tkn->type = TKN_RBRACKET; break;
-        default: tz->tkn->type = TKN_UNKNOWN;
-    }
 }
 
 // Set the EOF token
@@ -145,8 +141,15 @@ void tokenizer_advance(Tokenizer* tz) {
         c = stream_getchar(tz->strm);
     if (!stream_good(tz->strm)) {
         set_eof_token(tz);
+    } else if (c == ';') {
+        // skip comments
+        while (stream_good(tz->strm) && c != '\n')
+            c = stream_getchar(tz->strm);
+        tokenizer_advance(tz);
     } else if (is_token(c)) {
-        set_token_from_char(tz, c);
+        stream_mark(tz->strm);
+        stream_getchar(tz->strm);
+        set_token_from_stream_memory(tz);
     } else if (c == '"') {
         stream_mark(tz->strm);
         // find the end of the string literal
@@ -154,22 +157,14 @@ void tokenizer_advance(Tokenizer* tz) {
         c = stream_getchar(tz->strm);
         while (c != '"')
             c = stream_getchar(tz->strm);
-        c = stream_getchar(tz->strm);
+        stream_getchar(tz->strm);
         set_token_from_stream_memory(tz);
-        // put the character back on the stream
-        if (!isspace(c)) {
-            stream_putchar(tz->strm);
-        }
     } else {
         stream_mark(tz->strm);
         // find the end of the token
-        while (!isspace(c) && !is_token(c))
+        while (!is_token_boundary(c))
             c = stream_getchar(tz->strm);
         set_token_from_stream_memory(tz);
-        // put the token back on the stream
-        if (is_token(c)) {
-            stream_putchar(tz->strm);
-        }
     }
 }
 

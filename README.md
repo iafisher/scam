@@ -7,7 +7,7 @@ The Scam programming language is a dialect of Lisp based on Scheme.
 ## Syntax
 The syntax of the language is described by the following EBNF grammar. Whitespace is only significant between symbols and numbers.
 
-    EXPR    := "(" EXPR+ ")" | VALUE | COMMENT
+    EXPR    := "(" EXPR+ ")" | VALUE
     VALUE   := NUMBER | SYMBOL | LIST | STRING | QUOTE
     COMMENT := ";" <any ASCII char except newline> "\n"
 

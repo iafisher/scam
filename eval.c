@@ -43,5 +43,17 @@ scamval* eval_line(char* line, scamenv* env) {
 }
 
 scamval* eval_file(char* fp, scamenv* env) {
-    return eval(parse_file(fp), env);
+    scamval* exprs = parse_file(fp);
+    if (exprs->type == SCAM_CODE) {
+        scamval* v = NULL;
+        for (int i = 0; i < exprs->vals.arr->count; i++) {
+            v = eval(exprs->vals.arr->root[i], env);
+            if (i != exprs->vals.arr->count - 1) {
+                scamval_free(v);
+            }
+        }
+        return v;
+    } else {
+        return eval(exprs, env);
+    }
 }

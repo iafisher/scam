@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include "stream.h"
 
-enum { TKN_RPAREN, TKN_LPAREN, TKN_RBRACKET, TKN_LBRACKET, TKN_RBRACE, 
-       TKN_LBRACE, TKN_INT, TKN_DEC, TKN_SYM, TKN_STR, TKN_EOF, TKN_UNKNOWN };
+enum { TKN_LPAREN, TKN_RPAREN, TKN_LBRACKET, TKN_RBRACKET, TKN_LBRACE, 
+       TKN_RBRACE, TKN_INT, TKN_DEC, TKN_SYM, TKN_STR, TKN_EOF, TKN_UNKNOWN };
 typedef struct {
     int type;
     char* val;
