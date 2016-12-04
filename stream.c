@@ -8,19 +8,18 @@ Stream* stream_init(int type) {
     Stream* ret = malloc(sizeof(Stream));
     if (ret) {
         ret->type = type;
-        ret->col = 0;
-        ret->line = 1;
-        ret->memory_flag = -1;
+        ret->col = ret->mem_col = 0;
+        ret->line = ret->mem_line = 1;
+        ret->mem_flag = -1;
         // initialize all type-dependent members to 0
         ret->s = NULL;
         ret->fp = NULL;
-        ret->s_len = ret->last_pos = ret->memory_len = 0;
+        ret->s_len = ret->last_pos = ret->mem_len = 0;
     }
     return ret;
 }
 
-// Initialize a Stream object from a string
-Stream* stream_from_str(char* s) {
+Stream* stream_from_str(const char* s) {
     Stream* ret = stream_init(STREAM_STR);
     if (ret) {
         ret->s_len = strlen(s);
@@ -34,18 +33,16 @@ Stream* stream_from_str(char* s) {
     return ret;
 }
 
-// Initialize a Stream object from a file path
-Stream* stream_from_file(char* fp) {
+Stream* stream_from_file(const char* fp) {
     Stream* ret = stream_init(STREAM_FILE);
     if (ret) {
         ret->last_pos = 0;
-        ret->memory_len = 0;
+        ret->mem_len = 0;
         ret->fp = fopen(fp, "r");
     }
     return ret;
 }
 
-// Check if a Stream object can be read from
 int stream_good(Stream* strm) {
     if (strm->type == STREAM_STR) {
         return strm->col < strm->s_len;
@@ -54,11 +51,10 @@ int stream_good(Stream* strm) {
     }
 }
 
-// Read a character from the Stream object
 char stream_getchar(Stream* strm) {
     if (!stream_good(strm)) return '\0';
-    if (strm->memory_flag > -1) 
-        strm->memory_len++;
+    if (strm->mem_flag > -1) 
+        strm->mem_len++;
     if (strm->type == STREAM_STR) {
         return strm->s[strm->col++];
     } else {
@@ -74,33 +70,45 @@ char stream_getchar(Stream* strm) {
     }
 }
 
-// Tell the Stream object to start remembering characters
-void stream_mark(Stream* strm) {
-    if (strm->type == STREAM_STR) {
-        if (strm->col > 0)
-            strm->memory_flag = strm->col - 1;
-    } else {
-        strm->memory_flag = strm->last_pos;
+void stream_putchar(Stream* strm) {
+    if (strm->mem_flag == -1) {
+        if (strm->type == STREAM_STR) {
+            if (strm->col > 0) {
+                strm->col--;
+            }
+        } else {
+            fseek(strm->fp, strm->last_pos, SEEK_SET);
+        }
     }
 }
 
-// Recall the characters remembered so far
+void stream_mark(Stream* strm) {
+    strm->mem_col = strm->col;
+    strm->mem_line = strm->line;
+    if (strm->type == STREAM_STR) {
+        if (strm->col > 0)
+            strm->mem_flag = strm->col - 1;
+    } else {
+        strm->mem_flag = strm->last_pos;
+    }
+}
+
 char* stream_recall(Stream* strm) {
-    if (strm->memory_flag > -1) {
-        char* ret = malloc(strm->memory_len + 1);
+    if (strm->mem_flag > -1) {
+        char* ret = malloc(strm->mem_len + 1);
         if (ret) {
             if (strm->type == STREAM_STR) {
-                strncpy(ret, strm->s + strm->memory_flag, strm->memory_len);
-                ret[strm->memory_len] = '\0';
+                strncpy(ret, strm->s + strm->mem_flag, strm->mem_len);
+                ret[strm->mem_len] = '\0';
             } else {
-                fseek(strm->fp, strm->memory_flag, SEEK_SET);
-                fgets(ret, strm->memory_len + 1, strm->fp);
+                fseek(strm->fp, strm->mem_flag, SEEK_SET);
+                fgets(ret, strm->mem_len + 1, strm->fp);
                 // read and discard the current character
                 fgetc(strm->fp);
             }
         }
-        strm->memory_flag = -1;
-        strm->memory_len = 0;
+        strm->mem_flag = -1;
+        strm->mem_len = 0;
         return ret;
     } else {
         return NULL;

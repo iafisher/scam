@@ -3,7 +3,7 @@
 #include "stream.h"
 
 enum { TKN_RPAREN, TKN_LPAREN, TKN_RBRACKET, TKN_LBRACKET, TKN_RBRACE, 
-       TKN_LBRACE, TKN_INT, TKN_DEC, TKN_STR, TKN_EOF, TKN_UNKNOWN, };
+       TKN_LBRACE, TKN_INT, TKN_DEC, TKN_SYM, TKN_STR, TKN_EOF, TKN_UNKNOWN };
 typedef struct {
     int type;
     char* val;
