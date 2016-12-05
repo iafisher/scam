@@ -4,21 +4,22 @@
 void runtest(char* s, int n, ...) {
     va_list args;
     va_start(args, n);
-    Tokenizer* tz = tokenizer_from_str(s);
+    Tokenizer tz; 
+    tokenizer_from_str(&tz, s);
     int i = 0;
     while (i < n) {
         int this_type = va_arg(args, int);
-        if (this_type != tz->tkn->type) {
+        if (this_type != tz.tkn.type) {
             printf("Failed tokenize test \"%s\" on token %d; ", s, i);
-            printf("got %s, expected %s\n", token_type_name(tz->tkn->type),
+            printf("got %s, expected %s\n", token_type_name(tz.tkn.type),
                                             token_type_name(this_type));
             return;
         }
-        tokenizer_advance(tz);
+        tokenizer_advance(&tz);
         i++;
     }
     va_end(args);
-    tokenizer_close(tz);
+    tokenizer_close(&tz);
     printf("Passed tokenize test on \"%s\"\n", s);
 }
 

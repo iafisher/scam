@@ -19,8 +19,8 @@ typedef struct {
 } Stream;
 
 // Initialize streams from various sources
-Stream* stream_from_str(const char*);
-Stream* stream_from_file(const char*);
+void stream_from_str(Stream*, const char*);
+void stream_from_file(Stream*, const char*);
 
 // Return 1 if the stream can still be read from
 int stream_good(Stream*);

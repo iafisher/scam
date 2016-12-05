@@ -5,7 +5,7 @@
 
 #define TOKENIZER_MUST_ADVANCE(tz) { \
     tokenizer_advance(tz); \
-    if (tz->tkn->type == TKN_EOF) { \
+    if (tz->tkn.type == TKN_EOF) { \
         return scamval_err("premature end of input"); \
     } \
 }
@@ -20,36 +20,38 @@ int starts_value(int tkn_type);
 scamval* scamval_from_token(Token*);
 
 scamval* parse_line(char* s) {
-    Tokenizer* tz = tokenizer_from_str(s);
-    if (tz->tkn->type == TKN_EOF) {
-        tokenizer_close(tz);
+    Tokenizer tz; 
+    tokenizer_from_str(&tz, s);
+    if (tz.tkn.type == TKN_EOF) {
+        tokenizer_close(&tz);
         return scamval_null();
     } else {
-        scamval* ret = match_expr(tz);
-        if (tz->tkn->type == TKN_EOF) {
-            tokenizer_close(tz);
+        scamval* ret = match_expr(&tz);
+        if (tz.tkn.type == TKN_EOF) {
+            tokenizer_close(&tz);
             return ret;
         } else {
             scamval_free(ret);
-            tokenizer_close(tz);
+            tokenizer_close(&tz);
             return scamval_err("trailing input");
         }
     }
 }
 
 scamval* parse_file(char* fp) {
-    Tokenizer* tz = tokenizer_from_file(fp);
-    scamval* ret = match_expr_plus(tz);
-    tokenizer_close(tz);
+    Tokenizer tz; 
+    tokenizer_from_file(&tz, fp);
+    scamval* ret = match_expr_plus(&tz);
+    tokenizer_close(&tz);
     return ret;
 }
 
 scamval* match_any_expr(Tokenizer* tz, int type, int start, int end) {
-    if (tz->tkn->type == start) {
+    if (tz->tkn.type == start) {
         TOKENIZER_MUST_ADVANCE(tz);
         scamval* ret = match_expr_star(tz);
         ret->type = type;
-        if (tz->tkn->type == end) {
+        if (tz->tkn.type == end) {
             tokenizer_advance(tz);
             return ret;
         } else {
@@ -72,7 +74,7 @@ scamval* match_any_nonempty_expr(Tokenizer* tz, int type, int start, int end) {
 }
 
 scamval* match_expr(Tokenizer* tz) {
-    if (tz->tkn->type == TKN_LPAREN) {
+    if (tz->tkn.type == TKN_LPAREN) {
         return match_any_nonempty_expr(tz, SCAM_CODE, TKN_LPAREN, TKN_RPAREN);
     } else {
         return match_value(tz);
@@ -88,26 +90,26 @@ scamval* match_expr_plus(Tokenizer* tz) {
         scamval_free(ast);
         return first_expr;
     }
-    while (starts_expr(tz->tkn->type))
+    while (starts_expr(tz->tkn.type))
         scamval_append(ast, match_expr(tz));
     return ast;
 }
 
 scamval* match_expr_star(Tokenizer* tz) {
     scamval* ast = scamval_code();
-    while (starts_expr(tz->tkn->type))
+    while (starts_expr(tz->tkn.type))
         scamval_append(ast, match_expr(tz));
     return ast;
 }
 
 scamval* match_value(Tokenizer* tz) {
-    if (starts_value(tz->tkn->type)) {
-        if (tz->tkn->type == TKN_LBRACE) {
+    if (starts_value(tz->tkn.type)) {
+        if (tz->tkn.type == TKN_LBRACE) {
             return match_any_expr(tz, SCAM_QUOTE, TKN_LBRACE, TKN_RBRACE);
-        } else if (tz->tkn->type == TKN_LBRACKET) {
+        } else if (tz->tkn.type == TKN_LBRACKET) {
             return match_any_expr(tz, SCAM_LIST, TKN_LBRACKET, TKN_RBRACKET);
         } else {
-            scamval* ret = scamval_from_token(tz->tkn);
+            scamval* ret = scamval_from_token(&tz->tkn);
             tokenizer_advance(tz);
             return ret;
         }
@@ -117,7 +119,6 @@ scamval* match_value(Tokenizer* tz) {
 }
 
 scamval* scamval_from_token(Token* tkn) {
-    // this will need to be changed
     switch (tkn->type) {
         case TKN_INT: return scamval_int(strtoll(tkn->val, NULL, 10));
         case TKN_DEC: return scamval_dec(strtod(tkn->val, NULL));

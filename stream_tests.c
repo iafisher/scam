@@ -41,21 +41,22 @@ int stream_test_103_27(Stream* strm) {
 
 void stream_tests() {
     // open the two streams
-    Stream* fstream = stream_from_file("streamtest.txt");
-    Stream* sstream = stream_from_str("(+ 103 27)");
+    Stream fstream, sstream; 
+    stream_from_file(&fstream, "streamtest.txt");
+    stream_from_str(&sstream, "(+ 103 27)");
     printf("Running file stream test... ");
-    if (stream_test_103_27(fstream)) {
+    if (stream_test_103_27(&fstream)) {
         printf("passed!\n");
     } else {
         printf("FAILED (oh no)\n");
     }
     printf("Running string stream test... ");
-    if (stream_test_103_27(sstream)) {
+    if (stream_test_103_27(&sstream)) {
         printf("passed!\n");
     } else {
         printf("FAILED (oh no)\n");
     }
     // close the two streams
-    stream_close(fstream); 
-    stream_close(sstream);
+    stream_close(&fstream); 
+    stream_close(&sstream);
 }

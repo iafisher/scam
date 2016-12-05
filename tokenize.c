@@ -3,26 +3,22 @@
 #include <string.h>
 #include "tokenize.h"
 
-Tokenizer* tokenizer_from_str(char* s) {
-    Tokenizer* ret = malloc(sizeof(Tokenizer));
-    if (ret) {
-        ret->strm = stream_from_str(s);
-        ret->tkn = malloc(sizeof(Token));
-        if (ret->tkn) ret->tkn->val = NULL;
-        tokenizer_advance(ret);
-    }
-    return ret;
+// Initializer a Tokenizer object, regardless of the stream type
+void tokenizer_init(Tokenizer* tz) {
+    tz->tkn.val = NULL;
+    tz->tkn.line = tz->tkn.col = 0;
 }
 
-Tokenizer* tokenizer_from_file(char* fp) {
-    Tokenizer* ret = malloc(sizeof(Tokenizer));
-    if (ret) {
-        ret->strm = stream_from_file(fp);
-        ret->tkn = malloc(sizeof(Token));
-        if (ret->tkn) ret->tkn->val = NULL;
-        tokenizer_advance(ret);
-    }
-    return ret;
+void tokenizer_from_str(Tokenizer* tz, char* s) {
+    tokenizer_init(tz);
+    stream_from_str(&tz->strm, s);
+    tokenizer_advance(tz);
+}
+
+void tokenizer_from_file(Tokenizer* tz, char* fp) {
+    tokenizer_init(tz);
+    stream_from_file(&tz->strm, fp);
+    tokenizer_advance(tz);
 }
 
 int is_symbol_char(char c) {
@@ -120,63 +116,58 @@ int token_type_from_str(char* s) {
 
 // Set the tkn member from the stream memory
 void set_token_from_stream_memory(Tokenizer* tz) {
-    tz->tkn->line = tz->strm->mem_line;
-    tz->tkn->col = tz->strm->mem_col - 1;
-    if (tz->tkn->val) free(tz->tkn->val);
-    tz->tkn->val = stream_recall(tz->strm);
-    tz->tkn->type = token_type_from_str(tz->tkn->val);
+    tz->tkn.line = tz->strm.mem_line;
+    tz->tkn.col = tz->strm.mem_col - 1;
+    if (tz->tkn.val) free(tz->tkn.val);
+    tz->tkn.val = stream_recall(&tz->strm);
+    tz->tkn.type = token_type_from_str(tz->tkn.val);
 }
 
 // Set the EOF token
 void set_eof_token(Tokenizer* tz) {
-    tz->tkn->line = tz->strm->line;
-    tz->tkn->col = tz->strm->col;
-    tz->tkn->type = TKN_EOF;
+    tz->tkn.line = tz->strm.line;
+    tz->tkn.col = tz->strm.col;
+    tz->tkn.type = TKN_EOF;
 }
 
 void tokenizer_advance(Tokenizer* tz) {
     // skip whitespace
     char c = ' ';
-    while (stream_good(tz->strm) && isspace(c))
-        c = stream_getchar(tz->strm);
-    if (!stream_good(tz->strm)) {
+    while (stream_good(&tz->strm) && isspace(c))
+        c = stream_getchar(&tz->strm);
+    if (!stream_good(&tz->strm)) {
         set_eof_token(tz);
     } else if (c == ';') {
         // skip comments
-        while (stream_good(tz->strm) && c != '\n')
-            c = stream_getchar(tz->strm);
+        while (stream_good(&tz->strm) && c != '\n')
+            c = stream_getchar(&tz->strm);
         tokenizer_advance(tz);
     } else if (is_token(c)) {
-        stream_mark(tz->strm);
-        stream_getchar(tz->strm);
+        stream_mark(&tz->strm);
+        stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
     } else if (c == '"') {
-        stream_mark(tz->strm);
+        stream_mark(&tz->strm);
         // find the end of the string literal
         // this should eventually be adjusted to account for backslash escapes
-        c = stream_getchar(tz->strm);
+        c = stream_getchar(&tz->strm);
         while (c != '"')
-            c = stream_getchar(tz->strm);
-        stream_getchar(tz->strm);
+            c = stream_getchar(&tz->strm);
+        stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
     } else {
-        stream_mark(tz->strm);
+        stream_mark(&tz->strm);
         // find the end of the token
         while (!is_token_boundary(c))
-            c = stream_getchar(tz->strm);
+            c = stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
     }
 }
 
 void tokenizer_close(Tokenizer* tz) {
-    if (tz) {
-        stream_close(tz->strm);
-        if (tz->tkn) {
-            if (tz->tkn->val)
-                free(tz->tkn->val);
-            free(tz->tkn);
-        }
-        free(tz);
+    stream_close(&tz->strm);
+    if (tz->tkn.val) {
+        free(tz->tkn.val);
     }
 }
 
@@ -199,9 +190,9 @@ const char* token_type_name(int type) {
 }
 
 void print_all_tokens(Tokenizer* tz) {
-    while (tz->tkn->type != TKN_EOF) {
-        printf("%s (%s)", tz->tkn->val, token_type_name(tz->tkn->type));
-        printf(" at line %d, col %d\n", tz->tkn->line, tz->tkn->col);
+    while (tz->tkn.type != TKN_EOF) {
+        printf("%s (%s)", tz->tkn.val, token_type_name(tz->tkn.type));
+        printf(" at line %d, col %d\n", tz->tkn.line, tz->tkn.col);
         tokenizer_advance(tz);
     }
 }

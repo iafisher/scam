@@ -4,43 +4,31 @@
 #include "stream.h"
 
 // Initialize a generic Stream object
-Stream* stream_init(int type) {
-    Stream* ret = malloc(sizeof(Stream));
-    if (ret) {
-        ret->type = type;
-        ret->col = ret->mem_col = FIRST_COL;
-        ret->line = ret->mem_line = FIRST_LINE;
-        ret->mem_flag = -1;
-        // initialize all type-dependent members to 0
-        ret->s = NULL;
-        ret->fp = NULL;
-        ret->s_len = ret->last_pos = ret->mem_len = 0;
-    }
-    return ret;
+void stream_init(Stream* strm, int type) {
+    strm->type = type;
+    strm->col = strm->mem_col = FIRST_COL;
+    strm->line = strm->mem_line = FIRST_LINE;
+    strm->mem_flag = -1;
+    // initialize everything to 0 to placate valgrind
+    strm->s_len = strm->last_pos = strm->mem_len = 0;
+    strm->s = NULL;
+    strm->fp = NULL;
 }
 
-Stream* stream_from_str(const char* s) {
-    Stream* ret = stream_init(STREAM_STR);
-    if (ret) {
-        ret->s_len = strlen(s);
-        ret->s = malloc(ret->s_len + 1);
-        if (ret->s) {
-            strcpy(ret->s, s);
-        } else {
-            ret->s_len = 0;
-        }
+void stream_from_str(Stream* strm, const char* s) {
+    stream_init(strm, STREAM_STR);
+    strm->s_len = strlen(s);
+    strm->s = malloc(strm->s_len + 1);
+    if (strm->s) {
+        strcpy(strm->s, s);
+    } else {
+        strm->s_len = 0;
     }
-    return ret;
 }
 
-Stream* stream_from_file(const char* fp) {
-    Stream* ret = stream_init(STREAM_FILE);
-    if (ret) {
-        ret->last_pos = 0;
-        ret->mem_len = 0;
-        ret->fp = fopen(fp, "r");
-    }
-    return ret;
+void stream_from_file(Stream* strm, const char* fp) {
+    stream_init(strm, STREAM_FILE);
+    strm->fp = fopen(fp, "r");
 }
 
 int stream_good(Stream* strm) {
@@ -123,7 +111,6 @@ char* stream_recall(Stream* strm) {
 }
 
 void stream_close(Stream* strm) {
-    if (!strm) return;
     if (strm->type == STREAM_STR) {
         if (strm->s) {
             free(strm->s);
@@ -133,5 +120,4 @@ void stream_close(Stream* strm) {
             fclose(strm->fp);
         }
     }
-    free(strm);
 }

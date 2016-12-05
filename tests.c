@@ -75,7 +75,8 @@ int main(int argc, char** argv) {
         }
     }
     if (buffer) free(buffer);
-    stream_close(strm);
+    if (strm)
+        stream_close(strm);
     scamenv_free(env);
     return 0;
 }
@@ -84,11 +85,11 @@ void stream_repl(char* command, size_t s_len, Stream** strm) {
     if (strstr(command, "open") == command && s_len >= 6) {
         char* fp = command + 5;
         stream_close(*strm);
-        *strm = stream_from_file(fp);
+        stream_from_file(*strm, fp);
     } else if (strstr(command, "feed") == command && s_len >= 6) {
         char* line = command + 5;
         stream_close(*strm);
-        *strm = stream_from_str(line);
+        stream_from_str(*strm, line);
     } else {
         if (!strm) {
             printf("Stream not yet opened\n");
@@ -110,23 +111,14 @@ void stream_repl(char* command, size_t s_len, Stream** strm) {
 }
 
 void tokenize_repl(char* command, size_t s_len) {
+    Tokenizer tz;
     if (strstr(command, "open") == command && s_len >= 6) {
-        Tokenizer* tz = tokenizer_from_file(command + 5);
-        if (tz) {
-            print_all_tokens(tz);
-            tokenizer_close(tz);
-        } else {
-            printf("Error: unable to open tokenizer from file");
-        }
+        tokenizer_from_file(&tz, command + 5);
     } else {
-        Tokenizer* tz = tokenizer_from_str(command);
-        if (tz) {
-            print_all_tokens(tz);
-            tokenizer_close(tz);
-        } else {
-            printf("Error: unable to open tokenizer");
-        }
+        tokenizer_from_str(&tz, command);
     }
+    print_all_tokens(&tz);
+    tokenizer_close(&tz);
 }
 
 void parse_repl(char* command) {

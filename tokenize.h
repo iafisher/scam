@@ -11,13 +11,13 @@ typedef struct {
 } Token;
 
 typedef struct {
-    Stream* strm;
-    Token* tkn;
+    Stream strm;
+    Token tkn;
 } Tokenizer;
 
 // Initialize tokenizers from various sources
-Tokenizer* tokenizer_from_str(char*);
-Tokenizer* tokenizer_from_file(char*);
+void tokenizer_from_str(Tokenizer*, char*);
+void tokenizer_from_file(Tokenizer*, char*);
 
 // Move to the next token
 void tokenizer_advance(Tokenizer*);
