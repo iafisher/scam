@@ -57,7 +57,7 @@ scamval* eval_define(scamval* ast, scamenv* env) {
         scamval* k = scamval_copy(scamval_get(ast, 1));
         scamval* v = eval(scamval_get(ast, 2), env);
         scamenv_bind(env, k, v);
-        return scamval_copy(v);
+        return scamval_null();
     }
 }
 

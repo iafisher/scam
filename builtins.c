@@ -1,9 +1,17 @@
+#include <stdio.h>
+#include <string.h>
 #include "builtins.h"
 
 #define TYPE_CHECK_ALL(args, req_type) { \
     for (int i = 1; i < args->count; i++) { \
         if (args->root[i]->type != req_type) \
             return scamval_err("type mismatch"); \
+    } \
+}
+
+#define TYPE_CHECK_ONE(args, i, req_type) { \
+    if (i < 0 || i >= args->count || args->root[i] != req_type) { \
+        return scamval_err("type mismatch"); \
     } \
 }
 
@@ -64,10 +72,36 @@ scamval* builtin_tail(array* args) {
     return ret;
 }
 
+scamval* builtin_print(array* args) {
+    COUNT_ARGS(args, 1);
+    if (args->root[1]->type != SCAM_STR) {
+        scamval_print(args->root[1]);
+    } else {
+        printf("%s", args->root[1]->vals.s);
+    }
+    return scamval_null();
+}
+
+scamval* builtin_println(array* args) {
+    COUNT_ARGS(args, 1);
+    if (args->root[1]->type != SCAM_STR) {
+        scamval_println(args->root[1]);
+    } else {
+        printf("%s\n", args->root[1]->vals.s);
+    }
+    return scamval_null();
+}
+
+void add_builtin(scamenv* env, char* sym, scambuiltin bltin) {
+    scamenv_bind(env, scamval_sym(sym), scamval_builtin(bltin));
+}
+
 void register_builtins(scamenv* env) {
-    scamenv_bind(env, scamval_sym("+"), scamval_builtin(builtin_add));
-    scamenv_bind(env, scamval_sym("-"), scamval_builtin(builtin_sub));
-    scamenv_bind(env, scamval_sym("*"), scamval_builtin(builtin_mult));
-    scamenv_bind(env, scamval_sym("head"), scamval_builtin(builtin_head));
-    scamenv_bind(env, scamval_sym("tail"), scamval_builtin(builtin_tail));
+    add_builtin(env, "+", builtin_add);
+    add_builtin(env, "-", builtin_sub);
+    add_builtin(env, "*", builtin_mult);
+    add_builtin(env, "head", builtin_head);
+    add_builtin(env, "tail", builtin_tail);
+    add_builtin(env, "print", builtin_print);
+    add_builtin(env, "println", builtin_println);
 }

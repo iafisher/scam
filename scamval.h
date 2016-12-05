@@ -4,7 +4,8 @@
 #define SCAM_CLOSED_FILE -1
 
 enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_QUOTE,
-      SCAM_FUNCTION, SCAM_PORT, SCAM_BUILTIN, SCAM_CODE, SCAM_SYM, SCAM_ERR };
+      SCAM_FUNCTION, SCAM_PORT, SCAM_BUILTIN, SCAM_CODE, SCAM_SYM, SCAM_ERR,
+      SCAM_NULL };
 
 const char* scamval_type_name(int type);
 
@@ -70,6 +71,7 @@ scamval* scamval_sym(char*);
 scamval* scamval_err(char*);
 scamval* scamval_function();
 scamval* scamval_builtin(scambuiltin*);
+scamval* scamval_null();
 
 scamval* scamval_copy(scamval*);
 

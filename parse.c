@@ -21,13 +21,17 @@ scamval* scamval_from_token(Token*);
 
 scamval* parse_line(char* s) {
     Tokenizer* tz = tokenizer_from_str(s);
-    scamval* ret = match_expr(tz);
     if (tz->tkn->type == TKN_EOF) {
-        tokenizer_close(tz);
-        return ret;
+        return scamval_null();
     } else {
-        scamval_free(ret);
-        return scamval_err("trailing input");
+        scamval* ret = match_expr(tz);
+        if (tz->tkn->type == TKN_EOF) {
+            tokenizer_close(tz);
+            return ret;
+        } else {
+            scamval_free(ret);
+            return scamval_err("trailing input");
+        }
     }
 }
 

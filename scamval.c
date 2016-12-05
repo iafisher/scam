@@ -188,6 +188,14 @@ scamval* scamval_port(FILE* fp) {
     return ret;
 }
 
+scamval* scamval_null() {
+    scamval* ret = malloc(sizeof(scamval));
+    if (ret) {
+        ret->type = SCAM_NULL;
+    }
+    return ret;
+}
+
 scamval* scamval_copy(scamval* v) {
     scamval* ret = malloc(sizeof(scamval));
     if (v && ret) {
@@ -308,7 +316,7 @@ void scamval_print(scamval* v) {
 }
 
 void scamval_println(scamval* v) {
-    if (!v) return;
+    if (!v || v->type == SCAM_NULL) return;
     scamval_print(v);
     printf("\n");
 }
@@ -327,6 +335,7 @@ const char* scamval_type_name(int type) {
         case SCAM_CODE: return "SCAM_CODE";
         case SCAM_SYM: return "SCAM_SYM";
         case SCAM_ERR: return "SCAM_ERR";
+        case SCAM_NULL: return "SCAM_NULL";
         default: return "bad scamval type";
     }
 }
