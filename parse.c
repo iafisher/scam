@@ -22,6 +22,7 @@ scamval* scamval_from_token(Token*);
 scamval* parse_line(char* s) {
     Tokenizer* tz = tokenizer_from_str(s);
     if (tz->tkn->type == TKN_EOF) {
+        tokenizer_close(tz);
         return scamval_null();
     } else {
         scamval* ret = match_expr(tz);
@@ -30,6 +31,7 @@ scamval* parse_line(char* s) {
             return ret;
         } else {
             scamval_free(ret);
+            tokenizer_close(tz);
             return scamval_err("trailing input");
         }
     }

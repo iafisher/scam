@@ -55,6 +55,19 @@ scamval* array_get(array* arr, size_t i) {
     }
 }
 
+scamval* array_pop(array* arr, size_t i) {
+    if (i >= 0 && i < arr->count) {
+        scamval* ret = arr->root[i];
+        for (size_t j = i; j < arr->count - 1; j++) {
+            arr->root[j] = arr->root[j + 1];
+        }
+        arr->count--;
+        return ret;
+    } else {
+        return scamval_err("attempted array access out of range");
+    }
+}
+
 size_t array_len(array* arr) {
     return arr->count;
 }
@@ -85,6 +98,10 @@ void scamval_set(scamval* seq, size_t i, scamval* v) {
 
 scamval* scamval_get(scamval* seq, size_t i) {
     return array_get(seq->vals.arr, i);
+}
+
+scamval* scamval_pop(scamval* seq, size_t i) {
+    return array_pop(seq->vals.arr, i);
 }
 
 scamval* scamval_int(long long n) {

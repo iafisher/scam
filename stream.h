@@ -1,4 +1,6 @@
 #pragma once
+#include <stdio.h>
+
 #define FIRST_COL 0
 #define FIRST_LINE 1
 

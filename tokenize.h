@@ -26,3 +26,4 @@ void tokenizer_close(Tokenizer*);
 
 // Print all tokens and their type to stdout (useful for debugging)
 void print_all_tokens(Tokenizer*);
+const char* token_type_name(int type);

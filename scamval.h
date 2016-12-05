@@ -21,7 +21,7 @@ typedef struct {
 } array;
 
 // Other convenient typedefs
-typedef scamval* (scambuiltin)(array*);
+typedef scamval* (scambuiltin)(scamval*);
 typedef FILE scamport;
 
 array* array_init();
@@ -29,12 +29,14 @@ array* array_copy(array*);
 void array_free(array*);
 
 scamval* array_get(array*, size_t);
+scamval* array_pop(array*, size_t);
 void array_set(array*, size_t, scamval*);
 size_t array_len(array*);
 void array_append(array*, scamval*);
 
 // Useful wrapper functions around array methods
 scamval* scamval_get(scamval*, size_t);
+scamval* scamval_pop(scamval*, size_t);
 void scamval_set(scamval*, size_t, scamval*);
 size_t scamval_len(scamval*);
 void scamval_append(scamval*, scamval*);

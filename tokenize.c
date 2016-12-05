@@ -87,7 +87,7 @@ int is_token(char c) {
 
 // Return 1 if the character is a token boundary
 int is_token_boundary(char c) {
-    return is_token(c)  || isspace(c) || c == '\0';
+    return is_token(c)  || isspace(c) || c == '"' || c == '\0';
 }
 
 // Return the token type of the given string

@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,21 +6,18 @@
 #include "parse.h"
 #include "stream.h"
 #include "tokenize.h"
-
-#define CHECK_OBJ(obj, name) \
-    { if (!obj) { printf("%s not yet opened\n", name); return; } }
+#include "tests.h"
 
 void stream_repl(char*, size_t, Stream**);
 void tokenize_repl(char*, size_t);
 void parse_repl(char*);
 void eval_repl(char*, scamenv*);
 
-void stream_tests();
-
 enum { REPL_EVAL, REPL_PARSE, REPL_TOKENIZE, REPL_STREAM };
 int main(int argc, char** argv) {
     // Run tests
-    //stream_tests();
+    stream_tests();
+    tokenize_tests();
     // set mode based on the command line argument
     int mode = REPL_EVAL;
     if (argc == 2) {
@@ -40,6 +36,13 @@ int main(int argc, char** argv) {
     scamenv* env = scamenv_init(NULL);
     register_builtins(env);
     while (1) {
+        switch (mode) {
+            case REPL_STREAM: printf("stream"); break;
+            case REPL_TOKENIZE: printf("tokenize"); break;
+            case REPL_PARSE: printf("parse"); break;
+            case REPL_EVAL: printf("eval"); break;
+            default: printf("unknown mode"); break;
+        }
         printf(">>> ");
         int end = getline(&buffer, &s_len, stdin);
         // remove trailing newline
@@ -87,7 +90,10 @@ void stream_repl(char* command, size_t s_len, Stream** strm) {
         stream_close(*strm);
         *strm = stream_from_str(line);
     } else {
-        CHECK_OBJ(strm, "stream");
+        if (!strm) {
+            printf("Stream not yet opened\n");
+            return;
+        }
         if (strcmp(command, "getchar") == 0) {
             printf("'%c'\n", stream_getchar(*strm));
         } else if (strcmp(command, "mark") == 0) {
@@ -133,47 +139,4 @@ void eval_repl(char* command, scamenv* env) {
     scamval* v = eval_line(command, env);
     scamval_println(v);
     scamval_free(v);
-}
-
-void stream_test_103_27(Stream* strm) {
-    assert(stream_good(strm));
-    // token: (
-    assert(stream_getchar(strm) == '(');
-    // token: +
-    assert(stream_getchar(strm) == '+');
-    stream_mark(strm);
-    assert(stream_getchar(strm) == ' ');
-    char* s = stream_recall(strm);
-    assert(strcmp(s, "+") == 0);
-    free(s);
-    // token: 103
-    assert(stream_getchar(strm) == '1');
-    stream_mark(strm);
-    assert(stream_getchar(strm) == '0');
-    assert(stream_getchar(strm) == '3');
-    assert(stream_getchar(strm) == ' ');
-    s = stream_recall(strm);
-    assert(strcmp(s, "103") == 0);
-    free(s);
-    // token: 27
-    assert(stream_getchar(strm) == '2');
-    stream_mark(strm);
-    assert(stream_getchar(strm) == '7');
-    assert(stream_getchar(strm) == ')');
-    s = stream_recall(strm);
-    assert(strcmp(s, "27") == 0);
-    free(s);
-    // token: )
-    assert(stream_getchar(strm) == ')');
-}
-
-void stream_tests() {
-    // open the two streams
-    Stream* fstream = stream_from_file("streamtest.txt");
-    Stream* sstream = stream_from_str("(+ 103 27)");
-    stream_test_103_27(fstream);
-    stream_test_103_27(sstream);
-    // close the two streams
-    stream_close(fstream); 
-    stream_close(sstream);
 }
