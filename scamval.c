@@ -40,6 +40,25 @@ array* array_copy(array* arr) {
     }
 }
 
+void array_set(array* arr, size_t i, scamval* v) {
+    if (i >= 0 && i < arr->count) {
+        scamval_free(arr->root[i]);
+        arr->root[i] = v;
+    }
+}
+
+scamval* array_get(array* arr, size_t i) {
+    if (i >= 0 && i < arr->count) {
+        return arr->root[i];
+    } else {
+        return scamval_err("attempted array access out of range");
+    }
+}
+
+size_t array_len(array* arr) {
+    return arr->count;
+}
+
 void array_free(array* arr) {
     if (arr) {
         if (arr->root) {
@@ -60,12 +79,12 @@ size_t scamval_len(scamval* seq) {
     return seq->vals.arr->count;
 }
 
+void scamval_set(scamval* seq, size_t i, scamval* v) {
+    array_set(seq->vals.arr, i, v);
+}
+
 scamval* scamval_get(scamval* seq, size_t i) {
-    if (i >= 0 && i < seq->vals.arr->count) {
-        return seq->vals.arr->root[i];
-    } else {
-        return scamval_err("array access out of bound");
-    }
+    return array_get(seq->vals.arr, i);
 }
 
 scamval* scamval_int(long long n) {

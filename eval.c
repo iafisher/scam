@@ -12,6 +12,11 @@ scamval* eval(scamval* ast, scamenv* env) {
         return scamenv_lookup(env, ast);
     } else if (ast->type == SCAM_CODE) {
         return eval_code(ast, env);
+    } else if (ast->type == SCAM_LIST) {
+        for (int i = 0; i < scamval_len(ast); i++) {
+            scamval_set(ast, i, eval(scamval_get(ast, i), env));
+        }
+        return scamval_copy(ast);
     } else {
         return scamval_copy(ast);
     }
@@ -49,9 +54,10 @@ scamval* eval_define(scamval* ast, scamenv* env) {
     } else if (scamval_get(ast, 1)->type != SCAM_SYM) {
         return scamval_err("cannot define non-symbol");
     } else {
-        scamenv_bind(env, scamval_copy(scamval_get(ast, 1)),
-                          scamval_copy(scamval_get(ast, 2)));
-        return scamval_bool(1);
+        scamval* k = scamval_copy(scamval_get(ast, 1));
+        scamval* v = eval(scamval_get(ast, 2), env);
+        scamenv_bind(env, k, v);
+        return scamval_copy(v);
     }
 }
 

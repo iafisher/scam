@@ -24,20 +24,25 @@ typedef scamval* (scambuiltin)(array*);
 typedef FILE scamport;
 
 array* array_init();
-void array_append(array*, scamval*);
 array* array_copy(array*);
 void array_free(array*);
+
+scamval* array_get(array*, size_t);
+void array_set(array*, size_t, scamval*);
+size_t array_len(array*);
+void array_append(array*, scamval*);
+
+// Useful wrapper functions around array methods
+scamval* scamval_get(scamval*, size_t);
+void scamval_set(scamval*, size_t, scamval*);
+size_t scamval_len(scamval*);
+void scamval_append(scamval*, scamval*);
 
 typedef struct {
     scamenv* env;
     array* parameters;
     scamval* body;
 } scamfun;
-
-// Array utilities
-void scamval_append(scamval*, scamval*);
-scamval* scamval_get(scamval*, size_t);
-size_t scamval_len(scamval*);
 
 struct scamval {
     int type;
