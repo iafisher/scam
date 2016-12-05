@@ -1,22 +1,27 @@
 #pragma once
+#include <stdio.h>
+
 #define SCAM_CLOSED_FILE -1
 
 enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_QUOTE,
       SCAM_FUNCTION, SCAM_PORT, SCAM_BUILTIN, SCAM_CODE, SCAM_SYM, SCAM_ERR };
+
+const char* scamval_type_name(int type);
 
 // Forward declaration of scamval and scamenv
 struct scamval;
 typedef struct scamval scamval;
 struct scamenv;
 typedef struct scamenv scamenv;
-// Other convenient typedefs
-typedef scamval* (*scambuiltin)(scamval*);
-typedef FILE scamport;
 
 typedef struct {
     size_t count;
     scamval** root;
 } array;
+
+// Other convenient typedefs
+typedef scamval* (scambuiltin)(array*);
+typedef FILE scamport;
 
 array* array_init();
 void array_append(array*, scamval*);
@@ -29,8 +34,10 @@ typedef struct {
     scamval* body;
 } scamfun;
 
-// Append an element (without copying) to a sequence
+// Array utilities
 void scamval_append(scamval*, scamval*);
+scamval* scamval_get(scamval*, size_t);
+size_t scamval_len(scamval*);
 
 struct scamval {
     int type;
@@ -57,6 +64,7 @@ scamval* scamval_str(char*);
 scamval* scamval_sym(char*);
 scamval* scamval_err(char*);
 scamval* scamval_function();
+scamval* scamval_builtin(scambuiltin*);
 
 scamval* scamval_copy(scamval*);
 
@@ -73,6 +81,6 @@ struct scamenv {
 };
 
 scamenv* scamenv_init(scamenv* enclosing);
-void scamenv_bind(scamenv*, char*, scamval*);
-scamval* scamenv_lookup(scamenv*, char*);
+void scamenv_bind(scamenv*, scamval*, scamval*);
+scamval* scamenv_lookup(scamenv*, scamval*);
 void scamenv_free(scamenv*);

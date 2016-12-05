@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "builtins.h"
+#include "eval.h"
 #include "parse.h"
 #include "stream.h"
 #include "tokenize.h"
@@ -12,6 +14,7 @@
 void stream_repl(char*, size_t, Stream**);
 void tokenize_repl(char*, size_t);
 void parse_repl(char*);
+void eval_repl(char*, scamenv*);
 
 void stream_tests();
 
@@ -34,6 +37,8 @@ int main(int argc, char** argv) {
     char* buffer = NULL;
     size_t s_len = 0;
     Stream* strm = NULL;
+    scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
     while (1) {
         printf(">>> ");
         int end = getline(&buffer, &s_len, stdin);
@@ -62,10 +67,14 @@ int main(int argc, char** argv) {
             tokenize_repl(buffer, s_len);
         } else if (mode == REPL_PARSE) {
             parse_repl(buffer);
+        } else if (mode == REPL_EVAL) {
+            eval_repl(buffer, env);
         }
     }
     if (buffer) free(buffer);
     stream_close(strm);
+    scamenv_free(env);
+    return 0;
 }
 
 void stream_repl(char* command, size_t s_len, Stream** strm) {
@@ -118,6 +127,12 @@ void parse_repl(char* command) {
     scamval* ast = parse_line(command);
     scamval_println(ast);
     scamval_free(ast);
+}
+
+void eval_repl(char* command, scamenv* env) {
+    scamval* v = eval_line(command, env);
+    scamval_println(v);
+    scamval_free(v);
 }
 
 void stream_test_103_27(Stream* strm) {

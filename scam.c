@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "builtins.h"
 #include "eval.h"
 
 void run_repl(scamenv*);
 
 int main(int argc, char** argv) {
     scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
     int load_flag = 0;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-l") == 0) {
@@ -22,6 +24,7 @@ int main(int argc, char** argv) {
     if (load_flag || argc == 1) {
         run_repl(env);
     }
+    scamenv_free(env);
     return 0;
 }
 
@@ -31,7 +34,7 @@ void run_repl(scamenv* env) {
     while (1) {
         printf(">>> ");
         getline(&buffer, &len, stdin);
-        if (strcmp(buffer, "quit") == 0) break;
+        if (strcmp(buffer, "quit\n") == 0) break;
         scamval* v = eval_line(buffer, env);
         scamval_println(v);
         scamval_free(v);
