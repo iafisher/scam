@@ -1,7 +1,10 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "scamval.h"
+
+#define MAX_ERROR_SIZE 100
 
 array* array_init() {
     array* ret = malloc(sizeof(array));
@@ -173,16 +176,32 @@ scamval* scamval_sym(char* s) {
     return scamval_internal_str(SCAM_SYM, s);
 }
 
-scamval* scamval_err(char* s) {
-    return scamval_internal_str(SCAM_ERR, s);
+scamval* scamval_err(char* format, ...) {
+    scamval* ret = malloc(sizeof(scamval));
+    if (ret) {
+        ret->type = SCAM_ERR;
+        va_list vlist;
+        va_start(vlist, format);
+        ret->vals.s = malloc(MAX_ERROR_SIZE);
+        if (ret->vals.s) {
+            vsnprintf(ret->vals.s, MAX_ERROR_SIZE, format, vlist);
+            va_end(vlist);
+        }
+    }
+    return ret;
 }
 
-scamval* scamval_function() {
+scamval* scamval_function(scamenv* env, array* parameters, scamval* body) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_FUNCTION;
         // probably going to need to change this at some point
-        ret->vals.fun = NULL;
+        ret->vals.fun = malloc(sizeof(scamfun));
+        if (ret->vals.fun) {
+            ret->vals.fun->env = scamenv_init(env);
+            ret->vals.fun->parameters = array_copy(parameters);
+            ret->vals.fun->body = scamval_copy(body);
+        }
     }
     return ret;
 }
@@ -235,8 +254,13 @@ scamval* scamval_copy(scamval* v) {
                     strcpy(ret->vals.s, v->vals.s);
                 break;
             case SCAM_FUNCTION:
-                printf("Warning: trying to copy a function\n");
-                ret->vals.fun = v->vals.fun;
+                ret->vals.fun = malloc(sizeof(scamfun));
+                if (ret->vals.fun) {
+                    ret->vals.fun->env = scamenv_copy(v->vals.fun->env);
+                    ret->vals.fun->parameters = array_copy(v->vals.fun->parameters);
+                    ret->vals.fun->body = scamval_copy(v->vals.fun->body);
+                }
+                break;
             case SCAM_BUILTIN:
                 ret->vals.bltin = v->vals.bltin;
             case SCAM_PORT:
@@ -265,6 +289,12 @@ void scamval_free(scamval* v) {
                 fclose(v->vals.port);
             }
             break;
+        case SCAM_FUNCTION:
+            scamenv_free(v->vals.fun->env);
+            array_free(v->vals.fun->parameters);
+            scamval_free(v->vals.fun->body);
+            free(v->vals.fun);
+            break;
     }
     free(v);
 }
@@ -280,9 +310,18 @@ scamenv* scamenv_init(scamenv* enclosing) {
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
-    array_append(env->syms, sym);
-    //array_append(env->vals, scamval_copy(val));
-    array_append(env->vals, val);
+    array_append(env->syms, scamval_copy(sym));
+    array_append(env->vals, scamval_copy(val));
+}
+
+scamenv* scamenv_copy(scamenv* env) {
+    scamenv* ret = malloc(sizeof(scamenv));
+    if (ret) {
+        ret->enclosing = env->enclosing;
+        ret->syms = array_copy(env->syms);
+        ret->vals = array_copy(env->vals);
+    }
+    return ret;
 }
 
 void scamenv_free(scamenv* env) {
@@ -300,7 +339,11 @@ scamval* scamenv_lookup(scamenv* env, scamval* name) {
             return scamval_copy(env->vals->root[i]);
         }
     }
-    return scamval_err("failed lookup");
+    if (env->enclosing != NULL) {
+        return scamenv_lookup(env->enclosing, name);
+    } else {
+        return scamval_err("unbound variable '%s'", name->vals.s);
+    }
 }
 
 void array_print(array* arr, char* open, char* close) {

@@ -2,5 +2,5 @@
 *.txt
 *.scm
 makefile
-test
+tests
 scam

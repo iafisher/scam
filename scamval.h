@@ -70,13 +70,14 @@ scamval* scamval_code();
 scamval* scamval_port(FILE*);
 scamval* scamval_str(char*);
 scamval* scamval_sym(char*);
-scamval* scamval_err(char*);
-scamval* scamval_function();
+scamval* scamval_err(char*, ...);
+scamval* scamval_function(scamenv*, array*, scamval*);
 scamval* scamval_builtin(scambuiltin*);
 scamval* scamval_null();
 
 scamval* scamval_copy(scamval*);
 
+const char* scamval_type_name(int type);
 void scamval_print(scamval*);
 void scamval_println(scamval*);
 
@@ -92,4 +93,5 @@ struct scamenv {
 scamenv* scamenv_init(scamenv* enclosing);
 void scamenv_bind(scamenv*, scamval*, scamval*);
 scamval* scamenv_lookup(scamenv*, scamval*);
+scamenv* scamenv_copy(scamenv*);
 void scamenv_free(scamenv*);

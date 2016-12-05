@@ -42,7 +42,7 @@ int stream_test_103_27(Stream* strm) {
 void stream_tests() {
     // open the two streams
     Stream fstream, sstream; 
-    stream_from_file(&fstream, "streamtest.txt");
+    stream_from_file(&fstream, "test_files/streamtest.txt");
     stream_from_str(&sstream, "(+ 103 27)");
     printf("Running file stream test... ");
     if (stream_test_103_27(&fstream)) {

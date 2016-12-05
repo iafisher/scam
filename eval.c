@@ -4,6 +4,7 @@
 
 // Forward declaration of various eval utilities
 scamval* eval_define(scamval*, scamenv*);
+scamval* eval_lambda(scamval*, scamenv*);
 scamval* eval_if(scamval*, scamenv*);
 scamval* eval_apply(scamval*, scamenv*);
 
@@ -19,6 +20,8 @@ scamval* eval(scamval* ast, scamenv* env) {
             return eval_define(ast, env);
         } else if (strcmp(scamval_get(ast, 0)->vals.s, "if") == 0) {
             return eval_if(ast, env);
+        } else if (strcmp(scamval_get(ast, 0)->vals.s, "lambda") == 0) {
+            return eval_lambda(ast, env);
         } else {
             return eval_apply(ast, env);
         }
@@ -58,6 +61,25 @@ scamval* eval_file(char* fp, scamenv* env) {
     }
 }
 
+// Evaluate a lambda expression
+scamval* eval_lambda(scamval* ast, scamenv* env) {
+    if (scamval_len(ast) != 3) {
+        return scamval_err("wrong number of arguments to 'lambda'");
+    } else {
+        scamval* parameters = scamval_get(ast, 1);
+        scamval* body = scamval_get(ast, 2);
+        if (parameters->type != SCAM_CODE) {
+            return scamval_err("second argument to 'lambda' should be expression");
+        }
+        for (int i = 0; i < scamval_len(parameters); i++) {
+            if (scamval_get(body, i)->type != SCAM_SYM) {
+                return scamval_err("lambda parameter must be symbol");
+            }
+        }
+        return scamval_function(env, parameters->vals.arr, body);
+    }
+}
+
 // Evaluate a define statement
 scamval* eval_define(scamval* ast, scamenv* env) {
     if (scamval_len(ast) != 3) {
@@ -65,9 +87,10 @@ scamval* eval_define(scamval* ast, scamenv* env) {
     } else if (scamval_get(ast, 1)->type != SCAM_SYM) {
         return scamval_err("cannot define non-symbol");
     } else {
-        scamval* k = scamval_copy(scamval_get(ast, 1));
+        scamval* k = scamval_get(ast, 1);
         scamval* v = eval(scamval_get(ast, 2), env);
         scamenv_bind(env, k, v);
+        scamval_free(v);
         return scamval_null();
     }
 }
@@ -116,8 +139,8 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
             return scamval_err("wrong number of arguments given");
         }
         scamenv* fun_env = scamenv_init(env);
-        for (int i = 1; i < fun->parameters->count; i++) {
-            scamenv_bind(fun_env, fun->parameters->root[i - 1],
+        for (int i = 0; i < fun->parameters->count; i++) {
+            scamenv_bind(fun_env, fun->parameters->root[i],
                                   scamval_get(arglist, i));
         }
         scamval* ret = eval(fun->body, fun_env);
