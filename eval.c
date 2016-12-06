@@ -57,7 +57,8 @@ scamval* eval_file(char* fp, scamenv* env) {
         scamval* v = NULL;
         for (int i = 0; i < scamval_len(exprs); i++) {
             v = eval(scamval_get(exprs, i), env);
-            if (i != scamval_len(exprs) - 1) { scamval_free(v);
+            if (i != scamval_len(exprs) - 1) { 
+                scamval_free(v);
             }
         }
         scamval_free(exprs);
@@ -72,12 +73,13 @@ scamval* eval_file(char* fp, scamenv* env) {
 // Evaluate a lambda expression
 scamval* eval_lambda(scamval* ast, scamenv* env) {
     if (scamval_len(ast) != 3) {
-        return scamval_err("wrong number of arguments to 'lambda'");
+        return scamval_err("'lambda' expected %d argument(s), got %d",
+                           3, scamval_len(ast));
     } else {
         scamval* parameters = scamval_get(ast, 1);
         scamval* body = scamval_get(ast, 2);
         if (parameters->type != SCAM_CODE) {
-            return scamval_err("second argument to 'lambda' should be expression");
+            return scamval_err("arg 2 to 'lambda' should be expression");
         }
         for (int i = 0; i < scamval_len(parameters); i++) {
             if (scamval_get(body, i)->type != SCAM_SYM) {
@@ -186,11 +188,14 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
                                   scamval_get(arglist, i));
         }
         scamval* ret = eval(fun->body, fun_env);
-        scamenv_free(fun_env); scamval_free(arglist); scamval_free(fun_val);
+        scamenv_free(fun_env); 
+        scamval_free(fun_val);
+        scamval_free(arglist); 
         return ret;
     } else if (fun_val->type == SCAM_BUILTIN) {
         scamval* ret = fun_val->vals.bltin(arglist);
-        scamval_free(fun_val);
+        scamval_free(fun_val); 
+        scamval_free(arglist);
         return ret;
     } else {
         scamval_free(arglist); scamval_free(fun_val);
