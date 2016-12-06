@@ -6,6 +6,8 @@
 scamval* eval_define(scamval*, scamenv*);
 scamval* eval_lambda(scamval*, scamenv*);
 scamval* eval_if(scamval*, scamenv*);
+scamval* eval_and(scamval*, scamenv*);
+scamval* eval_or(scamval*, scamenv*);
 scamval* eval_apply(scamval*, scamenv*);
 
 scamval* eval(scamval* ast, scamenv* env) {
@@ -15,16 +17,22 @@ scamval* eval(scamval* ast, scamenv* env) {
         if (scamval_len(ast) == 0) {
             return scamval_err("empty expression");
         }
-        // define statement and if expression are special cases
-        if (strcmp(scamval_get(ast, 0)->vals.s, "define") == 0) {
-            return eval_define(ast, env);
-        } else if (strcmp(scamval_get(ast, 0)->vals.s, "if") == 0) {
-            return eval_if(ast, env);
-        } else if (strcmp(scamval_get(ast, 0)->vals.s, "lambda") == 0) {
-            return eval_lambda(ast, env);
-        } else {
-            return eval_apply(ast, env);
+        // handle special expressions and statements
+        if (scamval_get(ast, 0)->type == SCAM_SYM) {
+            char* name = scamval_get(ast, 0)->vals.s;
+            if (strcmp(name, "define") == 0) {
+                return eval_define(ast, env);
+            } else if (strcmp(name, "if") == 0) {
+                return eval_if(ast, env);
+            } else if (strcmp(name, "lambda") == 0) {
+                return eval_lambda(ast, env);
+            } else if (strcmp(name, "and") == 0) {
+                return eval_and(ast, env);
+            } else if (strcmp(name, "or") == 0) {
+                return eval_or(ast, env);
+            }
         }
+        return eval_apply(ast, env);
     } else if (ast->type == SCAM_LIST) {
         scamval* ret = scamval_list();
         for (int i = 0; i < scamval_len(ast); i++) {
@@ -95,7 +103,7 @@ scamval* eval_define(scamval* ast, scamenv* env) {
     }
 }
 
-// Evaluate an if statement
+// Evaluate an if expression
 scamval* eval_if(scamval* ast, scamenv* env) {
     if (scamval_len(ast) != 4) {
         return scamval_err("wrong number of arguments to 'if'");
@@ -114,6 +122,40 @@ scamval* eval_if(scamval* ast, scamenv* env) {
             return scamval_err("condition of an if expression must be a bool");
         }
     }
+}
+
+// Evaluate an and expression
+scamval* eval_and(scamval* ast, scamenv* env) {
+    for (int i = 1; i < scamval_len(ast); i++) {
+        scamval* v = eval(scamval_get(ast, i), env);
+        if (v->type != SCAM_BOOL) {
+            scamval_free(v);
+            return scamval_err("'and' passed non-boolean argument");
+        } else if (!v->vals.n) {
+            scamval_free(v);
+            return scamval_bool(0);
+        } else {
+            scamval_free(v);
+        }
+    }
+    return scamval_bool(1);
+}
+
+// Evaluate an or expression
+scamval* eval_or(scamval* ast, scamenv* env) {
+    for (int i = 1; i < scamval_len(ast); i++) {
+        scamval* v = eval(scamval_get(ast, i), env);
+        if (v->type != SCAM_BOOL) {
+            scamval_free(v);
+            return scamval_err("'or' passed non-boolean argument");
+        } else if (v->vals.n) {
+            scamval_free(v);
+            return scamval_bool(1);
+        } else {
+            scamval_free(v);
+        }
+    }
+    return scamval_bool(0);
 }
 
 // Evaluate a function application

@@ -153,6 +153,15 @@ scamval* builtin_floor_div(scamval* arglist) {
     BUILTIN_INT_ARITHMETIC("//", arglist, /);
 }
 
+scamval* builtin_len(scamval* arglist) {
+    COUNT_ARGS("len", arglist, 1);
+    TYPE_CHECK_ONE("len", arglist, 0, SCAM_LIST);
+    scamval* list_arg = scamval_get(arglist, 0);
+    scamval* ret = scamval_int(scamval_len(list_arg));
+    scamval_free(arglist);
+    return ret;
+}
+
 scamval* builtin_head(scamval* arglist) {
     COUNT_ARGS("head", arglist, 1);
     TYPE_CHECK_ONE("head", arglist, 0, SCAM_LIST);
@@ -170,8 +179,27 @@ scamval* builtin_head(scamval* arglist) {
 scamval* builtin_tail(scamval* arglist) {
     COUNT_ARGS("tail", arglist, 1);
     TYPE_CHECK_ONE("tail", arglist, 0, SCAM_LIST);
+    scamval* list_arg = scamval_pop(arglist, 0);
+    scamval_free(scamval_pop(list_arg, 0));
+    scamval_free(arglist);
+    return list_arg;
+}
+
+scamval* builtin_last(scamval* arglist) {
+    COUNT_ARGS("last", arglist, 1);
+    TYPE_CHECK_ONE("last", arglist, 0, SCAM_LIST);
     scamval* list_arg = scamval_get(arglist, 0);
-    scamval_pop(list_arg, 0);
+    scamval* ret = scamval_pop(list_arg, scamval_len(list_arg) - 1);
+    scamval_free(arglist);
+    return ret;
+}
+
+scamval* builtin_init(scamval* arglist) {
+    COUNT_ARGS("init", arglist, 1);
+    TYPE_CHECK_ONE("init", arglist, 0, SCAM_LIST);
+    scamval* list_arg = scamval_pop(arglist, 0);
+    scamval_free(scamval_pop(list_arg, scamval_len(list_arg) - 1));
+    scamval_free(arglist);
     return list_arg;
 }
 
@@ -244,8 +272,11 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "//", builtin_floor_div);
     add_builtin(env, "%", builtin_rem);
     add_builtin(env, "=", builtin_eq);
+    add_builtin(env, "len", builtin_len);
     add_builtin(env, "head", builtin_head);
     add_builtin(env, "tail", builtin_tail);
+    add_builtin(env, "last", builtin_last);
+    add_builtin(env, "init", builtin_init);
     add_builtin(env, "pop", builtin_pop);
     add_builtin(env, "print", builtin_print);
     add_builtin(env, "println", builtin_println);

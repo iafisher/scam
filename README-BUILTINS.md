@@ -18,7 +18,7 @@ Return the first element of the sequence, or raise an error if the sequence is e
 
 Return every element in the sequence after the first element. If the sequence is empty, return the empty sequence.
 
-    (tail seq)
+    (last seq)
 
 Return the last element in the sequence, or raise an error if the sequence is empty.
 
