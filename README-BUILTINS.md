@@ -5,7 +5,7 @@ The following arithmetic and boolean functions are installed in the default envi
 
 The `/` operator performs floating point division regardless of the types of its operands, which `//` operator only performs floor division on integers. `//` and `%` are the only two arithmetic operators with type restrictions: all others work on operands of any numerical type.
 
-The comparison operators are defined for integers, decimals, and strings. The `=` operator is additionally defined for lists and booleans.
+The comparison operators are defined for integers, decimals, and strings. The `=` operator is additionally usefully defined for lists and booleans; it returns `false` for all other types, and with mixed types (unless both are numeric).
 
 ## Sequence functions
 ### Defined for all sequence types (quotes, strings and lists)
@@ -36,9 +36,9 @@ Return `true` if the sequence contains no elements, `false` otherwise.
 
 ### Defined for strings and lists
 
-    (prepend seq val)
+    (prepend val seq)
 
-Prepend the value to the sequence.
+Prepend the value to the sequence (note the reversed order of the sequence and value).
 
     (append seq val)
 

@@ -33,6 +33,7 @@ scamval* array_pop(array*, size_t);
 void array_set(array*, size_t, scamval*);
 size_t array_len(array*);
 void array_append(array*, scamval*);
+void array_prepend(array*, scamval*);
 
 // Useful wrapper functions around array methods
 scamval* scamval_get(scamval*, size_t);
@@ -40,6 +41,7 @@ scamval* scamval_pop(scamval*, size_t);
 void scamval_set(scamval*, size_t, scamval*);
 size_t scamval_len(scamval*);
 void scamval_append(scamval*, scamval*);
+void scamval_prepend(scamval*, scamval*);
 
 typedef struct {
     scamenv* env;
@@ -80,6 +82,8 @@ scamval* scamval_copy(scamval*);
 const char* scamval_type_name(int type);
 void scamval_print(scamval*);
 void scamval_println(scamval*);
+
+int scamval_eq(scamval*, scamval*);
 
 // Free all resources used by a scamval, including the pointer itself
 void scamval_free(scamval*);

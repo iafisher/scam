@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include "tokenize.h"
 
-void runtest(char* s, int n, ...) {
+void tkntest(char* s, int n, ...) {
     va_list args;
     va_start(args, n);
     Tokenizer tz; 
@@ -24,13 +24,13 @@ void runtest(char* s, int n, ...) {
 }
 
 void tokenize_tests() {
-    runtest("-2730", 1, TKN_INT);
-    runtest("valid-identifier", 1, TKN_SYM);
-    runtest("[8.9 -92.0]", 4, TKN_LBRACKET, TKN_DEC, TKN_DEC, TKN_RBRACKET);
-    runtest("\"this is a string literal\"", 1, TKN_STR);
-    runtest("a\"b\"c", 3, TKN_SYM, TKN_STR, TKN_SYM);
-    runtest("a{b}c", 5, TKN_SYM, TKN_LBRACE, TKN_SYM, TKN_RBRACE, TKN_SYM);
-    runtest("(+ 1 1)", 5, TKN_LPAREN, TKN_SYM, TKN_INT, TKN_INT, TKN_RPAREN);
-    runtest("", 1, TKN_EOF);
-    runtest("{+ - / *}", 6, TKN_LBRACE, TKN_SYM, TKN_SYM, TKN_SYM, TKN_SYM, TKN_RBRACE);
+    tkntest("-2730", 1, TKN_INT);
+    tkntest("valid-identifier", 1, TKN_SYM);
+    tkntest("[8.9 -92.0]", 4, TKN_LBRACKET, TKN_DEC, TKN_DEC, TKN_RBRACKET);
+    tkntest("\"this is a string literal\"", 1, TKN_STR);
+    tkntest("a\"b\"c", 3, TKN_SYM, TKN_STR, TKN_SYM);
+    tkntest("a{b}c", 5, TKN_SYM, TKN_LBRACE, TKN_SYM, TKN_RBRACE, TKN_SYM);
+    tkntest("(+ 1 1)", 5, TKN_LPAREN, TKN_SYM, TKN_INT, TKN_INT, TKN_RPAREN);
+    tkntest("", 1, TKN_EOF);
+    tkntest("{+ - / *}", 6, TKN_LBRACE, TKN_SYM, TKN_SYM, TKN_SYM, TKN_SYM, TKN_RBRACE);
 }

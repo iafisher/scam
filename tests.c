@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     // Run tests
     stream_tests();
     tokenize_tests();
+    parse_tests();
     // set mode based on the command line argument
     int mode = REPL_EVAL;
     if (argc == 2) {

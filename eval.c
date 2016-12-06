@@ -8,6 +8,7 @@ scamval* eval_lambda(scamval*, scamenv*);
 scamval* eval_if(scamval*, scamenv*);
 scamval* eval_and(scamval*, scamenv*);
 scamval* eval_or(scamval*, scamenv*);
+scamval* eval_eval(scamval*, scamenv*);
 scamval* eval_apply(scamval*, scamenv*);
 
 scamval* eval(scamval* ast, scamenv* env) {
@@ -30,6 +31,8 @@ scamval* eval(scamval* ast, scamenv* env) {
                 return eval_and(ast, env);
             } else if (strcmp(name, "or") == 0) {
                 return eval_or(ast, env);
+            } else if (strcmp(name, "eval") == 0) {
+                return eval_eval(ast, env);
             }
         }
         return eval_apply(ast, env);
@@ -108,7 +111,7 @@ scamval* eval_define(scamval* ast, scamenv* env) {
 // Evaluate an if expression
 scamval* eval_if(scamval* ast, scamenv* env) {
     if (scamval_len(ast) != 4) {
-        return scamval_err("wrong number of arguments to 'if'");
+        return scamval_err("'if' passed wrong number of arguments");
     } else {
         scamval* cond = eval(scamval_get(ast, 1), env);
         if (cond->type == SCAM_BOOL) {
@@ -158,6 +161,24 @@ scamval* eval_or(scamval* ast, scamenv* env) {
         }
     }
     return scamval_bool(0);
+}
+
+// Evaluate an eval expression
+scamval* eval_eval(scamval* ast, scamenv* env) {
+    if (scamval_len(ast) != 2) {
+        return scamval_err("'eval' passed wrong number of arguments");
+    } else {
+        scamval* qu = eval(scamval_get(ast, 1), env);
+        if (qu->type == SCAM_QUOTE) {
+            qu->type = SCAM_CODE;
+            scamval* ret = eval(qu, env);
+            scamval_free(qu);
+            return ret;
+        } else {
+            scamval_free(qu);
+            return scamval_err("'eval' expects quote as argument");
+        }
+    }
 }
 
 // Evaluate a function application

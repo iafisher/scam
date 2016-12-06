@@ -26,6 +26,20 @@ void array_append(array* arr, scamval* v) {
     }
 }
 
+void array_prepend(array* arr, scamval* v) {
+    size_t new_sz = arr->count + 1;
+    arr->root = realloc(arr->root, sizeof(scamval*) * new_sz);
+    if (arr->root) {
+        arr->count = new_sz;
+        for (size_t i = new_sz - 1; i > 0; i--) {
+            arr->root[i] = arr->root[i - 1];
+        }
+        arr->root[0] = v;
+    } else {
+        arr->count = 0;
+    }
+}
+
 array* array_copy(array* arr) {
     array* ret = array_init();
     if (arr && ret) {
@@ -89,6 +103,10 @@ void array_free(array* arr) {
 
 void scamval_append(scamval* seq, scamval* v) {
     array_append(seq->vals.arr, v);
+}
+
+void scamval_prepend(scamval* seq, scamval* v) {
+    array_prepend(seq->vals.arr, v);
 }
 
 size_t scamval_len(scamval* seq) {
@@ -270,6 +288,63 @@ scamval* scamval_copy(scamval* v) {
     } else {
         // either passed a NULL pointer, or malloc failed
         return NULL;
+    }
+}
+
+int is_numeric_type(scamval* v) {
+    return v->type == SCAM_INT || v->type == SCAM_DEC;
+}
+
+int scamval_numeric_eq(scamval* v1, scamval* v2) {
+    if (v1->type == SCAM_INT) {
+        if (v2->type == SCAM_INT) {
+            return v1->vals.n == v2->vals.n;
+        } else {
+            return v1->vals.n == v2->vals.d;
+        }
+    } else {
+        if (v2->type == SCAM_INT) {
+            return v1->vals.d == v2->vals.n;
+        } else {
+            return v1->vals.d == v2->vals.d;
+        }
+    }
+}
+
+int scamval_list_eq(scamval* v1, scamval* v2) {
+    size_t n1 = scamval_len(v1);
+    size_t n2 = scamval_len(v2);
+    if (n1 == n2) {
+        for (int i = 0; i < n1; i++) {
+            if (!scamval_eq(scamval_get(v1, i), scamval_get(v2, i))) {
+                return 0;
+            }
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int scamval_eq(scamval* v1, scamval* v2) {
+    if (is_numeric_type(v1) && is_numeric_type(v2)) {
+        return scamval_numeric_eq(v1, v2);
+    } else if (v1->type == v2->type) {
+        switch (v1->type) {
+            case SCAM_BOOL:
+                return v1->vals.n == v2->vals.n;
+            case SCAM_CODE:
+            case SCAM_QUOTE:
+            case SCAM_LIST:
+                return scamval_list_eq(v1, v2);
+            case SCAM_SYM:
+            case SCAM_STR:
+                return (strcmp(v1->vals.s, v2->vals.s) == 0);
+            default:
+                return 0;
+        }
+    } else {
+        return 0;
     }
 }
 
