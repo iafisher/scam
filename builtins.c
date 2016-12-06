@@ -1,12 +1,23 @@
+#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "builtins.h"
 #include "eval.h"
 
-#define TYPE_CHECK_ONE(name, arglist, i, type_we_want) { \
+#define TYPE_CHECK_POS(name, arglist, i, type_we_want) { \
     int type_we_got = scamval_get(arglist, i)->type; \
     if (type_we_got != type_we_want) { \
         return scamval_err("type mismatch in arg %d of '%s': got %s, expected %s", i + 1, name, scamval_type_name(type_we_got), scamval_type_name(type_we_want)); \
+    } \
+}
+
+#define TYPE_CHECK_UNARY(name, arglist, type_we_want) { \
+    size_t n = scamval_len(arglist); \
+    if (n == 1) { \
+        TYPE_CHECK_POS(name, arglist, 0, type_we_want); \
+    } else { \
+        return scamval_err("'%s' expected 1 argument, got %d", name, n); \
     } \
 }
 
@@ -89,8 +100,8 @@
 
 #define BUILTIN_COMPARISON(name, arglist, op) { \
     COUNT_ARGS(name, arglist, 2); \
-    TYPE_CHECK_ONE(name, arglist, 0, SCAM_INT); \
-    TYPE_CHECK_ONE(name, arglist, 1, SCAM_INT); \
+    TYPE_CHECK_POS(name, arglist, 0, SCAM_INT); \
+    TYPE_CHECK_POS(name, arglist, 1, SCAM_INT); \
     scamval* left = scamval_get(arglist, 0); \
     scamval* right = scamval_get(arglist, 1); \
     return scamval_bool(left->vals.n op right->vals.n); \
@@ -153,21 +164,19 @@ scamval* builtin_floor_div(scamval* arglist) {
 }
 
 scamval* builtin_len(scamval* arglist) {
-    COUNT_ARGS("len", arglist, 1);
-    TYPE_CHECK_ONE("len", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_UNARY("len", arglist, SCAM_LIST);
     return scamval_int(scamval_len(scamval_get(arglist, 0)));
 }
 
 scamval* builtin_empty(scamval* arglist) {
-    COUNT_ARGS("empty?", arglist, 1);
-    TYPE_CHECK_ONE("empty?", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_UNARY("len", arglist, SCAM_LIST);
     return scamval_bool(scamval_len(scamval_get(arglist, 0)) == 0);
 }
 
 scamval* builtin_get(scamval* arglist) {
     COUNT_ARGS("get", arglist, 2);
-    TYPE_CHECK_ONE("get", arglist, 0, SCAM_LIST);
-    TYPE_CHECK_ONE("get", arglist, 1, SCAM_INT);
+    TYPE_CHECK_POS("get", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("get", arglist, 1, SCAM_INT);
     scamval* list_arg = scamval_get(arglist, 0);
     size_t i = scamval_get(arglist, 1)->vals.n;
     return scamval_pop(list_arg, i);
@@ -175,9 +184,9 @@ scamval* builtin_get(scamval* arglist) {
 
 scamval* builtin_slice(scamval* arglist) {
     COUNT_ARGS("slice", arglist, 3);
-    TYPE_CHECK_ONE("slice", arglist, 0, SCAM_LIST);
-    TYPE_CHECK_ONE("slice", arglist, 1, SCAM_INT);
-    TYPE_CHECK_ONE("slice", arglist, 2, SCAM_INT);
+    TYPE_CHECK_POS("slice", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("slice", arglist, 1, SCAM_INT);
+    TYPE_CHECK_POS("slice", arglist, 2, SCAM_INT);
     size_t start = scamval_get(arglist, 1)->vals.n;
     size_t end = scamval_get(arglist, 2)->vals.n;
     scamval* list_arg = scamval_pop(arglist, 0);
@@ -197,8 +206,7 @@ scamval* builtin_slice(scamval* arglist) {
 }
 
 scamval* builtin_head(scamval* arglist) {
-    COUNT_ARGS("head", arglist, 1);
-    TYPE_CHECK_ONE("head", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_UNARY("head", arglist, SCAM_LIST);
     scamval* list_arg = scamval_get(arglist, 0);
     if (scamval_len(list_arg) > 0) {
         return scamval_pop(list_arg, 0);
@@ -208,23 +216,20 @@ scamval* builtin_head(scamval* arglist) {
 }
 
 scamval* builtin_tail(scamval* arglist) {
-    COUNT_ARGS("tail", arglist, 1);
-    TYPE_CHECK_ONE("tail", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_UNARY("tail", arglist, SCAM_LIST);
     scamval* list_arg = scamval_pop(arglist, 0);
     scamval_free(scamval_pop(list_arg, 0));
     return list_arg;
 }
 
 scamval* builtin_last(scamval* arglist) {
-    COUNT_ARGS("last", arglist, 1);
-    TYPE_CHECK_ONE("last", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_UNARY("last", arglist, SCAM_LIST);
     scamval* list_arg = scamval_get(arglist, 0);
     return scamval_pop(list_arg, scamval_len(list_arg) - 1);
 }
 
 scamval* builtin_init(scamval* arglist) {
-    COUNT_ARGS("init", arglist, 1);
-    TYPE_CHECK_ONE("init", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_UNARY("init", arglist, SCAM_LIST);
     scamval* list_arg = scamval_pop(arglist, 0);
     scamval_free(scamval_pop(list_arg, scamval_len(list_arg) - 1));
     return list_arg;
@@ -232,7 +237,7 @@ scamval* builtin_init(scamval* arglist) {
 
 scamval* builtin_append(scamval* arglist) {
     COUNT_ARGS("append", arglist, 2);
-    TYPE_CHECK_ONE("append", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("append", arglist, 0, SCAM_LIST);
     scamval* list_arg = scamval_pop(arglist, 0);
     scamval* v = scamval_pop(arglist, 0);
     scamval_append(list_arg, v);
@@ -241,7 +246,7 @@ scamval* builtin_append(scamval* arglist) {
 
 scamval* builtin_prepend(scamval* arglist) {
     COUNT_ARGS("append", arglist, 2);
-    TYPE_CHECK_ONE("append", arglist, 1, SCAM_LIST);
+    TYPE_CHECK_POS("append", arglist, 1, SCAM_LIST);
     scamval* v = scamval_pop(arglist, 0);
     scamval* list_arg = scamval_pop(arglist, 0);
     scamval_prepend(list_arg, v);
@@ -250,7 +255,7 @@ scamval* builtin_prepend(scamval* arglist) {
 
 scamval* builtin_concat(scamval* arglist) {
     COUNT_ARGS_AT_LEAST("concat", arglist, 1);
-    TYPE_CHECK_ONE("concat", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("concat", arglist, 0, SCAM_LIST);
     size_t n = scamval_len(arglist);
     scamval* first_arg = scamval_pop(arglist, 0);
     for (int i = 1; i < n; i++) {
@@ -270,7 +275,7 @@ scamval* builtin_concat(scamval* arglist) {
 
 scamval* builtin_find(scamval* arglist) {
     COUNT_ARGS("find", arglist, 2);
-    TYPE_CHECK_ONE("find", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("find", arglist, 0, SCAM_LIST);
     scamval* list_arg = scamval_get(arglist, 0);
     scamval* datum = scamval_get(arglist, 1);
     for (int i = 0; i < scamval_len(list_arg); i++) {
@@ -283,7 +288,7 @@ scamval* builtin_find(scamval* arglist) {
 
 scamval* builtin_rfind(scamval* arglist) {
     COUNT_ARGS("rfind", arglist, 2);
-    TYPE_CHECK_ONE("rfind", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("rfind", arglist, 0, SCAM_LIST);
     scamval* list_arg = scamval_get(arglist, 0);
     scamval* datum = scamval_get(arglist, 1);
     for (int i = scamval_len(list_arg) - 1; i >= 0; i--) {
@@ -292,6 +297,24 @@ scamval* builtin_rfind(scamval* arglist) {
         }
     }
     return scamval_bool(0);
+}
+
+scamval* builtin_upper(scamval* arglist) {
+    TYPE_CHECK_UNARY("upper", arglist, SCAM_STR);
+    scamval* str_arg = scamval_pop(arglist, 0);
+    for (int i = 0; i < strlen(str_arg->vals.s); i++) {
+        str_arg->vals.s[i] = toupper(str_arg->vals.s[i]);
+    }
+    return str_arg;
+}
+
+scamval* builtin_lower(scamval* arglist) {
+    TYPE_CHECK_UNARY("lower", arglist, SCAM_STR);
+    scamval* str_arg = scamval_pop(arglist, 0);
+    for (int i = 0; i < strlen(str_arg->vals.s); i++) {
+        str_arg->vals.s[i] = tolower(str_arg->vals.s[i]);
+    }
+    return str_arg;
 }
 
 scamval* builtin_print(scamval* arglist) {
@@ -345,8 +368,7 @@ scamval* builtin_lte(scamval* arglist) {
 }
 
 scamval* builtin_not(scamval* arglist) {
-    COUNT_ARGS("not", arglist, 1);
-    TYPE_CHECK_ONE("not", arglist, 0, SCAM_BOOL);
+    TYPE_CHECK_UNARY("not", arglist, SCAM_BOOL);
     return scamval_bool(!(scamval_get(arglist, 0)->vals.n));
 }
 
@@ -385,6 +407,9 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "concat", builtin_concat);
     add_builtin(env, "find", builtin_find);
     add_builtin(env, "rfind", builtin_rfind);
+    // string functions
+    add_builtin(env, "upper", builtin_upper);
+    add_builtin(env, "lower", builtin_lower);
     // IO functions
     add_builtin(env, "print", builtin_print);
     add_builtin(env, "println", builtin_println);
