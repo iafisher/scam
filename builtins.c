@@ -205,6 +205,36 @@ scamval* builtin_slice(scamval* arglist) {
     return list_arg;
 }
 
+scamval* builtin_take(scamval* arglist) {
+    COUNT_ARGS("take", arglist, 2);
+    TYPE_CHECK_POS("take", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("take", arglist, 1, SCAM_INT);
+    size_t start = scamval_get(arglist, 1)->vals.n;
+    scamval* list_arg = scamval_pop(arglist, 0);
+    size_t n = scamval_len(list_arg);
+    for (int i = start; i < n; i++) {
+        scamval_free(scamval_pop(list_arg, start));
+    }
+    return list_arg;
+}
+
+scamval* builtin_drop(scamval* arglist) {
+    COUNT_ARGS("drop", arglist, 2);
+    TYPE_CHECK_POS("drop", arglist, 0, SCAM_LIST);
+    TYPE_CHECK_POS("drop", arglist, 1, SCAM_INT);
+    size_t end = scamval_get(arglist, 1)->vals.n;
+    scamval* list_arg = scamval_pop(arglist, 0);
+    size_t n = scamval_len(list_arg);
+    for (int i = 0; i < n; i++) {
+        if (i < end) {
+            scamval_free(scamval_pop(list_arg, 0));
+        } else {
+            break;
+        }
+    }
+    return list_arg;
+}
+
 scamval* builtin_head(scamval* arglist) {
     TYPE_CHECK_UNARY("head", arglist, SCAM_LIST);
     scamval* list_arg = scamval_get(arglist, 0);
@@ -402,6 +432,8 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "init", builtin_init);
     add_builtin(env, "get", builtin_get);
     add_builtin(env, "slice", builtin_slice);
+    add_builtin(env, "take", builtin_take);
+    add_builtin(env, "drop", builtin_drop);
     add_builtin(env, "append", builtin_append);
     add_builtin(env, "prepend", builtin_prepend);
     add_builtin(env, "concat", builtin_concat);
