@@ -385,8 +385,8 @@ scamenv* scamenv_init(scamenv* enclosing) {
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
-    array_append(env->syms, scamval_copy(sym));
-    array_append(env->vals, scamval_copy(val));
+    array_append(env->syms, sym);
+    array_append(env->vals, val);
 }
 
 scamenv* scamenv_copy(scamenv* env) {

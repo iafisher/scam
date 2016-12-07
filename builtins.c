@@ -403,10 +403,7 @@ scamval* builtin_not(scamval* arglist) {
 }
 
 void add_builtin(scamenv* env, char* sym, scambuiltin bltin) {
-    scamval* sym_val = scamval_sym(sym);
-    scamval* bltin_val = scamval_builtin(bltin);
-    scamenv_bind(env, sym_val, bltin_val);
-    scamval_free(sym_val); scamval_free(bltin_val);
+    scamenv_bind(env, scamval_sym(sym), scamval_builtin(bltin));
 }
 
 void register_builtins(scamenv* env) {
