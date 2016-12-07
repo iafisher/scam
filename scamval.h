@@ -45,7 +45,7 @@ void scamval_prepend(scamval*, scamval*);
 
 typedef struct {
     scamenv* env;
-    array* parameters;
+    scamval* parameters;
     scamval* body;
 } scamfun;
 
@@ -73,7 +73,7 @@ scamval* scamval_port(FILE*);
 scamval* scamval_str(char*);
 scamval* scamval_sym(char*);
 scamval* scamval_err(char*, ...);
-scamval* scamval_function(scamenv*, array*, scamval*);
+scamval* scamval_function(scamenv*, scamval*, scamval*);
 scamval* scamval_builtin(scambuiltin*);
 scamval* scamval_null();
 

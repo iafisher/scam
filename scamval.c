@@ -209,7 +209,7 @@ scamval* scamval_err(char* format, ...) {
     return ret;
 }
 
-scamval* scamval_function(scamenv* env, array* parameters, scamval* body) {
+scamval* scamval_function(scamenv* env, scamval* parameters, scamval* body) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_FUNCTION;
@@ -217,8 +217,8 @@ scamval* scamval_function(scamenv* env, array* parameters, scamval* body) {
         ret->vals.fun = malloc(sizeof(scamfun));
         if (ret->vals.fun) {
             ret->vals.fun->env = scamenv_init(env);
-            ret->vals.fun->parameters = array_copy(parameters);
-            ret->vals.fun->body = scamval_copy(body);
+            ret->vals.fun->parameters = parameters;
+            ret->vals.fun->body = body;
         }
     }
     return ret;
@@ -275,7 +275,7 @@ scamval* scamval_copy(scamval* v) {
                 ret->vals.fun = malloc(sizeof(scamfun));
                 if (ret->vals.fun) {
                     ret->vals.fun->env = scamenv_copy(v->vals.fun->env);
-                    ret->vals.fun->parameters = array_copy(v->vals.fun->parameters);
+                    ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
                     ret->vals.fun->body = scamval_copy(v->vals.fun->body);
                 }
                 break;
@@ -366,7 +366,7 @@ void scamval_free(scamval* v) {
             break;
         case SCAM_FUNCTION:
             scamenv_free(v->vals.fun->env);
-            array_free(v->vals.fun->parameters);
+            scamval_free(v->vals.fun->parameters);
             scamval_free(v->vals.fun->body);
             free(v->vals.fun);
             break;

@@ -79,17 +79,19 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
         return scamval_err("'lambda' expected %d argument(s), got %d",
                            3, scamval_len(ast));
     } else {
-        scamval* parameters = scamval_get(ast, 1);
-        scamval* body = scamval_get(ast, 2);
+        scamval* parameters = scamval_pop(ast, 1);
+        scamval* body = scamval_pop(ast, 1);
         if (parameters->type != SCAM_CODE) {
+            scamval_free(parameters); scamval_free(body);
             return scamval_err("arg 2 to 'lambda' should be expression");
         }
         for (int i = 0; i < scamval_len(parameters); i++) {
             if (scamval_get(body, i)->type != SCAM_SYM) {
+                scamval_free(parameters); scamval_free(body);
                 return scamval_err("lambda parameter must be symbol");
             }
         }
-        return scamval_function(env, parameters->vals.arr, body);
+        return scamval_function(env, parameters, body);
     }
 }
 
@@ -199,13 +201,13 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
         // extract the function from the scamval, for convenience
         scamfun* fun = fun_val->vals.fun;
         // make sure the right number of arguments were given
-        if (fun->parameters->count != scamval_len(arglist)) {
+        if (scamval_len(fun->parameters) != scamval_len(arglist)) {
             scamval_free(arglist);
             return scamval_err("wrong number of arguments given");
         }
         scamenv* fun_env = scamenv_init(env);
-        for (int i = 0; i < fun->parameters->count; i++) {
-            scamenv_bind(fun_env, fun->parameters->root[i],
+        for (int i = 0; i < scamval_len(fun->parameters); i++) {
+            scamenv_bind(fun_env, scamval_get(fun->parameters, i),
                                   scamval_get(arglist, i));
         }
         scamval* ret = eval(fun->body, fun_env);
@@ -219,7 +221,8 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
         scamval_free(arglist);
         return ret;
     } else {
-        scamval_free(arglist); scamval_free(fun_val);
+        scamval_free(arglist); 
+        scamval_free(fun_val);
         return scamval_err("first element in expression not a function");
     }
 }
