@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -105,6 +106,43 @@
     scamval* left = scamval_get(arglist, 0); \
     scamval* right = scamval_get(arglist, 1); \
     return scamval_bool(left->vals.n op right->vals.n); \
+}
+
+typedef int type_pred(int);
+int typecheck_arglist(scamval* arglist, size_t arity, ...) {
+    size_t num_of_args = scamval_len(arglist);
+    if (num_of_args != arity)
+        return 0;
+    va_list vlist;
+    va_start(vlist, arity);
+    for (int i = 0; i < num_of_args; i++) {
+        type_pred* this_pred = va_arg(vlist, type_pred);
+        if (!this_pred(scamval_get(arglist, i)->type))
+            return 0;
+    }
+    return 1;
+}
+
+int is_scam_list(int type) { return type == SCAM_LIST; }
+
+scamval* builtin_max(scamval* left, scamval* right) {
+    if (left->vals.n >= right->vals.n) {
+        scamval_free(right);
+        return left;
+    } else {
+        scamval_free(left);
+        return right;
+    }
+}
+
+// Think about how to generate this as a macro from builtin_max
+scamval* builtin_max_wrapper(scamval* arglist) {
+    //TYPE_CHECK_BINARY("max", arglist, SCAM_INT, SCAM_INT);
+    scamval* arg1 = scamval_pop(arglist, 0);
+    scamval* arg2 = scamval_pop(arglist, 0);
+    scamval* ret = builtin_max(arg1, arg2);
+    scamval_free(arglist);
+    return ret;
 }
 
 // Return SCAM_INT if all args are ints, SCAM_DEC if at least one is a decimal,

@@ -3,29 +3,65 @@
 #include "eval.h"
 #include "tests.h"
 
+void evaltest_arith();
+void evaltest_val_def();
+void evaltest_fun_def();
+void evaltest_rec_fun();
+void evaltest_lambda();
+
+void eval_tests() {
+    evaltest_arith();
+    evaltest_val_def();
+    evaltest_fun_def();
+    evaltest_rec_fun();
+    evaltest_lambda();
+}
+
 // Forward declarations of testing utilities
 void evaltest(char*, scamenv*, scamval* what_we_expect);
 void evaltest_list(char*, scamenv*, int n, ...);
 void evaldef(char*, scamenv*);
 
-void eval_tests() {
+void evaltest_arith() {
     scamenv* env = scamenv_init(NULL);
     register_builtins(env);
-    // test basic arithmetic
     evaltest("(+ 1 1)", env, scamval_int(2));
-    // test variable definition
+    scamenv_free(env);
+}
+
+void evaltest_val_def() {
+    scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
     scamval_free(eval_line("(define x 10)", env));
     evaltest("x", env, scamval_int(10));
     evaltest("(* x 2)", env, scamval_int(20));
     evaltest("x", env, scamval_int(10));
-    // test function definition
-    evaldef("(define square (lambda (x) (* x x)))", env);
+    scamenv_free(env);
+}
+
+void evaltest_fun_def() {
+    scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
+    evaldef("(define (square x) (* x x))", env);
     evaltest("(square 9)", env, scamval_int(81));
     evaltest("(square (square 3))", env, scamval_int(81));
-    // test recursive function definition
-    evaldef("(define range (lambda (i) (if (= i 0) [] (append (range (- i 1)) i))))", env);
+    scamenv_free(env);
+}
+
+void evaltest_rec_fun() {
+    scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
+    evaldef("(define (range i) (if (= i 0) [] (append (range (- i 1)) i)))", 
+            env);
     evaltest_list("(range 5)", env, 5, scamval_int(1), scamval_int(2), 
                   scamval_int(3), scamval_int(4), scamval_int(5));
+    scamenv_free(env);
+}
+
+void evaltest_lambda() {
+    scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
+    evaltest("((lambda (x y) (+ x y)) 20 22)", env, scamval_int(42));
     scamenv_free(env);
 }
 

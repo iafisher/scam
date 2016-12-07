@@ -98,16 +98,49 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     return scamval_function(env, parameters, body);
 }
 
-// Evaluate a define statement
-scamval* eval_define(scamval* ast, scamenv* env) {
+scamval* eval_define_val(scamval* ast, scamenv* env) {
     SCAM_ASSERT_ARITY("define", ast, 3);
     SCAM_ASSERT(scamval_get(ast, 1)->type == SCAM_SYM, ast,
                 "cannot define non-symbol");
     scamval* k = scamval_pop(ast, 1);
     scamval* v = eval(scamval_pop(ast, 1), env);
     scamval_free(ast);
-    scamenv_bind(env, k, v);
+    if (v->type != SCAM_ERR) {
+        scamenv_bind(env, k, v);
+        return scamval_null();
+    } else {
+        scamval_free(k);
+        return v;
+    }
+}
+
+scamval* eval_define_fun(scamval* ast, scamenv* env) {
+    SCAM_ASSERT(scamval_get(ast, 1)->type == SCAM_CODE, ast,
+                "argument 1 of define should be a symbol");
+    scamval* par_list = scamval_get(ast, 1);
+    SCAM_ASSERT(scamval_len(par_list) > 0, ast, "empty expression");
+    for (int i = 0; i < scamval_len(par_list); i++) {
+        SCAM_ASSERT(scamval_get(par_list, i)->type == SCAM_SYM, ast,
+                    "function name or parameter must be a symbol");
+    }
+    // replace the copy of the parameter list with the actual thing
+    par_list = scamval_pop(ast, 1);
+    scamval* body = scamval_pop(ast, 1);
+    scamval_free(ast);
+    scamval* f_name = scamval_pop(par_list, 0);
+    scamval* fun = scamval_function(env, par_list, body);
+    scamenv_bind(env, f_name, fun);
     return scamval_null();
+}
+
+// Evaluate a define statement
+scamval* eval_define(scamval* ast, scamenv* env) {
+    SCAM_ASSERT_ARITY("define", ast, 3);
+    if (scamval_get(ast, 1)->type == SCAM_SYM) {
+        return eval_define_val(ast, env);
+    } else {
+        return eval_define_fun(ast, env);
+    }
 }
 
 // Evaluate an if expression
