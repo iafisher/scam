@@ -203,33 +203,35 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
         }
     }
     scamval_free(ast);
-    scamval* fun_val = scamval_pop(arglist, 0);
-    if (fun_val->type == SCAM_FUNCTION) {
+    scamval* fun_val_copy = scamval_get(arglist, 0);
+    if (fun_val_copy->type == SCAM_FUNCTION) {
         // extract the function from the scamval, for convenience
-        scamfun* fun = fun_val->vals.fun;
+        scamfun* fun = fun_val_copy->vals.fun;
         // make sure the right number of arguments were given
-        SCAM_ASSERT(scamval_len(fun->parameters) == scamval_len(arglist),
-                    arglist, "wrong number of arguments given");
+        size_t expected = scamval_len(fun->parameters);
+        size_t got = scamval_len(arglist) - 1;
+        SCAM_ASSERT(got == expected, arglist, 
+                    "'lambda' got %d argument(s), expected %d", got, expected);
         scamenv* fun_env = scamenv_init(env);
         while (scamval_len(fun->parameters) > 0) {
             scamenv_bind(fun_env, scamval_pop(fun->parameters, 0),
-                                  scamval_pop(arglist, 0));
+                                  scamval_pop(arglist, 1));
         }
         scamval* ret = eval(fun->body, fun_env);
         // make sure there is something for scamval_free(fun_val) to free
         fun->body = scamval_null();
         scamenv_free(fun_env); 
-        scamval_free(fun_val);
         scamval_free(arglist); 
         return ret;
-    } else if (fun_val->type == SCAM_BUILTIN) {
+    } else if (fun_val_copy->type == SCAM_BUILTIN) {
+        // pop the function off the arglist so it contains only the arguments
+        scamval* fun_val = scamval_pop(arglist, 0);
         scamval* ret = fun_val->vals.bltin(arglist);
         scamval_free(fun_val); 
         scamval_free(arglist);
         return ret;
     } else {
         scamval_free(arglist); 
-        scamval_free(fun_val);
         return scamval_err("first element in expression not a function");
     }
 }

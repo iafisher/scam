@@ -82,6 +82,8 @@ scamval* scamval_copy(scamval*);
 const char* scamval_type_name(int type);
 void scamval_print(scamval*);
 void scamval_println(scamval*);
+void scamval_print_debug(scamval*);
+void scamval_print_ast(scamval*, int indent);
 
 int scamval_eq(scamval*, scamval*);
 

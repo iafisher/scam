@@ -340,6 +340,8 @@ int scamval_eq(scamval* v1, scamval* v2) {
             case SCAM_SYM:
             case SCAM_STR:
                 return (strcmp(v1->vals.s, v2->vals.s) == 0);
+            case SCAM_NULL:
+                return 1;
             default:
                 return 0;
         }
@@ -450,10 +452,28 @@ void scamval_print(scamval* v) {
     }
 }
 
+void scamval_print_debug(scamval* v) {
+    scamval_print(v);
+    printf(" (%s)", scamval_type_name(v->type));
+}
+
 void scamval_println(scamval* v) {
     if (!v || v->type == SCAM_NULL) return;
     scamval_print(v);
     printf("\n");
+}
+
+void scamval_print_ast(scamval* ast, int indent) {
+    for (int i = 0; i < indent; i++)
+        printf("  ");
+    if (ast->type == SCAM_CODE) {
+        printf("EXPR\n");
+        for (int i = 0; i < scamval_len(ast); i++) {
+            scamval_print_ast(scamval_get(ast, i), indent + 1);
+        }
+    } else {
+        scamval_println(ast);
+    }
 }
 
 const char* scamval_type_name(int type) {

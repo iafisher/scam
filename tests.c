@@ -16,9 +16,13 @@ void eval_repl(char*, scamenv*);
 enum { REPL_EVAL, REPL_PARSE, REPL_TOKENIZE, REPL_STREAM };
 int main(int argc, char** argv) {
     // Run tests
-    stream_tests();
-    tokenize_tests();
-    parse_tests();
+    if (argc == 1 || strcmp(argv[1], "-r") != 0) {
+        stream_tests();
+        tokenize_tests();
+        parse_tests();
+        eval_tests();
+        return 0;
+    }
     // set mode based on the command line argument
     int mode = REPL_EVAL;
     if (argc == 2) {
@@ -124,7 +128,7 @@ void tokenize_repl(char* command, size_t s_len) {
 
 void parse_repl(char* command) {
     scamval* ast = parse_line(command);
-    scamval_println(ast);
+    scamval_print_ast(ast, 0);
     scamval_free(ast);
 }
 
