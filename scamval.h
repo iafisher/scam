@@ -38,9 +38,11 @@ void array_prepend(array*, scamval*);
 scamval* scamval_get(scamval*, size_t);
 scamval* scamval_pop(scamval*, size_t);
 void scamval_set(scamval*, size_t, scamval*);
+// same as scamval_set, except the previous element is free'd
+void scamval_replace(scamval*, size_t, scamval*);
 size_t scamval_len(scamval*);
-void scamval_append(scamval*, scamval*);
-void scamval_prepend(scamval*, scamval*);
+void scamval_append(scamval* seq, scamval*);
+void scamval_prepend(scamval* seq, scamval*);
 
 typedef struct {
     scamenv* env;
@@ -78,6 +80,7 @@ scamval* scamnull();
 
 // Useful error message constructors
 scamval* scamerr_arity(char* name, size_t got, size_t expected);
+scamval* scamerr_min_arity(char* name, size_t got, size_t expected);
 scamval* scamerr_type(char* name, size_t pos, int given_type, int req_type);
 
 scamval* scamval_copy(scamval*);

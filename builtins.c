@@ -29,11 +29,12 @@
     } \
 }
 
-#define COUNT_ARGS_AT_LEAST(name, arglist, req_n) { \
-    size_t num_of_args = scamval_len(arglist); \
-    if (num_of_args < req_n) { \
+#define COUNT_ARGS_AT_LEAST(name, arglist, expected) { \
+    size_t got = scamval_len(arglist); \
+    if (got < expected) { \
+        return scamerr_min_arity(name, got, expected); \
         return scamerr("'%s' expected at least %d argument(s), got %d", \
-                           name, req_n, num_of_args); \
+                           name, expected, got); \
     } \
 }
 

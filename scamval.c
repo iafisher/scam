@@ -116,6 +116,11 @@ void scamval_set(scamval* seq, size_t i, scamval* v) {
     array_set(seq->vals.arr, i, v);
 }
 
+void scamval_replace(scamval* seq, size_t i, scamval* v) {
+    scamval_free(scamval_get(seq, i));
+    scamval_set(seq, i, v);
+}
+
 scamval* scamval_get(scamval* seq, size_t i) {
     return array_get(seq->vals.arr, i);
 }
@@ -210,6 +215,11 @@ scamval* scamerr(char* format, ...) {
 
 scamval* scamerr_arity(char* name, size_t got, size_t expected) {
     return scamerr("'%s' got %d arg(s), expected %d", name, got, expected);
+}
+
+scamval* scamerr_min_arity(char* name, size_t got, size_t expected) {
+    return scamerr("'%s' got %d arg(s), expected at least %d", name, got, 
+                   expected);
 }
 
 scamval* scamerr_type(char* name, size_t pos, int given_type, int req_type) {

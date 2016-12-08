@@ -17,6 +17,14 @@
     } \
 }
 
+#define SCAM_ASSERT_MIN_ARITY(name, ast, expected) { \
+    size_t got = scamval_len(ast); \
+    if (got < expected) { \
+        scamval_free(ast); \
+        return scamerr_arity(name, got, expected); \
+    } \
+}
+
 // Forward declaration of various eval utilities
 scamval* eval_define(scamval*, scamenv*);
 scamval* eval_lambda(scamval*, scamenv*);
@@ -64,28 +72,19 @@ scamval* eval_line(char* line, scamenv* env) {
 }
 
 scamval* eval_file(char* fp, scamenv* env) {
-    /*
-    scamval* exprs = parse_file(fp);
-    if (exprs->type == SCAM_CODE) {
-        scamval* v = NULL;
-        for (int i = 0; i < scamval_len(exprs); i++) {
-            v = eval(scamval_get(exprs, i), env);
-            if (i != scamval_len(exprs) - 1) { 
-                scamval_free(v);
-            }
-        }
-        scamval_free(exprs);
-        return v;
-    } else {
-        return eval(exprs, env);
-    }
-    */
     return eval(parse_file(fp), env);
 }
 
 // Evaluate a lambda expression
 scamval* eval_lambda(scamval* ast, scamenv* env) {
-    SCAM_ASSERT_ARITY("lambda", ast, 3);
+    SCAM_ASSERT_MIN_ARITY("lambda", ast, 3);
+    /*
+    size_t got = scamval_len(ast);
+    if (got < 3) {
+        scamval_free(ast);
+        return scamerr_arity("lambda", got, 3);
+    }
+    */
     scamval* parameters_copy = scamval_get(ast, 1);
     SCAM_ASSERT(parameters_copy->type == SCAM_CODE, ast,
                 "arg 1 to 'lambda' should be a parameter list");
@@ -94,9 +93,9 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
                     "lambda parameter must be symbol");
     }
     scamval* parameters = scamval_pop(ast, 1);
-    scamval* body = scamval_pop(ast, 1);
-    scamval_free(ast);
-    return scamfunction(env, parameters, body);
+    // replace the 'lambda' symbol with 'begin'
+    scamval_replace(ast, 0, scamsym("begin"));
+    return scamfunction(env, parameters, ast);
 }
 
 scamval* eval_define_val(scamval* ast, scamenv* env) {
@@ -126,17 +125,16 @@ scamval* eval_define_fun(scamval* ast, scamenv* env) {
     }
     // replace the copy of the parameter list with the actual thing
     par_list = scamval_pop(ast, 1);
-    scamval* body = scamval_pop(ast, 1);
-    scamval_free(ast);
+    scamval_replace(ast, 0, scamsym("begin"));
     scamval* f_name = scamval_pop(par_list, 0);
-    scamval* fun = scamfunction(env, par_list, body);
+    scamval* fun = scamfunction(env, par_list, ast);
     scamenv_bind(env, f_name, fun);
     return scamnull();
 }
 
 // Evaluate a define statement
 scamval* eval_define(scamval* ast, scamenv* env) {
-    SCAM_ASSERT_ARITY("define", ast, 3);
+    SCAM_ASSERT_MIN_ARITY("define", ast, 3);
     if (scamval_get(ast, 1)->type == SCAM_SYM) {
         return eval_define_val(ast, env);
     } else {
