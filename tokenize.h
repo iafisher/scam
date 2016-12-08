@@ -16,6 +16,7 @@ typedef struct {
 } Tokenizer;
 
 // Initialize tokenizers from various sources
+typedef void (tokenizer_init_t)(Tokenizer*, char*);
 void tokenizer_from_str(Tokenizer*, char*);
 void tokenizer_from_file(Tokenizer*, char*);
 

@@ -64,6 +64,7 @@ scamval* eval_line(char* line, scamenv* env) {
 }
 
 scamval* eval_file(char* fp, scamenv* env) {
+    /*
     scamval* exprs = parse_file(fp);
     if (exprs->type == SCAM_CODE) {
         scamval* v = NULL;
@@ -78,6 +79,8 @@ scamval* eval_file(char* fp, scamenv* env) {
     } else {
         return eval(exprs, env);
     }
+    */
+    return eval(parse_file(fp), env);
 }
 
 // Evaluate a lambda expression
@@ -85,7 +88,7 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     SCAM_ASSERT_ARITY("lambda", ast, 3);
     scamval* parameters_copy = scamval_get(ast, 1);
     SCAM_ASSERT(parameters_copy->type == SCAM_CODE, ast,
-                "arg 2 to 'lambda' should be a parameter list");
+                "arg 1 to 'lambda' should be a parameter list");
     for (int i = 0; i < scamval_len(parameters_copy); i++) {
         SCAM_ASSERT(scamval_get(parameters_copy, i)->type == SCAM_SYM, ast,
                     "lambda parameter must be symbol");

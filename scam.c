@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
             load_flag = 1;
         } else {
             scamval* v = eval_file(argv[i], env);
-            if (v && v->type == SCAM_ERR) {
+            if (v->type == SCAM_ERR) {
                 scamval_println(v);
             }
             scamval_free(v);

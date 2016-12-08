@@ -11,6 +11,8 @@
 }
 
 // Forward declarations of recursive descent functions
+typedef scamval* (match_t)(Tokenizer*);
+scamval* match_program(Tokenizer*);
 scamval* match_expr(Tokenizer*);
 scamval* match_expr_star(Tokenizer*);
 scamval* match_expr_plus(Tokenizer*);
@@ -19,14 +21,14 @@ int starts_expr(int tkn_type);
 int starts_value(int tkn_type);
 scamval* scamval_from_token(Token*);
 
-scamval* parse_line(char* s) {
+scamval* parse_generic(char* s, tokenizer_init_t tz_init, match_t match_f) {
     Tokenizer tz; 
-    tokenizer_from_str(&tz, s);
+    tz_init(&tz, s);
     if (tz.tkn.type == TKN_EOF) {
         tokenizer_close(&tz);
         return scamnull();
     } else {
-        scamval* ret = match_expr(&tz);
+        scamval* ret = match_f(&tz);
         if (tz.tkn.type == TKN_EOF) {
             tokenizer_close(&tz);
             return ret;
@@ -38,12 +40,22 @@ scamval* parse_line(char* s) {
     }
 }
 
+scamval* parse_line(char* s) {
+    return parse_generic(s, tokenizer_from_str, match_expr);
+}
+
 scamval* parse_file(char* fp) {
-    Tokenizer tz; 
-    tokenizer_from_file(&tz, fp);
-    scamval* ret = match_expr_plus(&tz);
-    tokenizer_close(&tz);
-    return ret;
+    return parse_generic(fp, tokenizer_from_file, match_program);
+}
+
+scamval* match_program(Tokenizer* tz) {
+    scamval* ast = match_expr_plus(tz);
+    if (ast->type != SCAM_ERR) {
+        scamval_prepend(ast, scamsym("begin"));
+        return ast;
+    } else {
+        return ast;
+    }
 }
 
 scamval* match_any_expr(Tokenizer* tz, int type, int start, int end) {

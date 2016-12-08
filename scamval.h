@@ -3,7 +3,7 @@
 
 enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_QUOTE,
       SCAM_FUNCTION, SCAM_PORT, SCAM_BUILTIN, SCAM_CODE, SCAM_SYM, SCAM_ERR,
-      SCAM_NULL };
+      SCAM_PROGRAM, SCAM_NULL };
 
 const char* scamtype_name(int type);
 const char* scamtype_debug_name(int type);

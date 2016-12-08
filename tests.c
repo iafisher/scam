@@ -9,7 +9,7 @@
 #include "tests.h"
 
 void stream_repl(char*, size_t, Stream**);
-void tokenize_repl(char*, size_t);
+void tokenize_repl(char*);
 void parse_repl(char*);
 void eval_repl(char*, scamenv*);
 
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
         if (mode == REPL_STREAM) {
             stream_repl(buffer, s_len, &strm);
         } else if (mode == REPL_TOKENIZE) {
-            tokenize_repl(buffer, s_len);
+            tokenize_repl(buffer);
         } else if (mode == REPL_PARSE) {
             parse_repl(buffer);
         } else if (mode == REPL_EVAL) {
@@ -115,9 +115,9 @@ void stream_repl(char* command, size_t s_len, Stream** strm) {
     }
 }
 
-void tokenize_repl(char* command, size_t s_len) {
+void tokenize_repl(char* command) {
     Tokenizer tz;
-    if (strstr(command, "open") == command && s_len >= 6) {
+    if (strstr(command, "open") == command && strlen(command) >= 6) {
         tokenizer_from_file(&tz, command + 5);
     } else {
         tokenizer_from_str(&tz, command);
@@ -127,9 +127,15 @@ void tokenize_repl(char* command, size_t s_len) {
 }
 
 void parse_repl(char* command) {
-    scamval* ast = parse_line(command);
-    scamval_print_ast(ast, 0);
-    scamval_free(ast);
+    if (strstr(command, "open") == command && strlen(command) >= 6) {
+        scamval* ast = parse_file(command + 5);
+        scamval_print_ast(ast, 0);
+        scamval_free(ast);
+    } else {
+        scamval* ast = parse_line(command);
+        scamval_print_ast(ast, 0);
+        scamval_free(ast);
+    }
 }
 
 void eval_repl(char* command, scamenv* env) {

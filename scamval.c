@@ -473,8 +473,8 @@ void scamval_println(scamval* v) {
 void scamval_print_ast(scamval* ast, int indent) {
     for (int i = 0; i < indent; i++)
         printf("  ");
-    if (ast->type == SCAM_CODE) {
-        printf("EXPR\n");
+    if (ast->type == SCAM_CODE || ast->type == SCAM_PROGRAM) {
+        printf(ast->type == SCAM_CODE ? "EXPR\n" : "PROGRAM\n");
         for (int i = 0; i < scamval_len(ast); i++) {
             scamval_print_ast(scamval_get(ast, i), indent + 1);
         }
@@ -498,6 +498,7 @@ const char* scamtype_name(int type) {
         case SCAM_SYM: return "symbol";
         case SCAM_ERR: return "error";
         case SCAM_NULL: return "null";
+        case SCAM_PROGRAM: return "program";
         default: return "bad scamval type";
     }
 }
@@ -517,6 +518,7 @@ const char* scamtype_debug_name(int type) {
         case SCAM_SYM: return "SCAM_SYM";
         case SCAM_ERR: return "SCAM_ERR";
         case SCAM_NULL: return "SCAM_NULL";
+        case SCAM_PROGRAM: return "SCAM_PROGRAM";
         default: return "bad scamval type";
     }
 }
