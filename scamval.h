@@ -1,13 +1,12 @@
 #pragma once
 #include <stdio.h>
 
-#define SCAM_CLOSED_FILE -1
-
 enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_QUOTE,
       SCAM_FUNCTION, SCAM_PORT, SCAM_BUILTIN, SCAM_CODE, SCAM_SYM, SCAM_ERR,
       SCAM_NULL };
 
-const char* scamval_type_name(int type);
+const char* scamtype_name(int type);
+const char* scamtype_debug_name(int type);
 
 // Forward declaration of scamval and scamenv
 struct scamval;
@@ -77,9 +76,12 @@ scamval* scamfunction(scamenv*, scamval*, scamval*);
 scamval* scambuiltin(scambuiltin_t*);
 scamval* scamnull();
 
+// Useful error message constructors
+scamval* scamerr_arity(char* name, size_t got, size_t expected);
+scamval* scamerr_type(char* name, size_t pos, int given_type, int req_type);
+
 scamval* scamval_copy(scamval*);
 
-const char* scamval_type_name(int type);
 void scamval_print(scamval*);
 void scamval_println(scamval*);
 void scamval_print_debug(scamval*);

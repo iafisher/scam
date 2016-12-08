@@ -59,7 +59,6 @@ array* array_copy(array* arr) {
 
 void array_set(array* arr, size_t i, scamval* v) {
     if (i >= 0 && i < arr->count) {
-        scamval_free(arr->root[i]);
         arr->root[i] = v;
     }
 }
@@ -153,7 +152,7 @@ scamval* scambool(int b) {
 }
 
 // Make a scamval that is internally an array (lists, quotes and code)
-scamval* scaminternal_array(int type) {
+scamval* scam_internal_array(int type) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = type;
@@ -163,19 +162,19 @@ scamval* scaminternal_array(int type) {
 }
 
 scamval* scamlist() {
-    return scaminternal_array(SCAM_LIST);
+    return scam_internal_array(SCAM_LIST);
 }
 
 scamval* scamcode() {
-    return scaminternal_array(SCAM_CODE);
+    return scam_internal_array(SCAM_CODE);
 }
 
 scamval* scamquote() {
-    return scaminternal_array(SCAM_QUOTE);
+    return scam_internal_array(SCAM_QUOTE);
 }
 
 // Make a scamval that is internally a string (strings, symbols and errors)
-scamval* scaminternal_str(int type, char* s) {
+scamval* scam_internal_str(int type, char* s) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = type;
@@ -187,11 +186,11 @@ scamval* scaminternal_str(int type, char* s) {
 }
 
 scamval* scamstr(char* s) {
-    return scaminternal_str(SCAM_STR, s);
+    return scam_internal_str(SCAM_STR, s);
 }
 
 scamval* scamsym(char* s) {
-    return scaminternal_str(SCAM_SYM, s);
+    return scam_internal_str(SCAM_SYM, s);
 }
 
 scamval* scamerr(char* format, ...) {
@@ -203,10 +202,20 @@ scamval* scamerr(char* format, ...) {
         ret->vals.s = malloc(MAX_ERROR_SIZE);
         if (ret->vals.s) {
             vsnprintf(ret->vals.s, MAX_ERROR_SIZE, format, vlist);
-            va_end(vlist);
         }
+        va_end(vlist);
     }
     return ret;
+}
+
+scamval* scamerr_arity(char* name, size_t got, size_t expected) {
+    return scamerr("'%s' got %d arg(s), expected %d", name, got, expected);
+}
+
+scamval* scamerr_type(char* name, size_t pos, int given_type, int req_type) {
+    return scamerr("'%s' got %s as arg %d, expected %s", name, 
+                   scamtype_name(given_type), pos + 1,
+                   scamtype_name(req_type));
 }
 
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
@@ -362,9 +371,7 @@ void scamval_free(scamval* v) {
         case SCAM_ERR:
             if (v->vals.s) free(v->vals.s); break;
         case SCAM_PORT:
-            if (v->vals.port != SCAM_CLOSED_FILE) {
-                fclose(v->vals.port);
-            }
+            fclose(v->vals.port);
             break;
         case SCAM_FUNCTION:
             scamenv_free(v->vals.fun->env);
@@ -454,7 +461,7 @@ void scamval_print(scamval* v) {
 
 void scamval_print_debug(scamval* v) {
     scamval_print(v);
-    printf(" (%s)", scamval_type_name(v->type));
+    printf(" (%s)", scamtype_debug_name(v->type));
 }
 
 void scamval_println(scamval* v) {
@@ -476,7 +483,26 @@ void scamval_print_ast(scamval* ast, int indent) {
     }
 }
 
-const char* scamval_type_name(int type) {
+const char* scamtype_name(int type) {
+    switch (type) {
+        case SCAM_INT: return "integer";
+        case SCAM_DEC: return "decimal";
+        case SCAM_BOOL: return "boolean";
+        case SCAM_LIST: return "list";
+        case SCAM_STR: return "string";
+        case SCAM_QUOTE: return "quote";
+        case SCAM_FUNCTION: return "function";
+        case SCAM_PORT: return "port";
+        case SCAM_BUILTIN: return "function";
+        case SCAM_CODE: return "code";
+        case SCAM_SYM: return "symbol";
+        case SCAM_ERR: return "error";
+        case SCAM_NULL: return "null";
+        default: return "bad scamval type";
+    }
+}
+
+const char* scamtype_debug_name(int type) {
     switch (type) {
         case SCAM_INT: return "SCAM_INT";
         case SCAM_DEC: return "SCAM_DEC";

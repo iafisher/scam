@@ -9,7 +9,7 @@
 #define TYPE_CHECK_POS(name, arglist, i, type_we_want) { \
     int type_we_got = scamval_get(arglist, i)->type; \
     if (type_we_got != type_we_want) { \
-        return scamerr("type mismatch in arg %d of '%s': got %s, expected %s", i + 1, name, scamval_type_name(type_we_got), scamval_type_name(type_we_want)); \
+        return scamerr_type(name, i, type_we_got, type_we_want); \
     } \
 }
 
@@ -18,15 +18,14 @@
     if (n == 1) { \
         TYPE_CHECK_POS(name, arglist, 0, type_we_want); \
     } else { \
-        return scamerr("'%s' expected 1 argument, got %d", name, n); \
+        return scamerr_arity(name, n, 1); \
     } \
 }
 
-#define COUNT_ARGS(name, arglist, req_n) { \
-    size_t num_of_args = scamval_len(arglist); \
-    if (num_of_args != req_n) { \
-        return scamerr("'%s' expected %d argument(s), got %d", \
-                           name, req_n, num_of_args); \
+#define COUNT_ARGS(name, arglist, expected) { \
+    size_t got = scamval_len(arglist); \
+    if (got != expected) { \
+        return scamerr_arity(name, got, expected); \
     } \
 }
 
@@ -106,6 +105,16 @@
     scamval* left = scamval_get(arglist, 0); \
     scamval* right = scamval_get(arglist, 1); \
     return scambool(left->vals.n op right->vals.n); \
+}
+
+#define ASSERT_NO_ZEROS(arglist) { \
+    for (int i = 0; i < scamval_len(arglist); i++) { \
+        scamval* v = scamval_get(arglist, i); \
+        if ((v->type == SCAM_INT && v->vals.n == 0) || \
+            (v->type == SCAM_DEC && v->vals.d == 0.0)) { \
+            return scamerr("cannot divide by zero"); \
+        } \
+    } \
 }
 
 typedef int type_pred(int);
@@ -190,14 +199,17 @@ scamval* builtin_mult(scamval* arglist) {
 }
 
 scamval* builtin_rem(scamval* arglist) {
+    ASSERT_NO_ZEROS(arglist);
     BUILTIN_INT_ARITHMETIC("%", arglist, %);
 }
 
 scamval* builtin_real_div(scamval* arglist) {
+    ASSERT_NO_ZEROS(arglist);
     BUILTIN_DEC_ARITHMETIC("/", arglist, /);
 }
 
 scamval* builtin_floor_div(scamval* arglist) {
+    ASSERT_NO_ZEROS(arglist);
     BUILTIN_INT_ARITHMETIC("//", arglist, /);
 }
 

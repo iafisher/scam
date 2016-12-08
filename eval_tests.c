@@ -8,18 +8,22 @@ void evaltest_val_def();
 void evaltest_fun_def();
 void evaltest_rec_fun();
 void evaltest_lambda();
+void evaltest_zero_div();
 
 void eval_tests() {
+    printf("Running eval tests\n");
     evaltest_arith();
     evaltest_val_def();
     evaltest_fun_def();
     evaltest_rec_fun();
     evaltest_lambda();
+    evaltest_zero_div();
 }
 
 // Forward declarations of testing utilities
 void evaltest(char*, scamenv*, scamval* what_we_expect);
 void evaltest_list(char*, scamenv*, int n, ...);
+void evaltest_err(char*, scamenv*);
 void evaldef(char*, scamenv*);
 
 void evaltest_arith() {
@@ -68,11 +72,19 @@ void evaltest_lambda() {
     scamenv_free(env);
 }
 
+void evaltest_zero_div() {
+    scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
+    evaltest_err("(/ 10 0)", env);
+    evaltest_err("(// 10 0)", env);
+    evaltest_err("(% 10 0)", env);
+    evaltest_err("(+ 10 (/ 10 0))", env);
+    scamenv_free(env);
+}
+
 void evaltest(char* line, scamenv* env, scamval* what_we_expect) {
     scamval* what_we_got = eval_line(line, env);
-    if (scamval_eq(what_we_got, what_we_expect)) {
-        printf("Passed eval test \"%s\"\n", line);
-    } else {
+    if (!scamval_eq(what_we_got, what_we_expect)) {
         printf("Failed eval test \"%s\"; expected ", line);
         scamval_print_debug(what_we_expect);
         printf(" got ");
@@ -95,11 +107,17 @@ void evaltest_list(char* line, scamenv* env, int n, ...) {
     evaltest(line, env, items);
 }
 
-void evaldef(char* line, scamenv* env) {
+void evaltest_err(char* line, scamenv* env) {
     scamval* v = eval_line(line, env);
     if (v->type != SCAM_ERR) {
-        printf("Passed eval test \"%s\"\n", line);
-    } else {
+        printf("Failed eval test \"%s\" (expected error)\n", line);
+    }
+    scamval_free(v);
+}
+
+void evaldef(char* line, scamenv* env) {
+    scamval* v = eval_line(line, env);
+    if (v->type == SCAM_ERR) {
         printf("Failed eval test \"%s\"\n", line);
         scamval_println(v);
     }
