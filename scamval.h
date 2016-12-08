@@ -21,8 +21,8 @@ typedef struct {
 } array;
 
 // Other convenient typedefs
-typedef scamval* (scambuiltin)(scamval*);
-typedef FILE scamport;
+typedef scamval* (scambuiltin_t)(scamval*);
+typedef FILE scamport_t;
 
 array* array_init();
 array* array_copy(array*);
@@ -47,7 +47,7 @@ typedef struct {
     scamenv* env;
     scamval* parameters;
     scamval* body;
-} scamfun;
+} scamfun_t;
 
 struct scamval {
     int type;
@@ -56,26 +56,26 @@ struct scamval {
         double d; // SCAM_DEC
         char* s; // SCAM_STR, SCAM_SYM and SCAM_ERR
         array* arr; // SCAM_LIST, SCAM_QUOTE and SCAM_CODE
-        scamfun* fun; // SCAM_FUNCTION
-        scamport* port; // SCAM_PORT
-        scambuiltin* bltin; // SCAM_BUILTIN
+        scamfun_t* fun; // SCAM_FUNCTION
+        scamport_t* port; // SCAM_PORT
+        scambuiltin_t* bltin; // SCAM_BUILTIN
     } vals;
 };
 
 // Make scamvals out of various C types
-scamval* scamval_int(long long);
-scamval* scamval_dec(double);
-scamval* scamval_bool(int);
-scamval* scamval_list();
-scamval* scamval_quote();
-scamval* scamval_code();
-scamval* scamval_port(FILE*);
-scamval* scamval_str(char*);
-scamval* scamval_sym(char*);
-scamval* scamval_err(char*, ...);
-scamval* scamval_function(scamenv*, scamval*, scamval*);
-scamval* scamval_builtin(scambuiltin*);
-scamval* scamval_null();
+scamval* scamint(long long);
+scamval* scamdec(double);
+scamval* scambool(int);
+scamval* scamlist();
+scamval* scamquote();
+scamval* scamcode();
+scamval* scamport(FILE*);
+scamval* scamstr(char*);
+scamval* scamsym(char*);
+scamval* scamerr(char*, ...);
+scamval* scamfunction(scamenv*, scamval*, scamval*);
+scamval* scambuiltin(scambuiltin_t*);
+scamval* scamnull();
 
 scamval* scamval_copy(scamval*);
 

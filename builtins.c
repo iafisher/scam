@@ -9,7 +9,7 @@
 #define TYPE_CHECK_POS(name, arglist, i, type_we_want) { \
     int type_we_got = scamval_get(arglist, i)->type; \
     if (type_we_got != type_we_want) { \
-        return scamval_err("type mismatch in arg %d of '%s': got %s, expected %s", i + 1, name, scamval_type_name(type_we_got), scamval_type_name(type_we_want)); \
+        return scamerr("type mismatch in arg %d of '%s': got %s, expected %s", i + 1, name, scamval_type_name(type_we_got), scamval_type_name(type_we_want)); \
     } \
 }
 
@@ -18,14 +18,14 @@
     if (n == 1) { \
         TYPE_CHECK_POS(name, arglist, 0, type_we_want); \
     } else { \
-        return scamval_err("'%s' expected 1 argument, got %d", name, n); \
+        return scamerr("'%s' expected 1 argument, got %d", name, n); \
     } \
 }
 
 #define COUNT_ARGS(name, arglist, req_n) { \
     size_t num_of_args = scamval_len(arglist); \
     if (num_of_args != req_n) { \
-        return scamval_err("'%s' expected %d argument(s), got %d", \
+        return scamerr("'%s' expected %d argument(s), got %d", \
                            name, req_n, num_of_args); \
     } \
 }
@@ -33,7 +33,7 @@
 #define COUNT_ARGS_AT_LEAST(name, arglist, req_n) { \
     size_t num_of_args = scamval_len(arglist); \
     if (num_of_args < req_n) { \
-        return scamval_err("'%s' expected at least %d argument(s), got %d", \
+        return scamerr("'%s' expected at least %d argument(s), got %d", \
                            name, req_n, num_of_args); \
     } \
 }
@@ -50,7 +50,7 @@
             sum op##= scamval_get(arglist, i)->vals.d; \
         } \
     } \
-    return scamval_dec(sum); \
+    return scamdec(sum); \
 }
 
 // BUILTIN_INT_ARITHMETIC, but without the error checking
@@ -60,7 +60,7 @@
     for (int i = 1; i < scamval_len(arglist); i++) { \
         sum op##= scamval_get(arglist, i)->vals.n; \
     } \
-    return scamval_int(sum); \
+    return scamint(sum); \
 }
 
 // Perform the integer on the given arglist, returning an error if any of the 
@@ -69,7 +69,7 @@
     COUNT_ARGS_AT_LEAST(name, arglist, 1); \
     int type = arglist_type(arglist); \
     if (type != SCAM_INT) { \
-        return scamval_err("'%s' passed non-integer argument", name); \
+        return scamerr("'%s' passed non-integer argument", name); \
     } \
     BUILTIN_INT_ARITHMETIC_CORE(arglist, op); \
 }
@@ -80,7 +80,7 @@
     COUNT_ARGS_AT_LEAST(name, arglist, 1); \
     int type = arglist_type(arglist); \
     if (type != SCAM_INT && type != SCAM_DEC) { \
-        return scamval_err("'%s' passed non-numeric argument", name); \
+        return scamerr("'%s' passed non-numeric argument", name); \
     } \
     BUILTIN_MIXED_ARITHMETIC_CORE(arglist, op); \
 }
@@ -95,7 +95,7 @@
     } else if (type == SCAM_DEC) { \
         BUILTIN_MIXED_ARITHMETIC_CORE(arglist, op); \
     } else { \
-        return scamval_err("'%s' passed non-numeric argument", name); \
+        return scamerr("'%s' passed non-numeric argument", name); \
     } \
 }
 
@@ -105,7 +105,7 @@
     TYPE_CHECK_POS(name, arglist, 1, SCAM_INT); \
     scamval* left = scamval_get(arglist, 0); \
     scamval* right = scamval_get(arglist, 1); \
-    return scamval_bool(left->vals.n op right->vals.n); \
+    return scambool(left->vals.n op right->vals.n); \
 }
 
 typedef int type_pred(int);
@@ -168,12 +168,12 @@ scamval* builtin_negate(scamval* arglist) {
     int type = arglist_type(arglist);
     if (type == SCAM_INT) {
         long long n = scamval_get(arglist, 0)->vals.n;
-        return scamval_int(-1 * n);
+        return scamint(-1 * n);
     } else if (type == SCAM_DEC) {
         double d = scamval_get(arglist, 0)->vals.d;
-        return scamval_dec(-1 * d);
+        return scamdec(-1 * d);
     } else {
-        return scamval_err("'-' passed non-numeric argument");
+        return scamerr("'-' passed non-numeric argument");
     }
 }
 
@@ -203,12 +203,12 @@ scamval* builtin_floor_div(scamval* arglist) {
 
 scamval* builtin_len(scamval* arglist) {
     TYPE_CHECK_UNARY("len", arglist, SCAM_LIST);
-    return scamval_int(scamval_len(scamval_get(arglist, 0)));
+    return scamint(scamval_len(scamval_get(arglist, 0)));
 }
 
 scamval* builtin_empty(scamval* arglist) {
     TYPE_CHECK_UNARY("len", arglist, SCAM_LIST);
-    return scamval_bool(scamval_len(scamval_get(arglist, 0)) == 0);
+    return scambool(scamval_len(scamval_get(arglist, 0)) == 0);
 }
 
 scamval* builtin_get(scamval* arglist) {
@@ -231,7 +231,7 @@ scamval* builtin_slice(scamval* arglist) {
     size_t n = scamval_len(list_arg);
     if (start < 0 || start >= n || end < 0 || end >= n || start > end) {
         scamval_free(list_arg);
-        return scamval_err("attempted array access out of range");
+        return scamerr("attempted array access out of range");
     }
     for (int i = 0; i < n; i++) {
         if (i < start) {
@@ -279,7 +279,7 @@ scamval* builtin_head(scamval* arglist) {
     if (scamval_len(list_arg) > 0) {
         return scamval_pop(list_arg, 0);
     } else {
-        return scamval_err("cannot take head of empty list");
+        return scamerr("cannot take head of empty list");
     }
 }
 
@@ -335,7 +335,7 @@ scamval* builtin_concat(scamval* arglist) {
             }
         } else {
             scamval_free(first_arg);
-            return scamval_err("'concat' passed non-sequence argument");
+            return scamerr("'concat' passed non-sequence argument");
         }
     }
     return first_arg;
@@ -348,10 +348,10 @@ scamval* builtin_find(scamval* arglist) {
     scamval* datum = scamval_get(arglist, 1);
     for (int i = 0; i < scamval_len(list_arg); i++) {
         if (scamval_eq(scamval_get(list_arg, i), datum)) {
-            return scamval_int(i);
+            return scamint(i);
         }
     }
-    return scamval_bool(0);
+    return scambool(0);
 }
 
 scamval* builtin_rfind(scamval* arglist) {
@@ -361,10 +361,10 @@ scamval* builtin_rfind(scamval* arglist) {
     scamval* datum = scamval_get(arglist, 1);
     for (int i = scamval_len(list_arg) - 1; i >= 0; i--) {
         if (scamval_eq(scamval_get(list_arg, i), datum)) {
-            return scamval_int(i);
+            return scamint(i);
         }
     }
-    return scamval_bool(0);
+    return scambool(0);
 }
 
 scamval* builtin_upper(scamval* arglist) {
@@ -393,7 +393,7 @@ scamval* builtin_print(scamval* arglist) {
     } else {
         printf("%s", arg->vals.s);
     }
-    return scamval_null();
+    return scamnull();
 }
 
 scamval* builtin_println(scamval* arglist) {
@@ -404,7 +404,7 @@ scamval* builtin_println(scamval* arglist) {
     } else {
         printf("%s\n", arg->vals.s);
     }
-    return scamval_null();
+    return scamnull();
 }
 
 scamval* builtin_begin(scamval* arglist) {
@@ -416,7 +416,7 @@ scamval* builtin_eq(scamval* arglist) {
     COUNT_ARGS("=", arglist, 2);
     scamval* left = scamval_get(arglist, 0);
     scamval* right = scamval_get(arglist, 1);
-    return scamval_bool(scamval_eq(left, right));
+    return scambool(scamval_eq(left, right));
 }
 
 scamval* builtin_gt(scamval* arglist) {
@@ -437,11 +437,11 @@ scamval* builtin_lte(scamval* arglist) {
 
 scamval* builtin_not(scamval* arglist) {
     TYPE_CHECK_UNARY("not", arglist, SCAM_BOOL);
-    return scamval_bool(!(scamval_get(arglist, 0)->vals.n));
+    return scambool(!(scamval_get(arglist, 0)->vals.n));
 }
 
-void add_builtin(scamenv* env, char* sym, scambuiltin bltin) {
-    scamenv_bind(env, scamval_sym(sym), scamval_builtin(bltin));
+void add_builtin(scamenv* env, char* sym, scambuiltin_t bltin) {
+    scamenv_bind(env, scamsym(sym), scambuiltin(bltin));
 }
 
 void register_builtins(scamenv* env) {

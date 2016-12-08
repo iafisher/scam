@@ -5,7 +5,7 @@
 #define SCAM_ASSERT(cond, ast, err, ...) { \
     if (!(cond)) { \
         scamval_free(ast); \
-        return scamval_err(err, ##__VA_ARGS__); \
+        return scamerr(err, ##__VA_ARGS__); \
     } \
 }
 
@@ -13,7 +13,7 @@
     size_t this_n = scamval_len(ast); \
     if (this_n != n) { \
         scamval_free(ast); \
-        return scamval_err("'%s' expected %d argument(s), got %d", name, n, this_n); \
+        return scamerr("'%s' expected %d argument(s), got %d", name, n, this_n); \
     } \
 }
 
@@ -95,7 +95,7 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     scamval* parameters = scamval_pop(ast, 1);
     scamval* body = scamval_pop(ast, 1);
     scamval_free(ast);
-    return scamval_function(env, parameters, body);
+    return scamfunction(env, parameters, body);
 }
 
 scamval* eval_define_val(scamval* ast, scamenv* env) {
@@ -107,7 +107,7 @@ scamval* eval_define_val(scamval* ast, scamenv* env) {
     scamval_free(ast);
     if (v->type != SCAM_ERR) {
         scamenv_bind(env, k, v);
-        return scamval_null();
+        return scamnull();
     } else {
         scamval_free(k);
         return v;
@@ -128,9 +128,9 @@ scamval* eval_define_fun(scamval* ast, scamenv* env) {
     scamval* body = scamval_pop(ast, 1);
     scamval_free(ast);
     scamval* f_name = scamval_pop(par_list, 0);
-    scamval* fun = scamval_function(env, par_list, body);
+    scamval* fun = scamfunction(env, par_list, body);
     scamenv_bind(env, f_name, fun);
-    return scamval_null();
+    return scamnull();
 }
 
 // Evaluate a define statement
@@ -163,7 +163,7 @@ scamval* eval_if(scamval* ast, scamenv* env) {
     } else {
         scamval_free(cond);
         scamval_free(ast);
-        return scamval_err("condition of an if expression must be a bool");
+        return scamerr("condition of an if expression must be a bool");
     }
 }
 
@@ -174,17 +174,17 @@ scamval* eval_and(scamval* ast, scamenv* env) {
         if (v->type != SCAM_BOOL) {
             scamval_free(v);
             scamval_free(ast);
-            return scamval_err("'and' passed non-boolean argument");
+            return scamerr("'and' passed non-boolean argument");
         } else if (!v->vals.n) {
             scamval_free(v);
             scamval_free(ast);
-            return scamval_bool(0);
+            return scambool(0);
         } else {
             scamval_free(v);
         }
     }
     scamval_free(ast);
-    return scamval_bool(1);
+    return scambool(1);
 }
 
 // Evaluate an or expression
@@ -194,17 +194,17 @@ scamval* eval_or(scamval* ast, scamenv* env) {
         if (v->type != SCAM_BOOL) {
             scamval_free(v);
             scamval_free(ast);
-            return scamval_err("'or' passed non-boolean argument");
+            return scamerr("'or' passed non-boolean argument");
         } else if (v->vals.n) {
             scamval_free(v);
             scamval_free(ast);
-            return scamval_bool(1);
+            return scambool(1);
         } else {
             scamval_free(v);
         }
     }
     scamval_free(ast);
-    return scamval_bool(0);
+    return scambool(0);
 }
 
 // Evaluate an eval expression
@@ -217,14 +217,14 @@ scamval* eval_eval(scamval* ast, scamenv* env) {
         return eval(qu, env);
     } else {
         scamval_free(qu);
-        return scamval_err("'eval' expects quote as argument");
+        return scamerr("'eval' expects quote as argument");
     }
 }
 
 // Evaluate a function application
 scamval* eval_apply(scamval* ast, scamenv* env) {
     // evaluate the function and the argument list
-    scamval* arglist = scamval_code();
+    scamval* arglist = scamcode();
     while (scamval_len(ast) > 0) {
         scamval* v = eval(scamval_pop(ast, 0), env);
         if (v->type != SCAM_ERR) {
@@ -239,20 +239,20 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
     scamval* fun_val_copy = scamval_get(arglist, 0);
     if (fun_val_copy->type == SCAM_FUNCTION) {
         // extract the function from the scamval, for convenience
-        scamfun* fun = fun_val_copy->vals.fun;
+        scamfun_t* fun_copy = fun_val_copy->vals.fun;
         // make sure the right number of arguments were given
-        size_t expected = scamval_len(fun->parameters);
+        size_t expected = scamval_len(fun_copy->parameters);
         size_t got = scamval_len(arglist) - 1;
         SCAM_ASSERT(got == expected, arglist, 
                     "'lambda' got %d argument(s), expected %d", got, expected);
-        scamenv* fun_env = scamenv_init(env);
-        while (scamval_len(fun->parameters) > 0) {
-            scamenv_bind(fun_env, scamval_pop(fun->parameters, 0),
+        scamenv* fun_env = scamenv_init(fun_copy->env);
+        while (scamval_len(fun_copy->parameters) > 0) {
+            scamenv_bind(fun_env, scamval_pop(fun_copy->parameters, 0),
                                   scamval_pop(arglist, 1));
         }
-        scamval* ret = eval(fun->body, fun_env);
-        // make sure there is something for scamval_free(fun_val) to free
-        fun->body = scamval_null();
+        scamval* ret = eval(fun_copy->body, fun_env);
+        // make sure there is something for scamval_free(arglist) to free
+        fun_copy->body = scamnull();
         scamenv_free(fun_env); 
         scamval_free(arglist); 
         return ret;
@@ -265,6 +265,6 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
         return ret;
     } else {
         scamval_free(arglist); 
-        return scamval_err("first element in expression not a function");
+        return scamerr("first element in expression not a function");
     }
 }

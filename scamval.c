@@ -68,7 +68,7 @@ scamval* array_get(array* arr, size_t i) {
     if (i >= 0 && i < arr->count) {
         return arr->root[i];
     } else {
-        return scamval_err("attempted array access out of range");
+        return scamerr("attempted array access out of range");
     }
 }
 
@@ -81,7 +81,7 @@ scamval* array_pop(array* arr, size_t i) {
         arr->count--;
         return ret;
     } else {
-        return scamval_err("attempted array access out of range");
+        return scamerr("attempted array access out of range");
     }
 }
 
@@ -125,7 +125,7 @@ scamval* scamval_pop(scamval* seq, size_t i) {
     return array_pop(seq->vals.arr, i);
 }
 
-scamval* scamval_int(long long n) {
+scamval* scamint(long long n) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_INT;
@@ -134,7 +134,7 @@ scamval* scamval_int(long long n) {
     return ret;
 }
 
-scamval* scamval_dec(double d) {
+scamval* scamdec(double d) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_DEC;
@@ -143,7 +143,7 @@ scamval* scamval_dec(double d) {
     return ret;
 }
 
-scamval* scamval_bool(int b) {
+scamval* scambool(int b) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_BOOL;
@@ -153,7 +153,7 @@ scamval* scamval_bool(int b) {
 }
 
 // Make a scamval that is internally an array (lists, quotes and code)
-scamval* scamval_internal_array(int type) {
+scamval* scaminternal_array(int type) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = type;
@@ -162,20 +162,20 @@ scamval* scamval_internal_array(int type) {
     return ret;
 }
 
-scamval* scamval_list() {
-    return scamval_internal_array(SCAM_LIST);
+scamval* scamlist() {
+    return scaminternal_array(SCAM_LIST);
 }
 
-scamval* scamval_code() {
-    return scamval_internal_array(SCAM_CODE);
+scamval* scamcode() {
+    return scaminternal_array(SCAM_CODE);
 }
 
-scamval* scamval_quote() {
-    return scamval_internal_array(SCAM_QUOTE);
+scamval* scamquote() {
+    return scaminternal_array(SCAM_QUOTE);
 }
 
 // Make a scamval that is internally a string (strings, symbols and errors)
-scamval* scamval_internal_str(int type, char* s) {
+scamval* scaminternal_str(int type, char* s) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = type;
@@ -186,15 +186,15 @@ scamval* scamval_internal_str(int type, char* s) {
     return ret;
 }
 
-scamval* scamval_str(char* s) {
-    return scamval_internal_str(SCAM_STR, s);
+scamval* scamstr(char* s) {
+    return scaminternal_str(SCAM_STR, s);
 }
 
-scamval* scamval_sym(char* s) {
-    return scamval_internal_str(SCAM_SYM, s);
+scamval* scamsym(char* s) {
+    return scaminternal_str(SCAM_SYM, s);
 }
 
-scamval* scamval_err(char* format, ...) {
+scamval* scamerr(char* format, ...) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_ERR;
@@ -209,12 +209,12 @@ scamval* scamval_err(char* format, ...) {
     return ret;
 }
 
-scamval* scamval_function(scamenv* env, scamval* parameters, scamval* body) {
+scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_FUNCTION;
         // probably going to need to change this at some point
-        ret->vals.fun = malloc(sizeof(scamfun));
+        ret->vals.fun = malloc(sizeof(scamfun_t));
         if (ret->vals.fun) {
             ret->vals.fun->env = scamenv_init(env);
             ret->vals.fun->parameters = parameters;
@@ -224,7 +224,7 @@ scamval* scamval_function(scamenv* env, scamval* parameters, scamval* body) {
     return ret;
 }
 
-scamval* scamval_builtin(scambuiltin* bltin) {
+scamval* scambuiltin(scambuiltin_t* bltin) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_BUILTIN;
@@ -233,7 +233,7 @@ scamval* scamval_builtin(scambuiltin* bltin) {
     return ret;
 }
 
-scamval* scamval_port(FILE* fp) {
+scamval* scamport(FILE* fp) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_PORT;
@@ -242,7 +242,7 @@ scamval* scamval_port(FILE* fp) {
     return ret;
 }
 
-scamval* scamval_null() {
+scamval* scamnull() {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {
         ret->type = SCAM_NULL;
@@ -272,7 +272,7 @@ scamval* scamval_copy(scamval* v) {
                     strcpy(ret->vals.s, v->vals.s);
                 break;
             case SCAM_FUNCTION:
-                ret->vals.fun = malloc(sizeof(scamfun));
+                ret->vals.fun = malloc(sizeof(scamfun_t));
                 if (ret->vals.fun) {
                     ret->vals.fun->env = scamenv_copy(v->vals.fun->env);
                     ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
@@ -419,7 +419,7 @@ scamval* scamenv_lookup(scamenv* env, scamval* name) {
     if (env->enclosing != NULL) {
         return scamenv_lookup(env->enclosing, name);
     } else {
-        return scamval_err("unbound variable '%s'", name->vals.s);
+        return scamerr("unbound variable '%s'", name->vals.s);
     }
 }
 
