@@ -1,8 +1,5 @@
-# TO DO
-- Error handling
-- UTF-8 support (?)
-
-The Scam programming language is a dialect of Lisp based on Scheme.
+# Scam
+A bad programming language.
 
 ## Syntax
 The syntax of the language is described by the following EBNF grammar. Whitespace is only significant between symbols and numbers.

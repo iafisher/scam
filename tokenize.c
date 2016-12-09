@@ -21,6 +21,14 @@ void tokenizer_from_file(Tokenizer* tz, char* fp) {
     tokenizer_advance(tz);
 }
 
+int tokenizer_line(Tokenizer* tz) {
+    return tz->strm.line;
+}
+
+int tokenizer_col(Tokenizer* tz) {
+    return tz->strm.col;
+}
+
 int is_symbol_char(char c) {
     return isalnum(c) || strchr("-+?!%*/<>=_", c);
 }

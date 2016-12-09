@@ -60,6 +60,8 @@ scamval* match_program(Tokenizer* tz) {
 
 scamval* match_any_expr(Tokenizer* tz, int type, int start, int end) {
     if (tz->tkn.type == start) {
+        int line = tokenizer_line(tz);
+        int col = tokenizer_col(tz);
         TOKENIZER_MUST_ADVANCE(tz);
         scamval* ret = match_expr_star(tz);
         ret->type = type;
@@ -68,7 +70,8 @@ scamval* match_any_expr(Tokenizer* tz, int type, int start, int end) {
             return ret;
         } else {
             scamval_free(ret);
-            return scamerr("expected end of expression");
+            return scamerr("expected end of expression started at line %d, "
+                           "col %d", line, col);
         }
     } else {
         return scamerr("expected start of expression");

@@ -20,6 +20,9 @@ typedef void (tokenizer_init_t)(Tokenizer*, char*);
 void tokenizer_from_str(Tokenizer*, char*);
 void tokenizer_from_file(Tokenizer*, char*);
 
+int tokenizer_line(Tokenizer*);
+int tokenizer_col(Tokenizer*);
+
 // Move to the next token
 void tokenizer_advance(Tokenizer*);
 // Free all tokenizer resources, including the pointer itself

@@ -80,10 +80,6 @@ Return the string where all whitespace has been removed from the beginning and e
 
 ## I/O functions
 
-    (getn port n)
-
-Read `n` characters from the given port.
-
     (getline port)
 
 Read a line from the given port. The resulting string will include a newline at the end.
@@ -91,10 +87,6 @@ Read a line from the given port. The resulting string will include a newline at 
     (write port obj)
 
 Write the string representation of the object to the given port.
-
-    (inputn n)
-
-Read `n` characters from stdin.
 
     (input)
 

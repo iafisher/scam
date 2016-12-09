@@ -3,21 +3,26 @@
 #include "eval.h"
 #include "tests.h"
 
-void evaltest_arith();
-void evaltest_val_def();
-void evaltest_fun_def();
-void evaltest_rec_fun();
-void evaltest_lambda();
-void evaltest_zero_div();
+void evaltest_arith(scamenv*);
+void evaltest_lists(scamenv*);
+void evaltest_val_def(scamenv*);
+void evaltest_fun_def(scamenv*);
+void evaltest_rec_fun(scamenv*);
+void evaltest_lambda(scamenv*);
+void evaltest_zero_div(scamenv*);
 
 void eval_tests() {
     printf("Running eval tests\n");
-    evaltest_arith();
-    evaltest_val_def();
-    evaltest_fun_def();
-    evaltest_rec_fun();
-    evaltest_lambda();
-    evaltest_zero_div();
+    scamenv* env = scamenv_init(NULL);
+    register_builtins(env);
+    evaltest_arith(env);
+    evaltest_lists(env);
+    evaltest_val_def(env);
+    evaltest_fun_def(env);
+    evaltest_rec_fun(env);
+    evaltest_lambda(env);
+    evaltest_zero_div(env);
+    scamenv_free(env);
 }
 
 // Forward declarations of testing utilities
@@ -26,60 +31,84 @@ void evaltest_list(char*, scamenv*, int n, ...);
 void evaltest_err(char*, scamenv*);
 void evaldef(char*, scamenv*);
 
-void evaltest_arith() {
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
+void evaltest_arith(scamenv* env) {
+    // test addition
     evaltest("(+ 1 1)", env, scamint(2));
+    evaltest("(+ 1 2 3 4 5)", env, scamint(15));
+    evaltest("(+ 1 2 3.0 4 5)", env, scamint(15.0));
+    // test negation and subtraction
     evaltest("(- 10)", env, scamint(-10));
     evaltest("(- 10 3)", env, scamint(7));
     evaltest("(- 10 3.0)", env, scamdec(7.0));
-    scamenv_free(env);
+    evaltest("(- 10 8 2 3)", env, scamint(-3));
+    // test multiplication
+    evaltest("(* 21 2)", env, scamint(42));
+    evaltest("(* 3.2 7.4)", env, scamdec(3.2 * 7.4));
+    evaltest("(* 1 2 3 4 5 6)", env, scamint(720));
+    // test real division
+    evaltest("(/ 10 2)", env, scamdec(5.0));
+    evaltest("(/ -72 2.2)", env, scamdec(-72 / 2.2));
+    evaltest_err("(/ 10 0)", env);
+    evaltest_err("(+ 10 (/ 10 0))", env);
+    // test floor division
+    evaltest("(// 10 3)", env, scamint(3));
+    evaltest("(// 50 11 2)", env, scamint(2));
+    evaltest_err("(// 10 3.0)", env);
+    evaltest_err("(// 10 0)", env);
+    // test remainder
+    evaltest("(% 73 2)", env, scamint(1));
+    evaltest("(% 67 7)", env, scamint(67 % 7));
+    evaltest_err("(% 42 4.7)", env);
+    evaltest_err("(% 10 0)", env);
 }
 
-void evaltest_val_def() {
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
-    scamval_free(eval_line("(define x 10)", env));
+void evaltest_lists(scamenv* env) {
+    evaltest("(empty? [])", env, scambool(1));
+    evaldef("(define items [1 2 3 4 5 6])", env);
+    evaltest("(len items)", env, scamint(6));
+    evaltest("(empty? items)", env, scambool(0));
+    evaltest("(head items)", env, scamint(1));
+    evaltest_list("(tail items)", env, 5, scamint(2), scamint(3), scamint(4),
+                                          scamint(5), scamint(6));
+    evaltest("(last items)", env, scamint(6));
+    evaltest_list("(init items)", env, 5, scamint(1), scamint(2), scamint(3), 
+                                          scamint(4), scamint(5));
+    evaltest_list("(prepend 0 items)", env, 7, scamint(0), scamint(1), 
+                  scamint(2), scamint(3), scamint(4), scamint(5), scamint(6));
+    evaltest_list("(append items 7)", env, 7, scamint(1), scamint(2), 
+                  scamint(3), scamint(4), scamint(5), scamint(6), scamint(7));
+}
+
+void evaltest_val_def(scamenv* env) {
+    evaldef("(define x 10)", env);
     evaltest("x", env, scamint(10));
     evaltest("(* x 2)", env, scamint(20));
     evaltest("x", env, scamint(10));
-    scamenv_free(env);
 }
 
-void evaltest_fun_def() {
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
+void evaltest_fun_def(scamenv* env) {
     evaldef("(define (square x) (* x x))", env);
     evaltest("(square 9)", env, scamint(81));
     evaltest("(square (square 3))", env, scamint(81));
-    scamenv_free(env);
 }
 
-void evaltest_rec_fun() {
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
+void evaltest_rec_fun(scamenv* env) {
     evaldef("(define (range i) (if (= i 0) [] (append (range (- i 1)) i)))", 
             env);
     evaltest_list("(range 5)", env, 5, scamint(1), scamint(2), scamint(3), 
                                        scamint(4), scamint(5));
-    scamenv_free(env);
 }
 
-void evaltest_lambda() {
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
+void evaltest_lambda(scamenv* env) {
     evaltest("((lambda (x y) (+ x y)) 20 22)", env, scamint(42));
-    scamenv_free(env);
+    evaltest_err("((lambda (x y) (+ x y)) 20)", env);
+    evaltest_err("((lambda (x y) (+ x y)) 20 21 22)", env);
+    // make sure parameters must be valid symbols
+    evaltest_err("(lambda (10) (* 10 2))", env);
+    evaltest_err("(lambda (x 10 y) (* x y))", env);
 }
 
-void evaltest_zero_div() {
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
-    evaltest_err("(/ 10 0)", env);
-    evaltest_err("(// 10 0)", env);
-    evaltest_err("(% 10 0)", env);
-    evaltest_err("(+ 10 (/ 10 0))", env);
-    scamenv_free(env);
+void evaltest_zero_div(scamenv* env) {
 }
 
 void evaltest(char* line, scamenv* env, scamval* what_we_expect) {
