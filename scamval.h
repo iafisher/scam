@@ -16,6 +16,7 @@ typedef struct scamenv scamenv;
 
 typedef struct {
     size_t count;
+    size_t mem_size;
     scamval** root;
 } array;
 

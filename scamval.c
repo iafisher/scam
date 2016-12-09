@@ -5,39 +5,48 @@
 #include "scamval.h"
 
 #define MAX_ERROR_SIZE 100
+#define ARRAY_SIZE_INITIAL 5
+#define ARRAY_SIZE_INCREMENT 5
 
 array* array_init() {
     array* ret = malloc(sizeof(array));
     if (ret != NULL) {
         ret->count = 0;
+        ret->mem_size = 0;
         ret->root = NULL;
     }
     return ret;
 }
 
+void array_grow(array* arr) {
+    if (arr->root == NULL) {
+        arr->mem_size = ARRAY_SIZE_INITIAL;
+        arr->root = malloc(sizeof(scamval*) * arr->mem_size);
+    } else {
+        arr->mem_size += ARRAY_SIZE_INCREMENT;
+        arr->root = realloc(arr->root, sizeof(scamval*) * arr->mem_size);
+    }
+}
+
 void array_append(array* arr, scamval* v) {
     size_t new_sz = arr->count + 1;
-    arr->root = realloc(arr->root, sizeof(scamval*) * new_sz);
-    if (arr->root) {
-        arr->count = new_sz;
-        arr->root[new_sz - 1] = v;
-    } else {
-        arr->count = 0;
+    if (new_sz > arr->mem_size) {
+        array_grow(arr);
     }
+    arr->count = new_sz;
+    arr->root[new_sz - 1] = v;
 }
 
 void array_prepend(array* arr, scamval* v) {
     size_t new_sz = arr->count + 1;
-    arr->root = realloc(arr->root, sizeof(scamval*) * new_sz);
-    if (arr->root) {
-        arr->count = new_sz;
-        for (size_t i = new_sz - 1; i > 0; i--) {
-            arr->root[i] = arr->root[i - 1];
-        }
-        arr->root[0] = v;
-    } else {
-        arr->count = 0;
+    if (new_sz > arr->mem_size) {
+        array_grow(arr);
     }
+    arr->count = new_sz;
+    for (size_t i = new_sz - 1; i > 0; i--) {
+        arr->root[i] = arr->root[i - 1];
+    }
+    arr->root[0] = v;
 }
 
 array* array_copy(array* arr) {
@@ -46,6 +55,7 @@ array* array_copy(array* arr) {
         ret->root = malloc(sizeof(scamval*) * arr->count);
         if (arr->root) {
             ret->count = arr->count;
+            ret->mem_size = arr->count;
             for (int i = 0; i < arr->count; i++) {
                 ret->root[i] = scamval_copy(arr->root[i]);
             }
