@@ -2,7 +2,11 @@
 #include <stdio.h>
 #include "scamval.h"
 
-// Evaluate a Scam abstract syntax tree or value
+// Evaluate a Scam AST or value
 scamval* eval(scamval*, scamenv*);
-scamval* eval_line(char*, scamenv*);
-scamval* eval_file(char*, scamenv*);
+
+// Parse a string into a Scam AST and evaluate it
+scamval* eval_str(char* s, scamenv*);
+
+// Parse a file into a Scam AST and evaluate it
+scamval* eval_file(char* fp, scamenv*);

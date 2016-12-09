@@ -132,14 +132,14 @@ void parse_repl(char* command) {
         scamval_print_ast(ast, 0);
         scamval_free(ast);
     } else {
-        scamval* ast = parse_line(command);
+        scamval* ast = parse_str(command);
         scamval_print_ast(ast, 0);
         scamval_free(ast);
     }
 }
 
 void eval_repl(char* command, scamenv* env) {
-    scamval* v = eval_line(command, env);
+    scamval* v = eval_str(command, env);
     scamval_println(v);
     scamval_free(v);
 }

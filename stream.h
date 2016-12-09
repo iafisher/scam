@@ -4,12 +4,15 @@
 #define FIRST_COL 0
 #define FIRST_LINE 1
 
+// Possible values for 'type' field of streams
 enum { STREAM_STR, STREAM_FILE };
+
 typedef struct {
     int type; // STREAM_STR or STREAM_FILE
     int line, col;
     int mem_flag; // -1 if not remembering, > -1 otherwise
-    int mem_len, mem_line, mem_col;
+    int mem_len; // length of characters remembered so far
+    int mem_line, mem_col; // line and col when memory mode began
     // used by string streams
     int s_len;
     char* s;

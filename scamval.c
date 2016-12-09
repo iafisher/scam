@@ -67,7 +67,7 @@ void array_prepend(array* arr, scamval* v) {
     arr->root[0] = v;
 }
 
-array* array_copy(array* arr) {
+array* array_copy(const array* arr) {
     array* ret = array_init();
     ret->root = my_malloc(arr->count * sizeof *ret->root);
     ret->count = arr->count;
@@ -84,7 +84,7 @@ void array_set(array* arr, size_t i, scamval* v) {
     }
 }
 
-scamval* array_get(array* arr, size_t i) {
+scamval* array_get(const array* arr, size_t i) {
     if (i >= 0 && i < arr->count) {
         return arr->root[i];
     } else {
@@ -105,7 +105,7 @@ scamval* array_pop(array* arr, size_t i) {
     }
 }
 
-size_t array_len(array* arr) {
+size_t array_len(const array* arr) {
     return arr->count;
 }
 
@@ -129,7 +129,7 @@ void scamval_prepend(scamval* seq, scamval* v) {
     array_prepend(seq->vals.arr, v);
 }
 
-size_t scamval_len(scamval* seq) {
+size_t scamval_len(const scamval* seq) {
     return seq->vals.arr->count;
 }
 
@@ -142,7 +142,7 @@ void scamval_replace(scamval* seq, size_t i, scamval* v) {
     scamval_set(seq, i, v);
 }
 
-scamval* scamval_get(scamval* seq, size_t i) {
+scamval* scamval_get(const scamval* seq, size_t i) {
     return array_get(seq->vals.arr, i);
 }
 
@@ -192,7 +192,7 @@ scamval* scamquote() {
 }
 
 // Make a scamval that is internally a string (strings, symbols and errors)
-scamval* scam_internal_str(int type, char* s) {
+scamval* scam_internal_str(int type, const char* s) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = type;
     ret->vals.s = my_malloc(strlen(s) + 1);
@@ -200,15 +200,15 @@ scamval* scam_internal_str(int type, char* s) {
     return ret;
 }
 
-scamval* scamstr(char* s) {
+scamval* scamstr(const char* s) {
     return scam_internal_str(SCAM_STR, s);
 }
 
-scamval* scamsym(char* s) {
+scamval* scamsym(const char* s) {
     return scam_internal_str(SCAM_SYM, s);
 }
 
-scamval* scamerr(char* format, ...) {
+scamval* scamerr(const char* format, ...) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = SCAM_ERR;
     va_list vlist;
@@ -219,22 +219,23 @@ scamval* scamerr(char* format, ...) {
     return ret;
 }
 
-scamval* scamerr_arity(char* name, size_t got, size_t expected) {
+scamval* scamerr_arity(const char* name, size_t got, size_t expected) {
     return scamerr("'%s' got %d arg(s), expected %d", name, got, expected);
 }
 
-scamval* scamerr_min_arity(char* name, size_t got, size_t expected) {
+scamval* scamerr_min_arity(const char* name, size_t got, size_t expected) {
     return scamerr("'%s' got %d arg(s), expected at least %d", name, got, 
                    expected);
 }
 
-scamval* scamerr_type(char* name, size_t pos, int given_type, int req_type) {
+scamval* scamerr_type(const char* name, size_t pos, int given_type, 
+                      int req_type) {
     return scamerr("'%s' got %s as arg %d, expected %s", name, 
                    scamtype_name(given_type), pos + 1,
                    scamtype_name(req_type));
 }
 
-scamval* scamerr_type2(char* name, size_t pos, int given_type) {
+scamval* scamerr_type2(const char* name, size_t pos, int given_type) {
     return scamerr("'%s' got %s as arg %d", name, 
                    scamtype_name(given_type), pos + 1);
 }
@@ -269,7 +270,7 @@ scamval* scamnull() {
     return ret;
 }
 
-scamval* scamval_copy(scamval* v) {
+scamval* scamval_copy(const scamval* v) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = v->type;
     switch (v->type) {
@@ -302,11 +303,11 @@ scamval* scamval_copy(scamval* v) {
     return ret;
 }
 
-int is_numeric_type(scamval* v) {
+int is_numeric_type(const scamval* v) {
     return v->type == SCAM_INT || v->type == SCAM_DEC;
 }
 
-int scamval_numeric_eq(scamval* v1, scamval* v2) {
+int scamval_numeric_eq(const scamval* v1, const scamval* v2) {
     if (v1->type == SCAM_INT) {
         if (v2->type == SCAM_INT) {
             return v1->vals.n == v2->vals.n;
@@ -322,7 +323,7 @@ int scamval_numeric_eq(scamval* v1, scamval* v2) {
     }
 }
 
-int scamval_list_eq(scamval* v1, scamval* v2) {
+int scamval_list_eq(const scamval* v1, const scamval* v2) {
     size_t n1 = scamval_len(v1);
     size_t n2 = scamval_len(v2);
     if (n1 == n2) {
@@ -337,7 +338,7 @@ int scamval_list_eq(scamval* v1, scamval* v2) {
     }
 }
 
-int scamval_eq(scamval* v1, scamval* v2) {
+int scamval_eq(const scamval* v1, const scamval* v2) {
     if (is_numeric_type(v1) && is_numeric_type(v2)) {
         return scamval_numeric_eq(v1, v2);
     } else if (v1->type == v2->type) {
@@ -398,7 +399,7 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
     array_append(env->vals, val);
 }
 
-scamenv* scamenv_copy(scamenv* env) {
+scamenv* scamenv_copy(const scamenv* env) {
     scamenv* ret = my_malloc(sizeof *ret);
     ret->enclosing = env->enclosing;
     ret->syms = array_copy(env->syms);
@@ -427,7 +428,7 @@ scamval* scamenv_lookup(scamenv* env, scamval* name) {
     }
 }
 
-void array_print(array* arr, char* open, char* close) {
+void array_print(const array* arr, char* open, char* close) {
     if (!arr) return;
     printf("%s", open);
     for (int i = 0; i < arr->count; i++) {
@@ -438,7 +439,7 @@ void array_print(array* arr, char* open, char* close) {
     printf("%s", close);
 }
 
-void scamval_print(scamval* v) {
+void scamval_print(const scamval* v) {
     if (!v) return;
     switch (v->type) {
         case SCAM_INT: printf("%lli", v->vals.n); break;
@@ -456,18 +457,18 @@ void scamval_print(scamval* v) {
     }
 }
 
-void scamval_print_debug(scamval* v) {
+void scamval_print_debug(const scamval* v) {
     scamval_print(v);
     printf(" (%s)", scamtype_debug_name(v->type));
 }
 
-void scamval_println(scamval* v) {
+void scamval_println(const scamval* v) {
     if (!v || v->type == SCAM_NULL) return;
     scamval_print(v);
     printf("\n");
 }
 
-void scamval_print_ast(scamval* ast, int indent) {
+void scamval_print_ast(const scamval* ast, int indent) {
     for (int i = 0; i < indent; i++)
         printf("  ");
     if (ast->type == SCAM_CODE || ast->type == SCAM_PROGRAM) {

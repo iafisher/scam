@@ -35,7 +35,7 @@ void run_repl(scamenv* env) {
         printf(">>> ");
         getline(&buffer, &len, stdin);
         if (strcmp(buffer, "quit\n") == 0) break;
-        scamval* v = eval_line(buffer, env);
+        scamval* v = eval_str(buffer, env);
         scamval_println(v);
         scamval_free(v);
     }

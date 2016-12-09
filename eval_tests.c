@@ -141,7 +141,7 @@ void evaltest_zero_div(scamenv* env) {
 }
 
 void evaltest(char* line, scamenv* env, scamval* what_we_expect) {
-    scamval* what_we_got = eval_line(line, env);
+    scamval* what_we_got = eval_str(line, env);
     if (!scamval_eq(what_we_got, what_we_expect)) {
         printf("Failed eval test \"%s\"; expected ", line);
         scamval_print_debug(what_we_expect);
@@ -166,7 +166,7 @@ void evaltest_list(char* line, scamenv* env, int n, ...) {
 }
 
 void evaltest_err(char* line, scamenv* env) {
-    scamval* v = eval_line(line, env);
+    scamval* v = eval_str(line, env);
     if (v->type != SCAM_ERR) {
         printf("Failed eval test \"%s\" (expected error)\n", line);
     }
@@ -174,7 +174,7 @@ void evaltest_err(char* line, scamenv* env) {
 }
 
 void evaldef(char* line, scamenv* env) {
-    scamval* v = eval_line(line, env);
+    scamval* v = eval_str(line, env);
     if (v->type == SCAM_ERR) {
         printf("Failed eval test \"%s\"\n", line);
         scamval_println(v);

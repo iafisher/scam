@@ -9,13 +9,13 @@ void tokenizer_init(Tokenizer* tz) {
     tz->tkn.line = tz->tkn.col = 0;
 }
 
-void tokenizer_from_str(Tokenizer* tz, char* s) {
+void tokenizer_from_str(Tokenizer* tz, const char* s) {
     tokenizer_init(tz);
     stream_from_str(&tz->strm, s);
     tokenizer_advance(tz);
 }
 
-void tokenizer_from_file(Tokenizer* tz, char* fp) {
+void tokenizer_from_file(Tokenizer* tz, const char* fp) {
     tokenizer_init(tz);
     stream_from_file(&tz->strm, fp);
     tokenizer_advance(tz);

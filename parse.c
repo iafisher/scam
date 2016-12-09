@@ -19,11 +19,12 @@ scamval* match_expr_plus(Tokenizer*);
 scamval* match_value(Tokenizer*);
 int starts_expr(int tkn_type);
 int starts_value(int tkn_type);
-scamval* scamval_from_token(Token*);
 
-scamval* parse_generic(char* s, tokenizer_init_t tz_init, match_t match_f) {
+// Parse the given input by initializing a tokenizer with the given function,
+// and then calling the given matching function.
+scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
     Tokenizer tz; 
-    tz_init(&tz, s);
+    tz_init(&tz, s_or_fp);
     if (tz.tkn.type == TKN_EOF) {
         tokenizer_close(&tz);
         return scamnull();
@@ -40,12 +41,12 @@ scamval* parse_generic(char* s, tokenizer_init_t tz_init, match_t match_f) {
     }
 }
 
-scamval* parse_line(char* s) {
-    return parse_generic(s, tokenizer_from_str, match_expr);
+scamval* parse_str(char* s) {
+    return parse(s, tokenizer_from_str, match_expr);
 }
 
 scamval* parse_file(char* fp) {
-    return parse_generic(fp, tokenizer_from_file, match_program);
+    return parse(fp, tokenizer_from_file, match_program);
 }
 
 scamval* match_program(Tokenizer* tz) {

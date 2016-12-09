@@ -67,8 +67,8 @@ scamval* eval(scamval* ast, scamenv* env) {
     }
 }
 
-scamval* eval_line(char* line, scamenv* env) {
-    return eval(parse_line(line), env);
+scamval* eval_str(char* line, scamenv* env) {
+    return eval(parse_str(line), env);
 }
 
 scamval* eval_file(char* fp, scamenv* env) {

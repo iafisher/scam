@@ -17,7 +17,7 @@ void parse_tests() {
 }
 
 void parsetest(char* line, int n, ...) {
-    scamval* ast = parse_line(line);
+    scamval* ast = parse_str(line);
     if (ast->type != SCAM_CODE) {
         printf("Failed parse test \"%s\": expected SCAM_CODE object\n", line);
         scamval_free(ast);
@@ -40,7 +40,7 @@ void parsetest(char* line, int n, ...) {
 }
 
 void parsetest_lit(char* line, int type_we_want) {
-    scamval* v = parse_line(line);
+    scamval* v = parse_str(line);
     if (v->type != type_we_want) {
         printf("Failed parse test \"%s\" ", line);
         printf("got %s, expected %s\n", scamtype_debug_name(v->type),
