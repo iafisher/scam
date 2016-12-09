@@ -8,23 +8,41 @@
 #define ARRAY_SIZE_INITIAL 5
 #define ARRAY_SIZE_INCREMENT 5
 
-array* array_init() {
-    array* ret = malloc(sizeof(array));
-    if (ret != NULL) {
-        ret->count = 0;
-        ret->mem_size = 0;
-        ret->root = NULL;
+// a wrapper around malloc that exits the program if malloc returns NULL
+void* my_malloc(size_t size) {
+    void* ret = malloc(size);
+    if (ret == NULL) {
+        fputs("malloc returned a NULL pointer... exiting program\n", stderr);
+        exit(EXIT_FAILURE);
     }
+    return ret;
+}
+
+// a wrapper around realloc that exits the program if realloc returns NULL
+void* my_realloc(void* ptr, size_t size) {
+    void* ret = realloc(ptr, size);
+    if (ret == NULL) {
+        fputs("realloc returned a NULL pointer... exiting program", stderr);
+        exit(EXIT_FAILURE);
+    }
+    return ret;
+}
+
+array* array_init() {
+    array* ret = my_malloc(sizeof *ret);
+    ret->count = 0;
+    ret->mem_size = 0;
+    ret->root = NULL;
     return ret;
 }
 
 void array_grow(array* arr) {
     if (arr->root == NULL) {
         arr->mem_size = ARRAY_SIZE_INITIAL;
-        arr->root = malloc(sizeof(scamval*) * arr->mem_size);
+        arr->root = my_malloc(arr->mem_size * sizeof *arr->root);
     } else {
         arr->mem_size += ARRAY_SIZE_INCREMENT;
-        arr->root = realloc(arr->root, sizeof(scamval*) * arr->mem_size);
+        arr->root = my_realloc(arr->root, arr->mem_size * sizeof *arr->root);
     }
 }
 
@@ -51,20 +69,13 @@ void array_prepend(array* arr, scamval* v) {
 
 array* array_copy(array* arr) {
     array* ret = array_init();
-    if (arr && ret) {
-        ret->root = malloc(sizeof(scamval*) * arr->count);
-        if (arr->root) {
-            ret->count = arr->count;
-            ret->mem_size = arr->count;
-            for (int i = 0; i < arr->count; i++) {
-                ret->root[i] = scamval_copy(arr->root[i]);
-            }
-        }
-        return ret;
-    } else {
-        // either passed a NULL pointer, or malloc failed
-        return NULL;
+    ret->root = my_malloc(arr->count * sizeof *ret->root);
+    ret->count = arr->count;
+    ret->mem_size = arr->count;
+    for (int i = 0; i < arr->count; i++) {
+        ret->root[i] = scamval_copy(arr->root[i]);
     }
+    return ret;
 }
 
 void array_set(array* arr, size_t i, scamval* v) {
@@ -140,39 +151,31 @@ scamval* scamval_pop(scamval* seq, size_t i) {
 }
 
 scamval* scamint(long long n) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_INT;
-        ret->vals.n = n;
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_INT;
+    ret->vals.n = n;
     return ret;
 }
 
 scamval* scamdec(double d) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_DEC;
-        ret->vals.d = d;
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_DEC;
+    ret->vals.d = d;
     return ret;
 }
 
 scamval* scambool(int b) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_BOOL;
-        ret->vals.n = b;
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_BOOL;
+    ret->vals.n = b;
     return ret;
 }
 
 // Make a scamval that is internally an array (lists, quotes and code)
 scamval* scam_internal_array(int type) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = type;
-        ret->vals.arr = array_init();
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = type;
+    ret->vals.arr = array_init();
     return ret;
 }
 
@@ -190,13 +193,10 @@ scamval* scamquote() {
 
 // Make a scamval that is internally a string (strings, symbols and errors)
 scamval* scam_internal_str(int type, char* s) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = type;
-        ret->vals.s = malloc(strlen(s) + 1);
-        if (ret->vals.s)
-            strcpy(ret->vals.s, s);
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = type;
+    ret->vals.s = my_malloc(strlen(s) + 1);
+    strcpy(ret->vals.s, s);
     return ret;
 }
 
@@ -209,17 +209,13 @@ scamval* scamsym(char* s) {
 }
 
 scamval* scamerr(char* format, ...) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_ERR;
-        va_list vlist;
-        va_start(vlist, format);
-        ret->vals.s = malloc(MAX_ERROR_SIZE);
-        if (ret->vals.s) {
-            vsnprintf(ret->vals.s, MAX_ERROR_SIZE, format, vlist);
-        }
-        va_end(vlist);
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_ERR;
+    va_list vlist;
+    va_start(vlist, format);
+    ret->vals.s = my_malloc(MAX_ERROR_SIZE);
+    vsnprintf(ret->vals.s, MAX_ERROR_SIZE, format, vlist);
+    va_end(vlist);
     return ret;
 }
 
@@ -244,85 +240,66 @@ scamval* scamerr_type2(char* name, size_t pos, int given_type) {
 }
 
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_FUNCTION;
-        // probably going to need to change this at some point
-        ret->vals.fun = malloc(sizeof(scamfun_t));
-        if (ret->vals.fun) {
-            ret->vals.fun->env = scamenv_init(env);
-            ret->vals.fun->parameters = parameters;
-            ret->vals.fun->body = body;
-        }
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_FUNCTION;
+    ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
+    ret->vals.fun->env = scamenv_init(env);
+    ret->vals.fun->parameters = parameters;
+    ret->vals.fun->body = body;
     return ret;
 }
 
 scamval* scambuiltin(scambuiltin_t* bltin) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_BUILTIN;
-        ret->vals.bltin = bltin;
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_BUILTIN;
+    ret->vals.bltin = bltin;
     return ret;
 }
 
 scamval* scamport(FILE* fp) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_PORT;
-        ret->vals.port = fp;
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_PORT;
+    ret->vals.port = fp;
     return ret;
 }
 
 scamval* scamnull() {
-    scamval* ret = malloc(sizeof(scamval));
-    if (ret) {
-        ret->type = SCAM_NULL;
-    }
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_NULL;
     return ret;
 }
 
 scamval* scamval_copy(scamval* v) {
-    scamval* ret = malloc(sizeof(scamval));
-    if (v && ret) {
-        ret->type = v->type;
-        switch (v->type) {
-            case SCAM_BOOL:
-            case SCAM_INT: 
-                ret->vals.n = v->vals.n; break;
-            case SCAM_DEC: 
-                ret->vals.d = v->vals.d; break;
-            case SCAM_LIST:
-            case SCAM_CODE:
-            case SCAM_QUOTE:
-                ret->vals.arr = array_copy(v->vals.arr); break;
-            case SCAM_STR:
-            case SCAM_SYM:
-            case SCAM_ERR:
-                ret->vals.s = malloc(strlen(v->vals.s) + 1);
-                if (ret->vals.s)
-                    strcpy(ret->vals.s, v->vals.s);
-                break;
-            case SCAM_FUNCTION:
-                ret->vals.fun = malloc(sizeof(scamfun_t));
-                if (ret->vals.fun) {
-                    ret->vals.fun->env = scamenv_copy(v->vals.fun->env);
-                    ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
-                    ret->vals.fun->body = scamval_copy(v->vals.fun->body);
-                }
-                break;
-            case SCAM_BUILTIN:
-                ret->vals.bltin = v->vals.bltin;
-            case SCAM_PORT:
-                ret->vals.port = v->vals.port;
-        }
-        return ret;
-    } else {
-        // either passed a NULL pointer, or malloc failed
-        return NULL;
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = v->type;
+    switch (v->type) {
+        case SCAM_BOOL:
+        case SCAM_INT: 
+            ret->vals.n = v->vals.n; break;
+        case SCAM_DEC: 
+            ret->vals.d = v->vals.d; break;
+        case SCAM_LIST:
+        case SCAM_CODE:
+        case SCAM_QUOTE:
+            ret->vals.arr = array_copy(v->vals.arr); break;
+        case SCAM_STR:
+        case SCAM_SYM:
+        case SCAM_ERR:
+            ret->vals.s = my_malloc(strlen(v->vals.s) + 1);
+            strcpy(ret->vals.s, v->vals.s);
+            break;
+        case SCAM_FUNCTION:
+            ret->vals.fun = my_malloc(sizeof(scamfun_t));
+            ret->vals.fun->env = scamenv_copy(v->vals.fun->env);
+            ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
+            ret->vals.fun->body = scamval_copy(v->vals.fun->body);
+            break;
+        case SCAM_BUILTIN:
+            ret->vals.bltin = v->vals.bltin;
+        case SCAM_PORT:
+            ret->vals.port = v->vals.port;
     }
+    return ret;
 }
 
 int is_numeric_type(scamval* v) {
@@ -409,12 +386,10 @@ void scamval_free(scamval* v) {
 }
 
 scamenv* scamenv_init(scamenv* enclosing) {
-    scamenv* ret = malloc(sizeof(scamenv));
-    if (ret) {
-        ret->enclosing = enclosing;
-        ret->syms = array_init();
-        ret->vals = array_init();
-    }
+    scamenv* ret = my_malloc(sizeof *ret);
+    ret->enclosing = enclosing;
+    ret->syms = array_init();
+    ret->vals = array_init();
     return ret;
 }
 
@@ -424,18 +399,15 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
 }
 
 scamenv* scamenv_copy(scamenv* env) {
-    scamenv* ret = malloc(sizeof(scamenv));
-    if (ret) {
-        ret->enclosing = env->enclosing;
-        ret->syms = array_copy(env->syms);
-        ret->vals = array_copy(env->vals);
-    }
+    scamenv* ret = my_malloc(sizeof *ret);
+    ret->enclosing = env->enclosing;
+    ret->syms = array_copy(env->syms);
+    ret->vals = array_copy(env->vals);
     return ret;
 }
 
 void scamenv_free(scamenv* env) {
     if (env) {
-        // do I need to free the enclosing env too?
         array_free(env->syms);
         array_free(env->vals);
         free(env);

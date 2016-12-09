@@ -19,11 +19,7 @@ void stream_from_str(Stream* strm, const char* s) {
     stream_init(strm, STREAM_STR);
     strm->s_len = strlen(s);
     strm->s = malloc(strm->s_len + 1);
-    if (strm->s) {
-        strcpy(strm->s, s);
-    } else {
-        strm->s_len = 0;
-    }
+    strcpy(strm->s, s);
 }
 
 void stream_from_file(Stream* strm, const char* fp) {
@@ -90,16 +86,14 @@ void stream_mark(Stream* strm) {
 char* stream_recall(Stream* strm) {
     if (strm->mem_flag > -1) {
         char* ret = malloc(strm->mem_len + 1);
-        if (ret) {
-            if (strm->type == STREAM_STR) {
-                strncpy(ret, strm->s + strm->mem_flag, strm->mem_len);
-                ret[strm->mem_len] = '\0';
-            } else {
-                fseek(strm->fp, strm->mem_flag, SEEK_SET);
-                fgets(ret, strm->mem_len + 1, strm->fp);
-                // read and discard the current character
-                fgetc(strm->fp);
-            }
+        if (strm->type == STREAM_STR) {
+            strncpy(ret, strm->s + strm->mem_flag, strm->mem_len);
+            ret[strm->mem_len] = '\0';
+        } else {
+            fseek(strm->fp, strm->mem_flag, SEEK_SET);
+            fgets(ret, strm->mem_len + 1, strm->fp);
+            // read and discard the current character
+            fgetc(strm->fp);
         }
         strm->mem_flag = -1;
         strm->mem_len = 0;
