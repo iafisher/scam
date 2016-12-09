@@ -228,6 +228,11 @@ scamval* scamerr_type(char* name, size_t pos, int given_type, int req_type) {
                    scamtype_name(req_type));
 }
 
+scamval* scamerr_type2(char* name, size_t pos, int given_type) {
+    return scamerr("'%s' got %s as arg %d", name, 
+                   scamtype_name(given_type), pos + 1);
+}
+
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     scamval* ret = malloc(sizeof(scamval));
     if (ret) {

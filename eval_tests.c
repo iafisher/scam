@@ -36,34 +36,59 @@ void evaltest_arith(scamenv* env) {
     evaltest("(+ 1 1)", env, scamint(2));
     evaltest("(+ 1 2 3 4 5)", env, scamint(15));
     evaltest("(+ 1 2 3.0 4 5)", env, scamint(15.0));
+    evaltest_err("(+)", env);
+    evaltest_err("(+ 1)", env);
+    evaltest_err("(+ 1 [])", env);
     // test negation and subtraction
     evaltest("(- 10)", env, scamint(-10));
     evaltest("(- 10 3)", env, scamint(7));
     evaltest("(- 10 3.0)", env, scamdec(7.0));
     evaltest("(- 10 8 2 3)", env, scamint(-3));
+    evaltest_err("(-)", env);
+    evaltest_err("(- [])", env);
+    evaltest_err("(- 1 [])", env);
     // test multiplication
     evaltest("(* 21 2)", env, scamint(42));
     evaltest("(* 3.2 7.4)", env, scamdec(3.2 * 7.4));
     evaltest("(* 1 2 3 4 5 6)", env, scamint(720));
+    evaltest_err("(*)", env);
+    evaltest_err("(* 1)", env);
+    evaltest_err("(* 1 [])", env);
     // test real division
     evaltest("(/ 10 2)", env, scamdec(5.0));
     evaltest("(/ -72 2.2)", env, scamdec(-72 / 2.2));
+    evaltest("(/ 0 42)", env, scamdec(0.0));
     evaltest_err("(/ 10 0)", env);
+    evaltest_err("(/ 10 23 0)", env);
     evaltest_err("(+ 10 (/ 10 0))", env);
+    evaltest_err("(/)", env);
+    evaltest_err("(/ 10)", env);
+    evaltest_err("(/ 10 \"abc\")", env);
     // test floor division
     evaltest("(// 10 3)", env, scamint(3));
     evaltest("(// 50 11 2)", env, scamint(2));
+    evaltest("(// 0 42)", env, scamint(0.0));
     evaltest_err("(// 10 3.0)", env);
     evaltest_err("(// 10 0)", env);
+    evaltest_err("(//)", env);
+    evaltest_err("(// 10)", env);
+    evaltest_err("(// 10 \"abc\")", env);
     // test remainder
     evaltest("(% 73 2)", env, scamint(1));
     evaltest("(% 67 7)", env, scamint(67 % 7));
+    evaltest("(% 0 10)", env, scamint(0));
     evaltest_err("(% 42 4.7)", env);
     evaltest_err("(% 10 0)", env);
+    evaltest_err("(%)", env);
+    evaltest_err("(% 10)", env);
+    evaltest_err("(% 10 \"abc\")", env);
 }
 
 void evaltest_lists(scamenv* env) {
     evaltest("(empty? [])", env, scambool(1));
+    evaltest_err("(empty?)", env);
+    evaltest_err("(empty? 10)", env);
+    // extended example
     evaldef("(define items [1 2 3 4 5 6])", env);
     evaltest("(len items)", env, scamint(6));
     evaltest("(empty? items)", env, scambool(0));
@@ -84,12 +109,16 @@ void evaltest_val_def(scamenv* env) {
     evaltest("x", env, scamint(10));
     evaltest("(* x 2)", env, scamint(20));
     evaltest("x", env, scamint(10));
+    evaltest_err("(define 1 23)", env);
 }
 
 void evaltest_fun_def(scamenv* env) {
     evaldef("(define (square x) (* x x))", env);
     evaltest("(square 9)", env, scamint(81));
     evaltest("(square (square 3))", env, scamint(81));
+    evaltest_err("(square)", env);
+    evaltest_err("(square 2 3)", env);
+    evaltest_err("(square [])", env);
 }
 
 void evaltest_rec_fun(scamenv* env) {

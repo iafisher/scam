@@ -82,6 +82,7 @@ scamval* scamnull();
 scamval* scamerr_arity(char* name, size_t got, size_t expected);
 scamval* scamerr_min_arity(char* name, size_t got, size_t expected);
 scamval* scamerr_type(char* name, size_t pos, int given_type, int req_type);
+scamval* scamerr_type2(char* name, size_t pos, int given_type);
 
 scamval* scamval_copy(scamval*);
 

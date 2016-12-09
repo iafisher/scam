@@ -22,6 +22,20 @@
     } \
 }
 
+#define TYPECHECK_ARGS(name, arglist, n, ...) { \
+    scamval* check_result = typecheck_args(name, arglist, n, ##__VA_ARGS__); \
+    if (check_result) { \
+        return check_result; \
+    } \
+}
+
+#define TYPECHECK_ALL(name, arglist, pred) { \
+    scamval* check_result = typecheck_all(name, arglist, pred); \
+    if (check_result) { \
+        return check_result; \
+    } \
+}
+
 #define COUNT_ARGS(name, arglist, expected) { \
     size_t got = scamval_len(arglist); \
     if (got != expected) { \
@@ -29,17 +43,24 @@
     } \
 }
 
-#define COUNT_ARGS_AT_LEAST(name, arglist, expected) { \
+#define COUNT_MIN_ARGS(name, arglist, expected) { \
     size_t got = scamval_len(arglist); \
     if (got < expected) { \
         return scamerr_min_arity(name, got, expected); \
-        return scamerr("'%s' expected at least %d argument(s), got %d", \
-                           name, expected, got); \
     } \
 }
 
+// Assert that no element of the arglist is equal to zero, unless only the 
+// first element is zero and the arglist contains only two arguments
 #define ASSERT_NO_ZEROS(arglist) { \
-    for (int i = 0; i < scamval_len(arglist); i++) { \
+    if (scamval_len(arglist) > 2) { \
+        scamval* first = scamval_get(arglist, 0); \
+        if ((first->type == SCAM_INT && first->vals.n == 0) || \
+            (first->type == SCAM_DEC && first->vals.d == 0.0)) { \
+            return scamerr("cannot divide by zero"); \
+        } \
+    } \
+    for (int i = 1; i < scamval_len(arglist); i++) { \
         scamval* v = scamval_get(arglist, i); \
         if ((v->type == SCAM_INT && v->vals.n == 0) || \
             (v->type == SCAM_DEC && v->vals.d == 0.0)) { \
@@ -49,20 +70,30 @@
 }
 
 typedef int type_pred(int);
-int is_scam_list(int type) { return type == SCAM_LIST; }
+int is_scamlist(int type) { return type == SCAM_LIST; }
+int is_scamint(int type) { return type == SCAM_INT; }
+int is_scamnum(int type) { return type == SCAM_INT || type == SCAM_DEC; }
 
-int typecheck_arglist(scamval* arglist, size_t arity, ...) {
-    size_t num_of_args = scamval_len(arglist);
-    if (num_of_args != arity)
-        return 0;
+scamval* typecheck_args(char* name, scamval* arglist, size_t arity, ...) {
+    COUNT_ARGS(name, arglist, arity);
     va_list vlist;
     va_start(vlist, arity);
-    for (int i = 0; i < num_of_args; i++) {
-        type_pred* this_pred = va_arg(vlist, type_pred);
+    for (int i = 0; i < scamval_len(arglist); i++) {
+        type_pred* this_pred = va_arg(vlist, type_pred*);
         if (!this_pred(scamval_get(arglist, i)->type))
-            return 0;
+            return scamerr_type2(name, i, scamval_get(arglist, i)->type);
     }
-    return 1;
+    return NULL;
+}
+
+scamval* typecheck_all(char* name, scamval* arglist, type_pred pred) {
+    for (int i = 0; i < scamval_len(arglist); i++) {
+        int this_type = scamval_get(arglist, i)->type;
+        if (!pred(this_type)) {
+            return scamerr_type2(name, i, this_type);
+        }
+    }
+    return NULL;
 }
 
 // Return SCAM_INT if all args are ints, SCAM_DEC if at least one is a decimal,
@@ -83,11 +114,14 @@ int arglist_type(scamval* arglist) {
 
 typedef long long (int_arith_func)(long long, long long);
 scamval* generic_int_arith(char* name, scamval* arglist, int_arith_func op) {
-    COUNT_ARGS_AT_LEAST(name, arglist, 2);
+    COUNT_MIN_ARGS(name, arglist, 2);
+    TYPECHECK_ALL(name, arglist, is_scamint);
+    /*
     int type = arglist_type(arglist);
     if (type != SCAM_INT) {
         return scamerr("'%s' passed non-integer argument", name);
     }
+    */
     scamval* first = scamval_get(arglist, 0);
     long long sum = first->vals.n;
     for (int i = 1; i < scamval_len(arglist); i++) {
@@ -99,22 +133,27 @@ scamval* generic_int_arith(char* name, scamval* arglist, int_arith_func op) {
 typedef double (arith_func)(double, double);
 scamval* generic_mixed_arith(char* name, scamval* arglist, arith_func op, 
                              int coerce_to_double) {
-    COUNT_ARGS_AT_LEAST(name, arglist, 2);
+    COUNT_MIN_ARGS(name, arglist, 2);
+    TYPECHECK_ALL(name, arglist, is_scamnum);
+    /*
     int type = arglist_type(arglist);
     if (type != SCAM_INT && type != SCAM_DEC) {
         return scamerr("'%s' passed non-numeric argument", name);
     }
+    */
     scamval* first = scamval_get(arglist, 0);
     double sum = first->type == SCAM_INT ? first->vals.n : first->vals.d;
+    int seen_double = 0;
     for (int i = 1; i < scamval_len(arglist); i++) {
         scamval* v = scamval_get(arglist, i);
         if (v->type == SCAM_INT) {
             sum = op(sum, v->vals.n);
         } else {
             sum = op(sum, v->vals.d);
+            seen_double = 1;
         }
     }
-    if (type == SCAM_DEC || coerce_to_double) {
+    if (seen_double || coerce_to_double) {
         return scamdec(sum);
     } else {
         return scamint(sum);
@@ -172,7 +211,8 @@ scamval* builtin_floor_div(scamval* arglist) {
 }
 
 scamval* builtin_len(scamval* arglist) {
-    TYPE_CHECK_UNARY("len", arglist, SCAM_LIST);
+    //TYPE_CHECK_UNARY("len", arglist, SCAM_LIST);
+    TYPECHECK_ARGS("len", arglist, 1, is_scamlist);
     return scamint(scamval_len(scamval_get(arglist, 0)));
 }
 
@@ -292,7 +332,7 @@ scamval* builtin_prepend(scamval* arglist) {
 }
 
 scamval* builtin_concat(scamval* arglist) {
-    COUNT_ARGS_AT_LEAST("concat", arglist, 1);
+    COUNT_MIN_ARGS("concat", arglist, 1);
     TYPE_CHECK_POS("concat", arglist, 0, SCAM_LIST);
     size_t n = scamval_len(arglist);
     scamval* first_arg = scamval_pop(arglist, 0);
@@ -392,7 +432,7 @@ scamval* builtin_input(scamval* arglist) {
 }
 
 scamval* builtin_begin(scamval* arglist) {
-    COUNT_ARGS_AT_LEAST("begin", arglist, 1);
+    COUNT_MIN_ARGS("begin", arglist, 1);
     return scamval_pop(arglist, scamval_len(arglist) - 1);
 }
 
@@ -445,12 +485,12 @@ void add_builtin(scamenv* env, char* sym, scambuiltin_t bltin) {
 
 void register_builtins(scamenv* env) {
     add_builtin(env, "begin", builtin_begin);
-    add_builtin(env, "+", builtin_add); // mixed
-    add_builtin(env, "-", builtin_sub); // mixed
-    add_builtin(env, "*", builtin_mult); // mixed
-    add_builtin(env, "/", builtin_real_div); // all decimals
-    add_builtin(env, "//", builtin_floor_div); // all integers
-    add_builtin(env, "%", builtin_rem); // all integers
+    add_builtin(env, "+", builtin_add);
+    add_builtin(env, "-", builtin_sub);
+    add_builtin(env, "*", builtin_mult);
+    add_builtin(env, "/", builtin_real_div);
+    add_builtin(env, "//", builtin_floor_div);
+    add_builtin(env, "%", builtin_rem);
     add_builtin(env, "=", builtin_eq);
     add_builtin(env, ">", builtin_gt);
     add_builtin(env, "<", builtin_lt);
