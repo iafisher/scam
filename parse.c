@@ -20,6 +20,9 @@ scamval* match_value(Tokenizer*);
 int starts_expr(int tkn_type);
 int starts_value(int tkn_type);
 
+// Syntactic transformations
+void transform_ast(scamval*);
+
 // Parse the given input by initializing a tokenizer with the given function,
 // and then calling the given matching function.
 scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
@@ -30,6 +33,7 @@ scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
         return scamnull();
     } else {
         scamval* ret = match_f(&tz);
+        transform_ast(ret);
         if (tz.tkn.type == TKN_EOF) {
             tokenizer_close(&tz);
             return ret;
@@ -170,4 +174,51 @@ int starts_value(int tkn_type) {
     return tkn_type == TKN_LBRACKET || tkn_type == TKN_LBRACE ||
            tkn_type == TKN_INT || tkn_type == TKN_DEC || tkn_type == TKN_STR ||
            tkn_type == TKN_SYM;
+}
+
+typedef int (transform_pred_t)(scamval*);
+typedef void (transform_func_t)(scamval*);
+
+int transform_define_pred(scamval* ast) {
+    if (scamval_len(ast) >= 3) {
+        scamval* first = scamval_get(ast, 0);
+        scamval* second = scamval_get(ast, 1);
+        if (first->type == SCAM_SYM && strcmp(first->vals.s, "define") == 0) {
+            if (second->type == SCAM_CODE && scamval_len(second) >= 1) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+void transform_define(scamval* ast) {
+    scamval* body = scamval_pop(ast, 2);
+    // ast == (define (...))
+    scamval* parameters = scamval_pop(ast, 1);
+    // ast == (define)
+    scamval* name = scamval_pop(parameters, 0);
+    scamval_append(ast, name);
+    // ast == (define name)
+    scamval* lambda = scamcode();
+    scamval_append(lambda, scamsym("lambda"));
+    scamval_append(lambda, parameters);
+    scamval_append(lambda, body);
+    scamval_append(ast, lambda);
+    // ast == (define name (lambda (...) body))
+}
+
+void do_transform(scamval* ast, transform_pred_t pred, transform_func_t func) {
+    if (ast->type == SCAM_CODE) {
+        if (pred(ast)) {
+            func(ast);
+        }
+        for (int i = 0; i < scamval_len(ast); i++) {
+            do_transform(scamval_get(ast, i), pred, func);
+        }
+    }
+}
+
+void transform_ast(scamval* ast) {
+    do_transform(ast, transform_define_pred, transform_define);
 }

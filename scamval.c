@@ -245,6 +245,7 @@ scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     ret->type = SCAM_FUNCTION;
     ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
     ret->vals.fun->env = scamenv_init(env);
+    //ret->vals.fun->env = scamenv_copy(env);
     ret->vals.fun->parameters = parameters;
     ret->vals.fun->body = body;
     return ret;
@@ -291,7 +292,7 @@ scamval* scamval_copy(const scamval* v) {
             break;
         case SCAM_FUNCTION:
             ret->vals.fun = my_malloc(sizeof(scamfun_t));
-            ret->vals.fun->env = scamenv_copy(v->vals.fun->env);
+            ret->vals.fun->env = scamenv_init(v->vals.fun->env);
             ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
             ret->vals.fun->body = scamval_copy(v->vals.fun->body);
             break;
@@ -395,11 +396,21 @@ scamenv* scamenv_init(scamenv* enclosing) {
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
+    for (int i = 0; i < array_len(env->syms); i++) {
+        if (scamval_eq(array_get(env->syms, i), sym)) {
+            // free the symbol and the old value
+            scamval_free(sym);
+            scamval_free(array_get(env->vals, i));
+            array_set(env->vals, i, val);
+            return;
+        }
+    }
     array_append(env->syms, sym);
     array_append(env->vals, val);
 }
 
 scamenv* scamenv_copy(const scamenv* env) {
+    printf("copying env with %ld bindings\n", array_len(env->syms));
     scamenv* ret = my_malloc(sizeof *ret);
     ret->enclosing = env->enclosing;
     ret->syms = array_copy(env->syms);

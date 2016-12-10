@@ -98,7 +98,8 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     return scamfunction(env, parameters, ast);
 }
 
-scamval* eval_define_val(scamval* ast, scamenv* env) {
+// Evaluate a define statement
+scamval* eval_define(scamval* ast, scamenv* env) {
     SCAM_ASSERT_ARITY("define", ast, 3);
     SCAM_ASSERT(scamval_get(ast, 1)->type == SCAM_SYM, ast,
                 "cannot define non-symbol");
@@ -111,34 +112,6 @@ scamval* eval_define_val(scamval* ast, scamenv* env) {
     } else {
         scamval_free(k);
         return v;
-    }
-}
-
-scamval* eval_define_fun(scamval* ast, scamenv* env) {
-    SCAM_ASSERT(scamval_get(ast, 1)->type == SCAM_CODE, ast,
-                "argument 1 of define should be a symbol");
-    scamval* par_list = scamval_get(ast, 1);
-    SCAM_ASSERT(scamval_len(par_list) > 0, ast, "empty expression");
-    for (int i = 0; i < scamval_len(par_list); i++) {
-        SCAM_ASSERT(scamval_get(par_list, i)->type == SCAM_SYM, ast,
-                    "function name or parameter must be a symbol");
-    }
-    // replace the copy of the parameter list with the actual thing
-    par_list = scamval_pop(ast, 1);
-    scamval_replace(ast, 0, scamsym("begin"));
-    scamval* f_name = scamval_pop(par_list, 0);
-    scamval* fun = scamfunction(env, par_list, ast);
-    scamenv_bind(env, f_name, fun);
-    return scamnull();
-}
-
-// Evaluate a define statement
-scamval* eval_define(scamval* ast, scamenv* env) {
-    SCAM_ASSERT_MIN_ARITY("define", ast, 3);
-    if (scamval_get(ast, 1)->type == SCAM_SYM) {
-        return eval_define_val(ast, env);
-    } else {
-        return eval_define_fun(ast, env);
     }
 }
 
@@ -241,15 +214,13 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
             return scamerr("'lambda' got %d argument(s), expected %d", 
                            got, expected);
         }
-        scamenv* fun_env = scamenv_init(fun->env);
         while (scamval_len(fun->parameters) > 0) {
-            scamenv_bind(fun_env, scamval_pop(fun->parameters, 0),
-                                  scamval_pop(arglist, 0));
+            scamenv_bind(fun->env, scamval_pop(fun->parameters, 0),
+                                   scamval_pop(arglist, 0));
         }
-        scamval* ret = eval(fun->body, fun_env);
-        // make sure there is something for scamval_free(arglist) to free
+        scamval* ret = eval(fun->body, fun->env);
+        // make sure there is something for scamval_free(fun_val) to free
         fun->body = scamnull();
-        scamenv_free(fun_env); 
         scamval_free(fun_val);
         scamval_free(arglist);
         return ret;

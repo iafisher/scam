@@ -109,6 +109,9 @@ void evaltest_val_def(scamenv* env) {
     evaltest("x", env, scamint(10));
     evaltest("(* x 2)", env, scamint(20));
     evaltest("x", env, scamint(10));
+    // test redefinition
+    evaldef("(define x 8)", env);
+    evaltest("x", env, scamint(8));
     evaltest_err("(define 1 23)", env);
 }
 
