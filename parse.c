@@ -183,19 +183,23 @@ int transform_define_pred(scamval* ast) {
 }
 
 void transform_define(scamval* ast) {
-    scamval* body = scamseq_pop(ast, 2);
-    // ast == (define (...))
-    scamval* parameters = scamseq_pop(ast, 1);
-    // ast == (define)
-    scamval* name = scamseq_pop(parameters, 0);
-    scamseq_append(ast, name);
-    // ast == (define name)
+    // ast == (define (...) body)
     scamval* lambda = scamcode();
+    scamval* parameters = scamseq_pop(ast, 1);
+    // ast == (define body)
+    scamval* name = scamseq_pop(parameters, 0);
     scamseq_append(lambda, scamsym("lambda"));
     scamseq_append(lambda, parameters);
-    scamseq_append(lambda, body);
+    scamval* lambda_body = scamcode();
+    scamseq_append(lambda_body, scamsym("begin"));
+    // lambda == (lambda (...))
+    while (scamseq_len(ast) > 1)
+        scamseq_append(lambda_body, scamseq_pop(ast, 1));
+    scamseq_append(lambda, lambda_body);
+    // ast == (define)
+    // lambda == (lambda (...) body)
+    scamseq_append(ast, name);
     scamseq_append(ast, lambda);
-    // ast == (define name (lambda (...) body))
 }
 
 void do_transform(scamval* ast, transform_pred_t pred, transform_func_t func) {

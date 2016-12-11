@@ -85,8 +85,6 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     scamval* parameters = scamseq_pop(ast, 1);
     // replace the 'lambda' symbol with 'begin'
     scamseq_replace(ast, 0, scamsym("begin"));
-    if (env->type == SCAMENV_TMP)
-        env->type = SCAMENV_CLOSURE;
     return scamfunction(env, parameters, ast);
 }
 

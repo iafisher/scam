@@ -86,10 +86,8 @@ int scamval_eq(const scamval*, const scamval*);
 // Free all resources used by a scamval, including the pointer itself
 void scamval_free(scamval*);
 
-enum {SCAMENV_NORMAL, SCAMENV_TMP, SCAMENV_CLOSURE};
 struct scamenv {
-    // type determines how the environment is freed 
-    int type;
+    int references;
     scamenv* enclosing;
     // symbols and values are stored as scamval lists
     scamval* syms;

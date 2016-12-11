@@ -226,6 +226,7 @@ scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     ret->type = SCAM_FUNCTION;
     ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
     ret->vals.fun->env = env;
+    env->references++;
     ret->vals.fun->parameters = parameters;
     ret->vals.fun->body = body;
     return ret;
@@ -278,8 +279,6 @@ scamval* scamval_copy(const scamval* v) {
         case SCAM_FUNCTION:
             ret->vals.fun = my_malloc(sizeof(scamfun_t));
             ret->vals.fun->env = scamenv_init(v->vals.fun->env);
-            ret->vals.fun->env->type = SCAMENV_TMP;
-            //ret->vals.fun->env = v->vals.fun->env;
             ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
             ret->vals.fun->body = scamval_copy(v->vals.fun->body);
             break;
@@ -363,8 +362,13 @@ void scamval_free(scamval* v) {
             fclose(v->vals.port);
             break;
         case SCAM_FUNCTION:
-            if (v->vals.fun->env->type == SCAMENV_TMP)
+            v->vals.fun->env->references--;
+            if (v->vals.fun->env->references == 0) {
                 scamenv_free(v->vals.fun->env);
+            } else if (v->vals.fun->env->references < 0) {
+                printf("negative references... something is wrong here\n");
+                scamenv_free(v->vals.fun->env);
+            }
             scamval_free(v->vals.fun->parameters);
             scamval_free(v->vals.fun->body);
             free(v->vals.fun);
@@ -375,21 +379,11 @@ void scamval_free(scamval* v) {
 
 scamenv* scamenv_init(scamenv* enclosing) {
     scamenv* ret = my_malloc(sizeof *ret);
-    ret->type = SCAMENV_NORMAL;
+    ret->references = 1;
     ret->enclosing = enclosing;
     ret->syms = scamlist();
     ret->vals = scamlist();
     return ret;
-}
-
-// If v is a function, change its environment's type from CLOSURE to TMP
-// This allows functions to be properly free'd
-void scamenv_set_func_type(scamval* v) {
-    if (v->type == SCAM_FUNCTION && v->vals.fun->env) {
-        if (v->vals.fun->env->type == SCAMENV_CLOSURE) {
-            v->vals.fun->env->type = SCAMENV_TMP;
-        }
-    }
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
@@ -397,9 +391,7 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
         if (scamval_eq(scamseq_get(env->syms, i), sym)) {
             // free the symbol and the old value
             scamval_free(sym);
-            scamval* v = scamseq_get(env->vals, i);
-            scamenv_set_func_type(v);
-            scamval_free(v);
+            scamval_free(scamseq_get(env->vals, i));
             scamseq_set(env->vals, i, val);
             return;
         }
@@ -410,9 +402,6 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
 
 void scamenv_free(scamenv* env) {
     if (env) {
-        for (int i = 0; i < scamseq_len(env->vals); i++) {
-            scamenv_set_func_type(scamseq_get(env->vals, i));
-        }
         scamval_free(env->syms);
         scamval_free(env->vals);
         free(env);
