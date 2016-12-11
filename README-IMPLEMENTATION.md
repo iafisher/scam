@@ -48,7 +48,7 @@ Since the grammar of the language is LL(1), parsing is straightforward. The pars
     scamval* parse_line(char*);
     scamval* parse_file(FILE*);
 
-The type of the return value can be anything except `SCAM_PORT` and `SCAM_FUNCTION`, since those types cannot be represented literally. In particular, the type of the return value is `SCAM_CODE` if the user entered an S-expression.
+The type of the return value can be anything except `SCAM_PORT` and `SCAM_FUNCTION`, since those types cannot be represented literally. In particular, the type of the return value is `SCAM_SEXPR` if the user entered an S-expression.
 
 Internally, the parser is a recursive descent parser using the following functions.
 
@@ -64,16 +64,16 @@ The evaluator can be accessed by any of these three functions, all three of whic
     scamval* eval_line(char*, scamenv*);
     scamval* eval_file(FILE*, scamenv*);
 
-If the `scamval` passed to `eval` is any of type other than `SCAM_SYM` or `SCAM_CODE`, then it is simply returned unchanged.
+If the `scamval` passed to `eval` is any of type other than `SCAM_SYM` or `SCAM_SEXPR`, then it is simply returned unchanged.
 
 If it is of type `SCAM_SYM`, then its value in the given environment is returned, or an error is returned if it is not found.
 
-If it is of type `SCAM_CODE`, then its first element is evaluated (if it has no element, an error is returned). If the first element does not evaluate to a function, then an error is returned. Otherwise, the rest of the elements are evaluated, and their values are bound to the names of the function's parameters (if too few or too many arguments are given, then an error is returned). Finally, the body of the function is evaluated in the extended environment.
+If it is of type `SCAM_SEXPR`, then its first element is evaluated (if it has no element, an error is returned). If the first element does not evaluate to a function, then an error is returned. Otherwise, the rest of the elements are evaluated, and their values are bound to the names of the function's parameters (if too few or too many arguments are given, then an error is returned). Finally, the body of the function is evaluated in the extended environment.
 
 ### Representation of Scam values
 Scam values implemented as a struct `scamval` with a `type` field and a `union` field that holds the possible values. The value of `type` indicates which field from the union should be accessed. `type` will be one of the following values:
 
-    SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_QUOTE,
-    SCAM_FUNCTION, SCAM_PORT, SCAM_BUILTIN, SCAM_CODE, SCAM_SYM, SCAM_ERR
+    SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_FUNCTION, 
+    SCAM_PORT, SCAM_BUILTIN, SCAM_SEXPR, SCAM_SYM, SCAM_ERR
 
 The latter three types are only used internally and are never exposed to the user. The `SCAM_BUILTIN` type is always presented to the user identically to the `SCAM_FUNCTION` type, though they differ internally.

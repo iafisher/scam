@@ -5,12 +5,11 @@ A bad programming language.
 The syntax of the language is described by the following EBNF grammar. Whitespace is only significant between symbols and numbers.
 
     EXPR    := "(" EXPR+ ")" | VALUE
-    VALUE   := NUMBER | SYMBOL | LIST | STRING | QUOTE
+    VALUE   := NUMBER | SYMBOL | LIST | STRING
     COMMENT := ";" <any ASCII char except newline> "\n"
 
     SYMBOL := <any SYMBOL_CHAR other than 0-9> SYMBOL_CHAR*
     LIST   := "[" EXPR* "]"
-    QUOTE  := "{" EXPR* "}"
     STRING := "\"" <any ASCII char, with normal backslash escapes> "\""
     NUMBER := INTEGER | FLOAT
 
@@ -32,7 +31,6 @@ All literals and named values belong to exactly one of the following types:
 - Boolean
 - List
 - String
-- Quote
 - Function
 - Port
 
@@ -43,9 +41,6 @@ Integers and decimals are represented internally as C `long long`s and `double`s
 
 #### Lists and strings
 The list is the primary general-purpose sequence type in Scam, and the string is a specialization of the list for sequences of ASCII characters.
-
-#### Quotes
-A quote value is a delayed-evaluation list. Symbols inside a quote will not be looked up, and S-expressions will not be evaluated.
 
 #### Functions
 Functions are first-class values in Scam. The notion of a function encapsulates the function body, the enclosing environment of the function, and the names of the parameters.
@@ -58,7 +53,7 @@ A Scam expression is always evaluated in the context of an environment, which is
 
 The following rules define the evaluation of Scam expressions.
 
-- A literal (a number, string literal, boolean, list, or quote) evaluates to itself.
+- A literal (a number, string literal, boolean, or list) evaluates to itself.
 - A symbol evaluates to its value in the current environment, or to an error if it is not defined.
 - An S-expression is evaluated as follows. The first element of the expression is evaluated, and if it is not a function, or if the number of remaining elements doesn't match the arity of the function, then an error is given. Otherwise, a new environment (enclosed by the function's environment) is created where the names of the parameters are bound to the arguments, and the body of the function is evaluated in this environment.
 

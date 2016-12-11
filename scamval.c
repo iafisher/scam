@@ -184,11 +184,7 @@ scamval* scamlist() {
 }
 
 scamval* scamcode() {
-    return scam_internal_array(SCAM_CODE);
-}
-
-scamval* scamquote() {
-    return scam_internal_array(SCAM_QUOTE);
+    return scam_internal_array(SCAM_SEXPR);
 }
 
 // Make a scamval that is internally a string (strings, symbols and errors)
@@ -281,8 +277,7 @@ scamval* scamval_copy(const scamval* v) {
         case SCAM_DEC: 
             ret->vals.d = v->vals.d; break;
         case SCAM_LIST:
-        case SCAM_CODE:
-        case SCAM_QUOTE:
+        case SCAM_SEXPR:
             ret->vals.arr = array_copy(v->vals.arr); break;
         case SCAM_STR:
         case SCAM_SYM:
@@ -346,8 +341,7 @@ int scamval_eq(const scamval* v1, const scamval* v2) {
         switch (v1->type) {
             case SCAM_BOOL:
                 return v1->vals.n == v2->vals.n;
-            case SCAM_CODE:
-            case SCAM_QUOTE:
+            case SCAM_SEXPR:
             case SCAM_LIST:
                 return scamval_list_eq(v1, v2);
             case SCAM_SYM:
@@ -367,8 +361,7 @@ void scamval_free(scamval* v) {
     if (!v) return;
     switch (v->type) {
         case SCAM_LIST:
-        case SCAM_QUOTE:
-        case SCAM_CODE:
+        case SCAM_SEXPR:
             array_free(v->vals.arr); break;
         case SCAM_STR:
         case SCAM_SYM:
@@ -457,8 +450,7 @@ void scamval_print(const scamval* v) {
         case SCAM_DEC: printf("%f", v->vals.d); break;
         case SCAM_BOOL: printf("%s", v->vals.n ? "true" : "false"); break;
         case SCAM_LIST: array_print(v->vals.arr, "[", "]"); break;
-        case SCAM_CODE: array_print(v->vals.arr, "(", ")"); break;
-        case SCAM_QUOTE: array_print(v->vals.arr, "{", "}"); break;
+        case SCAM_SEXPR: array_print(v->vals.arr, "(", ")"); break;
         case SCAM_FUNCTION:
         case SCAM_BUILTIN: printf("<Scam function>"); break;
         case SCAM_PORT: printf("<Scam port>"); break;
@@ -482,8 +474,8 @@ void scamval_println(const scamval* v) {
 void scamval_print_ast(const scamval* ast, int indent) {
     for (int i = 0; i < indent; i++)
         printf("  ");
-    if (ast->type == SCAM_CODE || ast->type == SCAM_PROGRAM) {
-        printf(ast->type == SCAM_CODE ? "EXPR\n" : "PROGRAM\n");
+    if (ast->type == SCAM_SEXPR) {
+        printf("EXPR\n");
         for (int i = 0; i < scamval_len(ast); i++) {
             scamval_print_ast(scamval_get(ast, i), indent + 1);
         }
@@ -499,15 +491,13 @@ const char* scamtype_name(int type) {
         case SCAM_BOOL: return "boolean";
         case SCAM_LIST: return "list";
         case SCAM_STR: return "string";
-        case SCAM_QUOTE: return "quote";
         case SCAM_FUNCTION: return "function";
         case SCAM_PORT: return "port";
         case SCAM_BUILTIN: return "function";
-        case SCAM_CODE: return "code";
+        case SCAM_SEXPR: return "S-expression";
         case SCAM_SYM: return "symbol";
         case SCAM_ERR: return "error";
         case SCAM_NULL: return "null";
-        case SCAM_PROGRAM: return "program";
         default: return "bad scamval type";
     }
 }
@@ -519,15 +509,13 @@ const char* scamtype_debug_name(int type) {
         case SCAM_BOOL: return "SCAM_BOOL";
         case SCAM_LIST: return "SCAM_LIST";
         case SCAM_STR: return "SCAM_STR";
-        case SCAM_QUOTE: return "SCAM_QUOTE";
         case SCAM_FUNCTION: return "SCAM_FUNCTION";
         case SCAM_PORT: return "SCAM_PORT";
         case SCAM_BUILTIN: return "SCAM_BUILTIN";
-        case SCAM_CODE: return "SCAM_CODE";
+        case SCAM_SEXPR: return "SCAM_SEXPR";
         case SCAM_SYM: return "SCAM_SYM";
         case SCAM_ERR: return "SCAM_ERR";
         case SCAM_NULL: return "SCAM_NULL";
-        case SCAM_PROGRAM: return "SCAM_PROGRAM";
         default: return "bad scamval type";
     }
 }

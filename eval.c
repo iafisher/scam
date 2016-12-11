@@ -31,7 +31,6 @@ scamval* eval_lambda(scamval*, scamenv*);
 scamval* eval_if(scamval*, scamenv*);
 scamval* eval_and(scamval*, scamenv*);
 scamval* eval_or(scamval*, scamenv*);
-scamval* eval_eval(scamval*, scamenv*);
 scamval* eval_apply(scamval*, scamenv*);
 scamval* eval_list(scamval*, scamenv*);
 
@@ -40,7 +39,7 @@ scamval* eval(scamval* ast, scamenv* env) {
         scamval* ret = scamenv_lookup(env, ast);
         scamval_free(ast);
         return ret;
-    } else if (ast->type == SCAM_CODE) {
+    } else if (ast->type == SCAM_SEXPR) {
         SCAM_ASSERT(scamval_len(ast) > 0, ast, "empty expression");
         // handle special expressions and statements
         if (scamval_get(ast, 0)->type == SCAM_SYM) {
@@ -55,8 +54,6 @@ scamval* eval(scamval* ast, scamenv* env) {
                 return eval_and(ast, env);
             } else if (strcmp(name, "or") == 0) {
                 return eval_or(ast, env);
-            } else if (strcmp(name, "eval") == 0) {
-                return eval_eval(ast, env);
             }
         }
         return eval_apply(ast, env);
@@ -86,7 +83,7 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     }
     */
     scamval* parameters_copy = scamval_get(ast, 1);
-    SCAM_ASSERT(parameters_copy->type == SCAM_CODE, ast,
+    SCAM_ASSERT(parameters_copy->type == SCAM_SEXPR, ast,
                 "arg 1 to 'lambda' should be a parameter list");
     for (int i = 0; i < scamval_len(parameters_copy); i++) {
         SCAM_ASSERT(scamval_get(parameters_copy, i)->type == SCAM_SYM, ast,
@@ -181,20 +178,6 @@ scamval* eval_or(scamval* ast, scamenv* env) {
     }
     scamval_free(ast);
     return scambool(0);
-}
-
-// Evaluate an eval expression
-scamval* eval_eval(scamval* ast, scamenv* env) {
-    SCAM_ASSERT_ARITY("eval", ast, 2);
-    scamval* qu = eval(scamval_pop(ast, 1), env);
-    scamval_free(ast);
-    if (qu->type == SCAM_QUOTE) {
-        qu->type = SCAM_CODE;
-        return eval(qu, env);
-    } else {
-        scamval_free(qu);
-        return scamerr("'eval' expects quote as argument");
-    }
 }
 
 // Evaluate a function application

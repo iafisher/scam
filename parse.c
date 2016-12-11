@@ -13,9 +13,9 @@
 // Forward declarations of recursive descent functions
 typedef scamval* (match_t)(Tokenizer*);
 scamval* match_program(Tokenizer*);
-scamval* match_expr(Tokenizer*);
-scamval* match_expr_star(Tokenizer*);
-scamval* match_expr_plus(Tokenizer*);
+scamval* match_sexpr(Tokenizer*);
+scamval* match_sexpr_star(Tokenizer*);
+scamval* match_sexpr_plus(Tokenizer*);
 scamval* match_value(Tokenizer*);
 int starts_expr(int tkn_type);
 int starts_value(int tkn_type);
@@ -24,7 +24,7 @@ int starts_value(int tkn_type);
 void transform_ast(scamval*);
 
 // Parse the given input by initializing a tokenizer with the given function,
-// and then calling the given matching function.
+// and then calling the given matching function
 scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
     Tokenizer tz; 
     tz_init(&tz, s_or_fp);
@@ -46,7 +46,7 @@ scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
 }
 
 scamval* parse_str(char* s) {
-    return parse(s, tokenizer_from_str, match_expr);
+    return parse(s, tokenizer_from_str, match_sexpr);
 }
 
 scamval* parse_file(char* fp) {
@@ -54,7 +54,7 @@ scamval* parse_file(char* fp) {
 }
 
 scamval* match_program(Tokenizer* tz) {
-    scamval* ast = match_expr_plus(tz);
+    scamval* ast = match_sexpr_plus(tz);
     if (ast->type != SCAM_ERR) {
         scamval_prepend(ast, scamsym("begin"));
         return ast;
@@ -63,12 +63,12 @@ scamval* match_program(Tokenizer* tz) {
     }
 }
 
-scamval* match_any_expr(Tokenizer* tz, int type, int start, int end) {
+scamval* match_sequence(Tokenizer* tz, int type, int start, int end) {
     if (tz->tkn.type == start) {
         int line = tokenizer_line(tz);
         int col = tokenizer_col(tz);
         TOKENIZER_MUST_ADVANCE(tz);
-        scamval* ret = match_expr_star(tz);
+        scamval* ret = match_sexpr_star(tz);
         ret->type = type;
         if (tz->tkn.type == end) {
             tokenizer_advance(tz);
@@ -83,27 +83,17 @@ scamval* match_any_expr(Tokenizer* tz, int type, int start, int end) {
     }
 }
 
-scamval* match_any_nonempty_expr(Tokenizer* tz, int type, int start, int end) {
-    scamval* ret = match_any_expr(tz, type, start, end);
-    if (ret->vals.arr->count > 0) {
-        return ret;
-    } else {
-        scamval_free(ret);
-        return scamerr("empty expression");
-    }
-}
-
-scamval* match_expr(Tokenizer* tz) {
+scamval* match_sexpr(Tokenizer* tz) {
     if (tz->tkn.type == TKN_LPAREN) {
-        return match_any_nonempty_expr(tz, SCAM_CODE, TKN_LPAREN, TKN_RPAREN);
+        return match_sequence(tz, SCAM_SEXPR, TKN_LPAREN, TKN_RPAREN);
     } else {
         return match_value(tz);
     }
 }
 
-scamval* match_expr_plus(Tokenizer* tz) {
+scamval* match_sexpr_plus(Tokenizer* tz) {
     scamval* ast = scamcode();
-    scamval* first_expr = match_expr(tz);
+    scamval* first_expr = match_sexpr(tz);
     if (first_expr->type != SCAM_ERR) {
         scamval_append(ast, first_expr);
     } else {
@@ -111,23 +101,23 @@ scamval* match_expr_plus(Tokenizer* tz) {
         return first_expr;
     }
     while (starts_expr(tz->tkn.type))
-        scamval_append(ast, match_expr(tz));
+        scamval_append(ast, match_sexpr(tz));
     return ast;
 }
 
-scamval* match_expr_star(Tokenizer* tz) {
+scamval* match_sexpr_star(Tokenizer* tz) {
     scamval* ast = scamcode();
     while (starts_expr(tz->tkn.type))
-        scamval_append(ast, match_expr(tz));
+        scamval_append(ast, match_sexpr(tz));
     return ast;
 }
 
 scamval* match_value(Tokenizer* tz) {
     if (starts_value(tz->tkn.type)) {
         if (tz->tkn.type == TKN_LBRACE) {
-            return match_any_expr(tz, SCAM_QUOTE, TKN_LBRACE, TKN_RBRACE);
+            return scamerr("brace expressions currently not implemented");
         } else if (tz->tkn.type == TKN_LBRACKET) {
-            return match_any_expr(tz, SCAM_LIST, TKN_LBRACKET, TKN_RBRACKET);
+            return match_sequence(tz, SCAM_LIST, TKN_LBRACKET, TKN_RBRACKET);
         } else {
             scamval* ret = scamval_from_token(&tz->tkn);
             tokenizer_advance(tz);
@@ -184,7 +174,7 @@ int transform_define_pred(scamval* ast) {
         scamval* first = scamval_get(ast, 0);
         scamval* second = scamval_get(ast, 1);
         if (first->type == SCAM_SYM && strcmp(first->vals.s, "define") == 0) {
-            if (second->type == SCAM_CODE && scamval_len(second) >= 1) {
+            if (second->type == SCAM_SEXPR && scamval_len(second) >= 1) {
                 return 1;
             }
         }
@@ -209,7 +199,7 @@ void transform_define(scamval* ast) {
 }
 
 void do_transform(scamval* ast, transform_pred_t pred, transform_func_t func) {
-    if (ast->type == SCAM_CODE) {
+    if (ast->type == SCAM_SEXPR) {
         if (pred(ast)) {
             func(ast);
         }

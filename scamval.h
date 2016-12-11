@@ -3,9 +3,8 @@
 
 // Possible values for the type field of the scamval struct
 // Note that some of these types are never exposed to the user
-enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_QUOTE,
-      SCAM_FUNCTION, SCAM_PORT, SCAM_BUILTIN, SCAM_CODE, SCAM_SYM, SCAM_ERR,
-      SCAM_PROGRAM, SCAM_NULL };
+enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_FUNCTION, 
+      SCAM_PORT, SCAM_BUILTIN, SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL };
 
 const char* scamtype_name(int type);
 const char* scamtype_debug_name(int type);
@@ -68,7 +67,7 @@ struct scamval {
         long long n; // used by SCAM_INT and SCAM_BOOL
         double d; // SCAM_DEC
         char* s; // SCAM_STR, SCAM_SYM and SCAM_ERR
-        array* arr; // SCAM_LIST, SCAM_QUOTE and SCAM_CODE
+        array* arr; // SCAM_LIST and SCAM_SEXPR
         scamfun_t* fun; // SCAM_FUNCTION
         scamport_t* port; // SCAM_PORT
         scambuiltin_t* bltin; // SCAM_BUILTIN
@@ -80,7 +79,6 @@ scamval* scamint(long long);
 scamval* scamdec(double);
 scamval* scambool(int);
 scamval* scamlist();
-scamval* scamquote();
 scamval* scamcode();
 scamval* scamport(FILE*);
 scamval* scamstr(const char*);

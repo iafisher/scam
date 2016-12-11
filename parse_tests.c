@@ -8,18 +8,17 @@ void parse_tests() {
     printf("Running parse tests\n");
     parsetest_lit("-103", SCAM_INT);
     parsetest_lit("-103.7", SCAM_DEC);
-    parsetest_lit("{1 2 3}", SCAM_QUOTE);
     parsetest_lit("hello", SCAM_SYM);
     parsetest_lit("\"hello\"", SCAM_STR);
     parsetest("(+ 1 1)", 3, SCAM_SYM, SCAM_INT, SCAM_INT);
-    parsetest("(+ (* 9 2) 1)", 3, SCAM_SYM, SCAM_CODE, SCAM_INT);
-    parsetest("((lambda (x y) (+ x y)) 5 5.0)", 3, SCAM_CODE, SCAM_INT, SCAM_DEC);
+    parsetest("(+ (* 9 2) 1)", 3, SCAM_SYM, SCAM_SEXPR, SCAM_INT);
+    parsetest("((lambda (x y) (+ x y)) 5 5.0)", 3, SCAM_SEXPR, SCAM_INT, SCAM_DEC);
 }
 
 void parsetest(char* line, int n, ...) {
     scamval* ast = parse_str(line);
-    if (ast->type != SCAM_CODE) {
-        printf("Failed parse test \"%s\": expected SCAM_CODE object\n", line);
+    if (ast->type != SCAM_SEXPR) {
+        printf("Failed parse test \"%s\": expected SCAM_SEXPR object\n", line);
         scamval_free(ast);
         return;
     }
