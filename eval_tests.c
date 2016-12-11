@@ -7,6 +7,7 @@ void evaltest_arith(scamenv*);
 void evaltest_lists(scamenv*);
 void evaltest_val_def(scamenv*);
 void evaltest_fun_def(scamenv*);
+void evaltest_closure(scamenv*);
 void evaltest_rec_fun(scamenv*);
 void evaltest_lambda(scamenv*);
 void evaltest_zero_div(scamenv*);
@@ -19,6 +20,7 @@ void eval_tests() {
     evaltest_lists(env);
     evaltest_val_def(env);
     evaltest_fun_def(env);
+    evaltest_closure(env);
     evaltest_rec_fun(env);
     evaltest_lambda(env);
     evaltest_zero_div(env);
@@ -122,6 +124,18 @@ void evaltest_fun_def(scamenv* env) {
     evaltest_err("(square)", env);
     evaltest_err("(square 2 3)", env);
     evaltest_err("(square [])", env);
+}
+
+void evaltest_closure(scamenv* env) {
+    // single nested closure
+    evaldef("(define (make-fun x) (lambda (y) (+ x y)))", env);
+    evaldef("(define foo (make-fun 5))", env);
+    evaltest("(foo 37)", env, scamint(42));
+    // doubly nested closure
+    evaldef("(define (make-fun x) (lambda (y) (lambda (z) (+ x y z))))", env);
+    evaldef("(define foo (make-fun 5))", env);
+    evaldef("(define bar (foo 32))", env);
+    evaltest("(bar 5)", env, scamint(42));
 }
 
 void evaltest_rec_fun(scamenv* env) {

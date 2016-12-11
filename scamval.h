@@ -110,7 +110,10 @@ int scamval_eq(const scamval*, const scamval*);
 // Free all resources used by a scamval, including the pointer itself
 void scamval_free(scamval*);
 
+enum {SCAMENV_NORMAL, SCAMENV_TMP, SCAMENV_CLOSURE};
 struct scamenv {
+    // type determines how the environment is freed 
+    int type;
     scamenv* enclosing;
     array* syms;
     array* vals;
@@ -119,5 +122,4 @@ struct scamenv {
 scamenv* scamenv_init(scamenv* enclosing);
 void scamenv_bind(scamenv*, scamval*, scamval*);
 scamval* scamenv_lookup(scamenv*, scamval*);
-scamenv* scamenv_copy(const scamenv*);
 void scamenv_free(scamenv*);

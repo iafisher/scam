@@ -75,13 +75,6 @@ scamval* eval_file(char* fp, scamenv* env) {
 // Evaluate a lambda expression
 scamval* eval_lambda(scamval* ast, scamenv* env) {
     SCAM_ASSERT_MIN_ARITY("lambda", ast, 3);
-    /*
-    size_t got = scamval_len(ast);
-    if (got < 3) {
-        scamval_free(ast);
-        return scamerr_arity("lambda", got, 3);
-    }
-    */
     scamval* parameters_copy = scamval_get(ast, 1);
     SCAM_ASSERT(parameters_copy->type == SCAM_SEXPR, ast,
                 "arg 1 to 'lambda' should be a parameter list");
@@ -92,6 +85,8 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     scamval* parameters = scamval_pop(ast, 1);
     // replace the 'lambda' symbol with 'begin'
     scamval_replace(ast, 0, scamsym("begin"));
+    if (env->type == SCAMENV_TMP)
+        env->type = SCAMENV_CLOSURE;
     return scamfunction(env, parameters, ast);
 }
 
