@@ -150,6 +150,10 @@ scamval* scamval_pop(scamval* seq, size_t i) {
     return array_pop(seq->vals.arr, i);
 }
 
+size_t scamval_strlen(const scamval* s) {
+    return strlen(s->vals.s);
+}
+
 scamval* scamint(long long n) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = SCAM_INT;
@@ -198,6 +202,24 @@ scamval* scam_internal_str(int type, const char* s) {
 
 scamval* scamstr(const char* s) {
     return scam_internal_str(SCAM_STR, s);
+}
+
+scamval* scamstr_n(const char* s, size_t n) {
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_STR;
+    ret->vals.s = my_malloc(n + 1);
+    strncpy(ret->vals.s, s, n);
+    ret->vals.s[n] = '\0';
+    return ret;
+}
+
+scamval* scamstr_from_char(char c) {
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_STR;
+    ret->vals.s = my_malloc(2);
+    ret->vals.s[0] = c;
+    ret->vals.s[1] = '\0';
+    return ret;
 }
 
 scamval* scamsym(const char* s) {

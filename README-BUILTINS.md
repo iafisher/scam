@@ -8,7 +8,7 @@ The `/` operator performs floating point division regardless of the types of its
 The comparison operators are defined for integers, decimals, and strings. The `=` operator is additionally usefully defined for lists and booleans; it returns `false` for all other types, and with mixed types (unless both are numeric).
 
 ## Sequence functions
-### Defined for all sequence types (quotes, strings and lists)
+### Defined for both sequence types (strings and lists)
 
     (head seq)
 
@@ -33,8 +33,6 @@ Return the length of the sequence.
     (empty? seq)
 
 Return `true` if the sequence contains no elements, `false` otherwise.
-
-### Defined for strings and lists
 
     (prepend val seq)
 
@@ -115,9 +113,3 @@ Set the current position of the port.
     (close port)
 
 Close the port. After a port has been closed, any read or write operation will produce an error.
-
-## Other functions
-
-    (eval qu)
-
-Evaluate a quote in the current environment.

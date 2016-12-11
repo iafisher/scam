@@ -55,6 +55,8 @@ size_t scamval_len(const scamval*);
 void scamval_append(scamval* seq, scamval*);
 void scamval_prepend(scamval* seq, scamval*);
 
+size_t scamval_strlen(const scamval*);
+
 typedef struct {
     scamenv* env;
     scamval* parameters;
@@ -82,6 +84,8 @@ scamval* scamlist();
 scamval* scamcode();
 scamval* scamport(FILE*);
 scamval* scamstr(const char*);
+scamval* scamstr_n(const char*, size_t n);
+scamval* scamstr_from_char(char);
 scamval* scamsym(const char*);
 scamval* scamerr(const char*, ...);
 scamval* scamfunction(scamenv*, scamval* parameters, scamval* body);
