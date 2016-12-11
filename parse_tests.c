@@ -26,7 +26,7 @@ void parsetest(char* line, int n, ...) {
     va_start(args, n);
     for (int i = 0; i < n; i++) {
         int req_type = va_arg(args, int);
-        int given_type = scamval_get(ast, i)->type;
+        int given_type = scamseq_get(ast, i)->type;
         if (req_type != given_type) {
             printf("Failed parse test \"%s\" on element %d; ", line, i);
             printf("got %s, expected %s\n", scamtype_debug_name(given_type),

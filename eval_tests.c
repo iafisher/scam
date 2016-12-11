@@ -176,7 +176,7 @@ void evaltest_list(char* line, scamenv* env, int n, ...) {
     scamval* items = scamlist();
     for (int i = 0; i < n; i++) {
         scamval* v = va_arg(vlist, scamval*);
-        scamval_append(items, v);
+        scamseq_append(items, v);
     }
     va_end(vlist);
     evaltest(line, env, items);

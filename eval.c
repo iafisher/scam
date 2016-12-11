@@ -10,7 +10,7 @@
 }
 
 #define SCAM_ASSERT_ARITY(name, ast, expected) { \
-    size_t got = scamval_len(ast); \
+    size_t got = scamseq_len(ast); \
     if (got != expected) { \
         scamval_free(ast); \
         return scamerr_arity(name, got, expected); \
@@ -18,7 +18,7 @@
 }
 
 #define SCAM_ASSERT_MIN_ARITY(name, ast, expected) { \
-    size_t got = scamval_len(ast); \
+    size_t got = scamseq_len(ast); \
     if (got < expected) { \
         scamval_free(ast); \
         return scamerr_arity(name, got, expected); \
@@ -40,10 +40,10 @@ scamval* eval(scamval* ast, scamenv* env) {
         scamval_free(ast);
         return ret;
     } else if (ast->type == SCAM_SEXPR) {
-        SCAM_ASSERT(scamval_len(ast) > 0, ast, "empty expression");
+        SCAM_ASSERT(scamseq_len(ast) > 0, ast, "empty expression");
         // handle special expressions and statements
-        if (scamval_get(ast, 0)->type == SCAM_SYM) {
-            char* name = scamval_get(ast, 0)->vals.s;
+        if (scamseq_get(ast, 0)->type == SCAM_SYM) {
+            char* name = scamseq_get(ast, 0)->vals.s;
             if (strcmp(name, "define") == 0) {
                 return eval_define(ast, env);
             } else if (strcmp(name, "if") == 0) {
@@ -75,16 +75,16 @@ scamval* eval_file(char* fp, scamenv* env) {
 // Evaluate a lambda expression
 scamval* eval_lambda(scamval* ast, scamenv* env) {
     SCAM_ASSERT_MIN_ARITY("lambda", ast, 3);
-    scamval* parameters_copy = scamval_get(ast, 1);
+    scamval* parameters_copy = scamseq_get(ast, 1);
     SCAM_ASSERT(parameters_copy->type == SCAM_SEXPR, ast,
                 "arg 1 to 'lambda' should be a parameter list");
-    for (int i = 0; i < scamval_len(parameters_copy); i++) {
-        SCAM_ASSERT(scamval_get(parameters_copy, i)->type == SCAM_SYM, ast,
+    for (int i = 0; i < scamseq_len(parameters_copy); i++) {
+        SCAM_ASSERT(scamseq_get(parameters_copy, i)->type == SCAM_SYM, ast,
                     "lambda parameter must be symbol");
     }
-    scamval* parameters = scamval_pop(ast, 1);
+    scamval* parameters = scamseq_pop(ast, 1);
     // replace the 'lambda' symbol with 'begin'
-    scamval_replace(ast, 0, scamsym("begin"));
+    scamseq_replace(ast, 0, scamsym("begin"));
     if (env->type == SCAMENV_TMP)
         env->type = SCAMENV_CLOSURE;
     return scamfunction(env, parameters, ast);
@@ -93,10 +93,10 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
 // Evaluate a define statement
 scamval* eval_define(scamval* ast, scamenv* env) {
     SCAM_ASSERT_ARITY("define", ast, 3);
-    SCAM_ASSERT(scamval_get(ast, 1)->type == SCAM_SYM, ast,
+    SCAM_ASSERT(scamseq_get(ast, 1)->type == SCAM_SYM, ast,
                 "cannot define non-symbol");
-    scamval* k = scamval_pop(ast, 1);
-    scamval* v = eval(scamval_pop(ast, 1), env);
+    scamval* k = scamseq_pop(ast, 1);
+    scamval* v = eval(scamseq_pop(ast, 1), env);
     scamval_free(ast);
     if (v->type != SCAM_ERR) {
         scamenv_bind(env, k, v);
@@ -110,10 +110,10 @@ scamval* eval_define(scamval* ast, scamenv* env) {
 // Evaluate an if expression
 scamval* eval_if(scamval* ast, scamenv* env) {
     SCAM_ASSERT_ARITY("if", ast, 4);
-    scamval* cond = eval(scamval_pop(ast, 1), env);
+    scamval* cond = eval(scamseq_pop(ast, 1), env);
     if (cond->type == SCAM_BOOL) {
-        scamval* true_clause = scamval_pop(ast, 1);
-        scamval* false_clause = scamval_pop(ast, 1);
+        scamval* true_clause = scamseq_pop(ast, 1);
+        scamval* false_clause = scamseq_pop(ast, 1);
         scamval_free(ast);
         if (cond->vals.n) {
             scamval_free(cond);
@@ -133,9 +133,9 @@ scamval* eval_if(scamval* ast, scamenv* env) {
 
 // Evaluate an and expression
 scamval* eval_and(scamval* ast, scamenv* env) {
-    size_t n = scamval_len(ast) - 1;
+    size_t n = scamseq_len(ast) - 1;
     for (int i = 0; i < n; i++) {
-        scamval* v = eval(scamval_pop(ast, 1), env);
+        scamval* v = eval(scamseq_pop(ast, 1), env);
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
             scamval_free(v);
@@ -155,9 +155,9 @@ scamval* eval_and(scamval* ast, scamenv* env) {
 
 // Evaluate an or expression
 scamval* eval_or(scamval* ast, scamenv* env) {
-    size_t n = scamval_len(ast) - 1;
+    size_t n = scamseq_len(ast) - 1;
     for (int i = 0; i < n; i++) {
-        scamval* v = eval(scamval_pop(ast, 1), env);
+        scamval* v = eval(scamseq_pop(ast, 1), env);
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
             scamval_free(v);
@@ -179,22 +179,22 @@ scamval* eval_or(scamval* ast, scamenv* env) {
 scamval* eval_apply(scamval* ast, scamenv* env) {
     scamval* arglist = eval_list(ast, env);
     if (arglist->type == SCAM_ERR) return arglist;
-    scamval* fun_val = scamval_pop(arglist, 0);
+    scamval* fun_val = scamseq_pop(arglist, 0);
     if (fun_val->type == SCAM_FUNCTION) {
         // extract the function from the scamval, for convenience
         scamfun_t* fun = fun_val->vals.fun;
         // make sure the right number of arguments were given
-        size_t expected = scamval_len(fun->parameters);
-        size_t got = scamval_len(arglist);
+        size_t expected = scamseq_len(fun->parameters);
+        size_t got = scamseq_len(arglist);
         if (got != expected) {
             scamval_free(arglist);
             scamval_free(fun_val);
             return scamerr("'lambda' got %d argument(s), expected %d", 
                            got, expected);
         }
-        while (scamval_len(fun->parameters) > 0) {
-            scamenv_bind(fun->env, scamval_pop(fun->parameters, 0),
-                                   scamval_pop(arglist, 0));
+        while (scamseq_len(fun->parameters) > 0) {
+            scamenv_bind(fun->env, scamseq_pop(fun->parameters, 0),
+                                   scamseq_pop(arglist, 0));
         }
         scamval* ret = eval(fun->body, fun->env);
         // make sure there is something for scamval_free(fun_val) to free
@@ -215,14 +215,14 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
 }
 
 scamval* eval_list(scamval* ast, scamenv* env) {
-    for (int i = 0; i < scamval_len(ast); i++) {
-        scamval* v = eval(scamval_get(ast, i), env);
+    for (int i = 0; i < scamseq_len(ast); i++) {
+        scamval* v = eval(scamseq_get(ast, i), env);
         if (v->type != SCAM_ERR) {
-            scamval_set(ast, i, v);
+            scamseq_set(ast, i, v);
         } else {
             // the i'th node was freed by eval, so it must be replaced by an
             // allocated value
-            scamval_set(ast, i, scamnull());
+            scamseq_set(ast, i, scamnull());
             scamval_free(ast);
             return v;
         }

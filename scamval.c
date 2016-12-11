@@ -5,8 +5,8 @@
 #include "scamval.h"
 
 #define MAX_ERROR_SIZE 100
-#define ARRAY_SIZE_INITIAL 5
-#define ARRAY_SIZE_INCREMENT 5
+#define SEQ_SIZE_INITIAL 5
+#define SEQ_SIZE_INCREMENT 5
 
 // a wrapper around malloc that exits the program if malloc returns NULL
 void* my_malloc(size_t size) {
@@ -28,129 +28,90 @@ void* my_realloc(void* ptr, size_t size) {
     return ret;
 }
 
-array* array_init() {
-    array* ret = my_malloc(sizeof *ret);
-    ret->count = 0;
-    ret->mem_size = 0;
-    ret->root = NULL;
-    return ret;
-}
-
-void array_grow(array* arr) {
-    if (arr->root == NULL) {
-        arr->mem_size = ARRAY_SIZE_INITIAL;
-        arr->root = my_malloc(arr->mem_size * sizeof *arr->root);
-    } else {
-        arr->mem_size += ARRAY_SIZE_INCREMENT;
-        arr->root = my_realloc(arr->root, arr->mem_size * sizeof *arr->root);
-    }
-}
-
-void array_append(array* arr, scamval* v) {
-    size_t new_sz = arr->count + 1;
-    if (new_sz > arr->mem_size) {
-        array_grow(arr);
-    }
-    arr->count = new_sz;
-    arr->root[new_sz - 1] = v;
-}
-
-void array_prepend(array* arr, scamval* v) {
-    size_t new_sz = arr->count + 1;
-    if (new_sz > arr->mem_size) {
-        array_grow(arr);
-    }
-    arr->count = new_sz;
-    for (size_t i = new_sz - 1; i > 0; i--) {
-        arr->root[i] = arr->root[i - 1];
-    }
-    arr->root[0] = v;
-}
-
-array* array_copy(const array* arr) {
-    array* ret = array_init();
-    ret->root = my_malloc(arr->count * sizeof *ret->root);
-    ret->count = arr->count;
-    ret->mem_size = arr->count;
-    for (int i = 0; i < arr->count; i++) {
-        ret->root[i] = scamval_copy(arr->root[i]);
-    }
-    return ret;
-}
-
-void array_set(array* arr, size_t i, scamval* v) {
-    if (i >= 0 && i < arr->count) {
-        arr->root[i] = v;
-    }
-}
-
-scamval* array_get(const array* arr, size_t i) {
-    if (i >= 0 && i < arr->count) {
-        return arr->root[i];
-    } else {
-        return scamerr("attempted array access out of range");
-    }
-}
-
-scamval* array_pop(array* arr, size_t i) {
-    if (i >= 0 && i < arr->count) {
-        scamval* ret = arr->root[i];
-        for (size_t j = i; j < arr->count - 1; j++) {
-            arr->root[j] = arr->root[j + 1];
+void scamseq_free(scamval* seq) {
+    if (seq->vals.arr) {
+        for (int i = 0; i < seq->count; i++) {
+            scamval_free(seq->vals.arr[i]);
         }
-        arr->count--;
+        free(seq->vals.arr);
+    }
+}
+
+void scamseq_grow(scamval* seq, size_t min_new_sz) {
+    if (seq->vals.arr == NULL) {
+        seq->mem_size = SEQ_SIZE_INITIAL;
+        if (seq->mem_size < min_new_sz)
+            seq->mem_size = min_new_sz;
+        seq->vals.arr = my_malloc(seq->mem_size * sizeof *seq->vals.arr);
+    } else {
+        // update the memory size and make sure it is at least big enough as
+        // requested
+        seq->mem_size += SEQ_SIZE_INCREMENT;
+        if (seq->mem_size < min_new_sz)
+            seq->mem_size = min_new_sz;
+        seq->vals.arr = my_realloc(seq->vals.arr, 
+                                   seq->mem_size * sizeof *seq->vals.arr);
+    }
+}
+
+void scamseq_append(scamval* seq, scamval* v) {
+    size_t new_sz = seq->count + 1;
+    if (new_sz > seq->mem_size) {
+        scamseq_grow(seq, new_sz);
+    }
+    seq->count = new_sz;
+    seq->vals.arr[new_sz - 1] = v;
+}
+
+void scamseq_prepend(scamval* seq, scamval* v) {
+    size_t new_sz = seq->count + 1;
+    if (new_sz > seq->mem_size) {
+        scamseq_grow(seq, new_sz);
+    }
+    seq->count = new_sz;
+    for (size_t i = new_sz - 1; i > 0; i--) {
+        seq->vals.arr[i] = seq->vals.arr[i - 1];
+    }
+    seq->vals.arr[0] = v;
+}
+
+size_t scamseq_len(const scamval* seq) {
+    return seq->count;
+}
+
+void scamseq_set(scamval* seq, size_t i, scamval* v) {
+    if (i >= 0 && i < seq->count) {
+        seq->vals.arr[i] = v;
+    }
+}
+
+void scamseq_replace(scamval* seq, size_t i, scamval* v) {
+    scamval_free(scamseq_get(seq, i));
+    scamseq_set(seq, i, v);
+}
+
+scamval* scamseq_get(const scamval* seq, size_t i) {
+    if (i >= 0 && i < seq->count) {
+        return seq->vals.arr[i];
+    } else {
+        return scamerr("attempted sequence access out of range");
+    }
+}
+
+scamval* scamseq_pop(scamval* seq, size_t i) {
+    if (i >= 0 && i < seq->count) {
+        scamval* ret = seq->vals.arr[i];
+        for (size_t j = i; j < seq->count - 1; j++) {
+            seq->vals.arr[j] = seq->vals.arr[j + 1];
+        }
+        seq->count--;
         return ret;
     } else {
-        return scamerr("attempted array access out of range");
+        return scamerr("attempted sequence access out of range");
     }
 }
 
-size_t array_len(const array* arr) {
-    return arr->count;
-}
-
-void array_free(array* arr) {
-    if (arr) {
-        if (arr->root) {
-            for (int i = 0; i < arr->count; i++) {
-                scamval_free(arr->root[i]);
-            }
-            free(arr->root);
-        }
-        free(arr);
-    }
-}
-
-void scamval_append(scamval* seq, scamval* v) {
-    array_append(seq->vals.arr, v);
-}
-
-void scamval_prepend(scamval* seq, scamval* v) {
-    array_prepend(seq->vals.arr, v);
-}
-
-size_t scamval_len(const scamval* seq) {
-    return seq->vals.arr->count;
-}
-
-void scamval_set(scamval* seq, size_t i, scamval* v) {
-    array_set(seq->vals.arr, i, v);
-}
-
-void scamval_replace(scamval* seq, size_t i, scamval* v) {
-    scamval_free(scamval_get(seq, i));
-    scamval_set(seq, i, v);
-}
-
-scamval* scamval_get(const scamval* seq, size_t i) {
-    return array_get(seq->vals.arr, i);
-}
-
-scamval* scamval_pop(scamval* seq, size_t i) {
-    return array_pop(seq->vals.arr, i);
-}
-
-size_t scamval_strlen(const scamval* s) {
+size_t scamstr_len(const scamval* s) {
     return strlen(s->vals.s);
 }
 
@@ -175,20 +136,22 @@ scamval* scambool(int b) {
     return ret;
 }
 
-// Make a scamval that is internally an array (lists, quotes and code)
-scamval* scam_internal_array(int type) {
+// Make a scamval that is internally a sequence (lists, quotes and code)
+scamval* scam_internal_seq(int type) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = type;
-    ret->vals.arr = array_init();
+    ret->count = 0;
+    ret->mem_size = 0;
+    ret->vals.arr = NULL;
     return ret;
 }
 
 scamval* scamlist() {
-    return scam_internal_array(SCAM_LIST);
+    return scam_internal_seq(SCAM_LIST);
 }
 
 scamval* scamcode() {
-    return scam_internal_array(SCAM_SEXPR);
+    return scam_internal_seq(SCAM_SEXPR);
 }
 
 // Make a scamval that is internally a string (strings, symbols and errors)
@@ -299,7 +262,13 @@ scamval* scamval_copy(const scamval* v) {
             ret->vals.d = v->vals.d; break;
         case SCAM_LIST:
         case SCAM_SEXPR:
-            ret->vals.arr = array_copy(v->vals.arr); break;
+            ret->vals.arr = my_malloc(v->count * sizeof *v->vals.arr);
+            ret->count = v->count;
+            ret->mem_size = v->count;
+            for (int i = 0; i < v->count; i++) {
+                ret->vals.arr[i] = scamval_copy(v->vals.arr[i]);
+            }
+            break;
         case SCAM_STR:
         case SCAM_SYM:
         case SCAM_ERR:
@@ -343,11 +312,11 @@ int scamval_numeric_eq(const scamval* v1, const scamval* v2) {
 }
 
 int scamval_list_eq(const scamval* v1, const scamval* v2) {
-    size_t n1 = scamval_len(v1);
-    size_t n2 = scamval_len(v2);
+    size_t n1 = scamseq_len(v1);
+    size_t n2 = scamseq_len(v2);
     if (n1 == n2) {
         for (int i = 0; i < n1; i++) {
-            if (!scamval_eq(scamval_get(v1, i), scamval_get(v2, i))) {
+            if (!scamval_eq(scamseq_get(v1, i), scamseq_get(v2, i))) {
                 return 0;
             }
         }
@@ -385,7 +354,7 @@ void scamval_free(scamval* v) {
     switch (v->type) {
         case SCAM_LIST:
         case SCAM_SEXPR:
-            array_free(v->vals.arr); break;
+            scamseq_free(v); break;
         case SCAM_STR:
         case SCAM_SYM:
         case SCAM_ERR:
@@ -408,8 +377,8 @@ scamenv* scamenv_init(scamenv* enclosing) {
     scamenv* ret = my_malloc(sizeof *ret);
     ret->type = SCAMENV_NORMAL;
     ret->enclosing = enclosing;
-    ret->syms = array_init();
-    ret->vals = array_init();
+    ret->syms = scamlist();
+    ret->vals = scamlist();
     return ret;
 }
 
@@ -424,36 +393,36 @@ void scamenv_set_func_type(scamval* v) {
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
-    for (int i = 0; i < array_len(env->syms); i++) {
-        if (scamval_eq(array_get(env->syms, i), sym)) {
+    for (int i = 0; i < scamseq_len(env->syms); i++) {
+        if (scamval_eq(scamseq_get(env->syms, i), sym)) {
             // free the symbol and the old value
             scamval_free(sym);
-            scamval* v = array_get(env->vals, i);
+            scamval* v = scamseq_get(env->vals, i);
             scamenv_set_func_type(v);
             scamval_free(v);
-            array_set(env->vals, i, val);
+            scamseq_set(env->vals, i, val);
             return;
         }
     }
-    array_append(env->syms, sym);
-    array_append(env->vals, val);
+    scamseq_append(env->syms, sym);
+    scamseq_append(env->vals, val);
 }
 
 void scamenv_free(scamenv* env) {
     if (env) {
-        for (int i = 0; i < array_len(env->vals); i++) {
-            scamenv_set_func_type(array_get(env->vals, i));
+        for (int i = 0; i < scamseq_len(env->vals); i++) {
+            scamenv_set_func_type(scamseq_get(env->vals, i));
         }
-        array_free(env->syms);
-        array_free(env->vals);
+        scamval_free(env->syms);
+        scamval_free(env->vals);
         free(env);
     }
 }
 
 scamval* scamenv_lookup(scamenv* env, scamval* name) {
-    for (int i = 0; i < env->syms->count; i++) {
-        if (strcmp(env->syms->root[i]->vals.s, name->vals.s) == 0) {
-            return scamval_copy(env->vals->root[i]);
+    for (int i = 0; i < scamseq_len(env->syms); i++) {
+        if (strcmp(scamseq_get(env->syms, i)->vals.s, name->vals.s) == 0) {
+            return scamval_copy(scamseq_get(env->vals, i));
         }
     }
     if (env->enclosing != NULL) {
@@ -463,12 +432,11 @@ scamval* scamenv_lookup(scamenv* env, scamval* name) {
     }
 }
 
-void array_print(const array* arr, char* open, char* close) {
-    if (!arr) return;
+void scamseq_print(const scamval* seq, char* open, char* close) {
     printf("%s", open);
-    for (int i = 0; i < arr->count; i++) {
-        scamval_print(arr->root[i]);
-        if (i != arr->count - 1)
+    for (int i = 0; i < seq->count; i++) {
+        scamval_print(seq->vals.arr[i]);
+        if (i != seq->count - 1)
             printf(" ");
     }
     printf("%s", close);
@@ -480,8 +448,8 @@ void scamval_print(const scamval* v) {
         case SCAM_INT: printf("%lli", v->vals.n); break;
         case SCAM_DEC: printf("%f", v->vals.d); break;
         case SCAM_BOOL: printf("%s", v->vals.n ? "true" : "false"); break;
-        case SCAM_LIST: array_print(v->vals.arr, "[", "]"); break;
-        case SCAM_SEXPR: array_print(v->vals.arr, "(", ")"); break;
+        case SCAM_LIST: scamseq_print(v, "[", "]"); break;
+        case SCAM_SEXPR: scamseq_print(v, "(", ")"); break;
         case SCAM_FUNCTION:
         case SCAM_BUILTIN: printf("<Scam function>"); break;
         case SCAM_PORT: printf("<Scam port>"); break;
@@ -507,8 +475,8 @@ void scamval_print_ast(const scamval* ast, int indent) {
         printf("  ");
     if (ast->type == SCAM_SEXPR) {
         printf("EXPR\n");
-        for (int i = 0; i < scamval_len(ast); i++) {
-            scamval_print_ast(scamval_get(ast, i), indent + 1);
+        for (int i = 0; i < scamseq_len(ast); i++) {
+            scamval_print_ast(scamseq_get(ast, i), indent + 1);
         }
     } else {
         scamval_println(ast);

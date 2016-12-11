@@ -56,7 +56,7 @@ scamval* parse_file(char* fp) {
 scamval* match_program(Tokenizer* tz) {
     scamval* ast = match_sexpr_plus(tz);
     if (ast->type != SCAM_ERR) {
-        scamval_prepend(ast, scamsym("begin"));
+        scamseq_prepend(ast, scamsym("begin"));
         return ast;
     } else {
         return ast;
@@ -95,20 +95,20 @@ scamval* match_sexpr_plus(Tokenizer* tz) {
     scamval* ast = scamcode();
     scamval* first_expr = match_sexpr(tz);
     if (first_expr->type != SCAM_ERR) {
-        scamval_append(ast, first_expr);
+        scamseq_append(ast, first_expr);
     } else {
         scamval_free(ast);
         return first_expr;
     }
     while (starts_expr(tz->tkn.type))
-        scamval_append(ast, match_sexpr(tz));
+        scamseq_append(ast, match_sexpr(tz));
     return ast;
 }
 
 scamval* match_sexpr_star(Tokenizer* tz) {
     scamval* ast = scamcode();
     while (starts_expr(tz->tkn.type))
-        scamval_append(ast, match_sexpr(tz));
+        scamseq_append(ast, match_sexpr(tz));
     return ast;
 }
 
@@ -170,11 +170,11 @@ typedef int (transform_pred_t)(scamval*);
 typedef void (transform_func_t)(scamval*);
 
 int transform_define_pred(scamval* ast) {
-    if (scamval_len(ast) >= 3) {
-        scamval* first = scamval_get(ast, 0);
-        scamval* second = scamval_get(ast, 1);
+    if (scamseq_len(ast) >= 3) {
+        scamval* first = scamseq_get(ast, 0);
+        scamval* second = scamseq_get(ast, 1);
         if (first->type == SCAM_SYM && strcmp(first->vals.s, "define") == 0) {
-            if (second->type == SCAM_SEXPR && scamval_len(second) >= 1) {
+            if (second->type == SCAM_SEXPR && scamseq_len(second) >= 1) {
                 return 1;
             }
         }
@@ -183,18 +183,18 @@ int transform_define_pred(scamval* ast) {
 }
 
 void transform_define(scamval* ast) {
-    scamval* body = scamval_pop(ast, 2);
+    scamval* body = scamseq_pop(ast, 2);
     // ast == (define (...))
-    scamval* parameters = scamval_pop(ast, 1);
+    scamval* parameters = scamseq_pop(ast, 1);
     // ast == (define)
-    scamval* name = scamval_pop(parameters, 0);
-    scamval_append(ast, name);
+    scamval* name = scamseq_pop(parameters, 0);
+    scamseq_append(ast, name);
     // ast == (define name)
     scamval* lambda = scamcode();
-    scamval_append(lambda, scamsym("lambda"));
-    scamval_append(lambda, parameters);
-    scamval_append(lambda, body);
-    scamval_append(ast, lambda);
+    scamseq_append(lambda, scamsym("lambda"));
+    scamseq_append(lambda, parameters);
+    scamseq_append(lambda, body);
+    scamseq_append(ast, lambda);
     // ast == (define name (lambda (...) body))
 }
 
@@ -203,8 +203,8 @@ void do_transform(scamval* ast, transform_pred_t pred, transform_func_t func) {
         if (pred(ast)) {
             func(ast);
         }
-        for (int i = 0; i < scamval_len(ast); i++) {
-            do_transform(scamval_get(ast, i), pred, func);
+        for (int i = 0; i < scamseq_len(ast); i++) {
+            do_transform(scamseq_get(ast, i), pred, func);
         }
     }
 }

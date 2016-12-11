@@ -15,47 +15,21 @@ typedef struct scamval scamval;
 struct scamenv;
 typedef struct scamenv scamenv;
 
-typedef struct {
-    size_t count;
-    size_t mem_size;
-    scamval** root;
-} array;
-
 // Other convenient typedefs
 typedef scamval* (scambuiltin_t)(scamval*);
 typedef FILE scamport_t;
 
-// Basic array functions
-array* array_init();
-array* array_copy(const array*);
-void array_free(array*);
-size_t array_len(const array*);
-
-// Return a copy of the given array element (do not free this value!)
-scamval* array_get(const array*, size_t);
-
-// Return the given array element (the caller is responsible for freeing it)
-scamval* array_pop(array*, size_t);
-
-// Set the given array element WITHOUT freeing what was previously there
-void array_set(array*, size_t, scamval*);
-
-// The caller of these functions surrenders control of the given value to the
-// array, so don't free a value after appending or prepending it!
-void array_append(array*, scamval*);
-void array_prepend(array*, scamval*);
-
-// Useful wrapper functions around array methods
-scamval* scamval_get(const scamval*, size_t);
-scamval* scamval_pop(scamval*, size_t);
-void scamval_set(scamval*, size_t, scamval*);
+// Useful functions for lists and S-expressions
+scamval* scamseq_get(const scamval*, size_t);
+scamval* scamseq_pop(scamval*, size_t);
+void scamseq_set(scamval*, size_t, scamval*);
 // same as scamval_set, except the previous element is free'd
-void scamval_replace(scamval*, size_t, scamval*);
-size_t scamval_len(const scamval*);
-void scamval_append(scamval* seq, scamval*);
-void scamval_prepend(scamval* seq, scamval*);
+void scamseq_replace(scamval*, size_t, scamval*);
+size_t scamseq_len(const scamval*);
+void scamseq_append(scamval* seq, scamval*);
+void scamseq_prepend(scamval* seq, scamval*);
 
-size_t scamval_strlen(const scamval*);
+size_t scamstr_len(const scamval*);
 
 typedef struct {
     scamenv* env;
@@ -65,11 +39,13 @@ typedef struct {
 
 struct scamval {
     int type;
+    size_t count, mem_size; // used by SCAM_LIST, SCAM_SEXPR and SCAM_STR
     union {
         long long n; // used by SCAM_INT and SCAM_BOOL
         double d; // SCAM_DEC
         char* s; // SCAM_STR, SCAM_SYM and SCAM_ERR
-        array* arr; // SCAM_LIST and SCAM_SEXPR
+        //array* arr; // SCAM_LIST and SCAM_SEXPR
+        scamval** arr;
         scamfun_t* fun; // SCAM_FUNCTION
         scamport_t* port; // SCAM_PORT
         scambuiltin_t* bltin; // SCAM_BUILTIN
@@ -115,8 +91,9 @@ struct scamenv {
     // type determines how the environment is freed 
     int type;
     scamenv* enclosing;
-    array* syms;
-    array* vals;
+    // symbols and values are stored as scamval lists
+    scamval* syms;
+    scamval* vals;
 };
 
 scamenv* scamenv_init(scamenv* enclosing);
