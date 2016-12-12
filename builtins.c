@@ -495,6 +495,17 @@ scamval* builtin_input(scamval* args) {
     return ret;
 }
 
+scamval* builtin_assert(scamval* args) {
+    TYPECHECK_ARGS("assert", args, 1, SCAM_BOOL);
+    scamval* cond = scamseq_get(args, 0);
+    if (cond->vals.n) {
+        return scambool(1);
+    } else {
+        return scamerr("failed assert at line %d, col %d", cond->line, 
+                                                           cond->col);
+    }
+}
+
 scamval* builtin_begin(scamval* args) {
     TYPECHECK_ALL("begin", args, 1, SCAM_ANY);
     return scamseq_pop(args, scamseq_len(args) - 1);
@@ -519,23 +530,35 @@ scamval* generic_comparison(char* name, scamval* args, comp_func op) {
 
 int comp_gt(double x, double y) { return x > y; }
 scamval* builtin_gt(scamval* args) {
-    return generic_comparison(">", args, comp_gt);
+    TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
+    scamval* left = scamseq_get(args, 0);
+    scamval* right = scamseq_get(args, 1);
+    return scambool(scamval_gt(left, right));
 }
 
 int comp_lt(double x, double y) { return x < y; }
 scamval* builtin_lt(scamval* args) {
-    return generic_comparison("<", args, comp_lt);
+    TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
+    scamval* left = scamseq_get(args, 0);
+    scamval* right = scamseq_get(args, 1);
+    return scambool(!scamval_gt(left, right) && !scamval_eq(left, right));
 }
 
 
 int comp_gte(double x, double y) { return x >= y; }
 scamval* builtin_gte(scamval* args) {
-    return generic_comparison(">=", args, comp_gte);
+    TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
+    scamval* left = scamseq_get(args, 0);
+    scamval* right = scamseq_get(args, 1);
+    return scambool(scamval_gt(left, right) || scamval_eq(left, right));
 }
 
 int comp_lte(double x, double y) { return x <= y; }
 scamval* builtin_lte(scamval* args) {
-    return generic_comparison("<=", args, comp_lte);
+    TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
+    scamval* left = scamseq_get(args, 0);
+    scamval* right = scamseq_get(args, 1);
+    return scambool(!scamval_gt(left, right));
 }
 
 scamval* builtin_not(scamval* args) {
@@ -585,4 +608,6 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "print", builtin_print);
     add_builtin(env, "println", builtin_println);
     add_builtin(env, "input", builtin_input);
+    // miscellaneous functions
+    add_builtin(env, "assert", builtin_assert);
 }

@@ -120,6 +120,8 @@ scamval* match_value(Tokenizer* tz) {
             return match_sequence(tz, SCAM_LIST, TKN_LBRACKET, TKN_RBRACKET);
         } else {
             scamval* ret = scamval_from_token(&tz->tkn);
+            ret->line = tokenizer_line(tz);
+            ret->col = tokenizer_col(tz);
             tokenizer_advance(tz);
             return ret;
         }

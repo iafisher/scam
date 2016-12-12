@@ -174,6 +174,8 @@ scamval* scamnull() {
 scamval* scamval_copy(const scamval* v) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = v->type;
+    ret->line = v->line;
+    ret->col = v->col;
     switch (v->type) {
         case SCAM_BOOL:
         case SCAM_INT: 
@@ -244,7 +246,7 @@ int scamval_list_eq(const scamval* v1, const scamval* v2) {
 }
 
 int scamval_eq(const scamval* v1, const scamval* v2) {
-    if (is_numeric_type(v1) && is_numeric_type(v2)) {
+    if (scamval_typecheck(v1, SCAM_NUM) && scamval_typecheck(v2, SCAM_NUM)) {
         return scamval_numeric_eq(v1, v2);
     } else if (v1->type == v2->type) {
         switch (v1->type) {
@@ -261,6 +263,33 @@ int scamval_eq(const scamval* v1, const scamval* v2) {
             default:
                 return 0;
         }
+    } else {
+        return 0;
+    }
+}
+
+int scamval_numeric_gt(const scamval* v1, const scamval* v2) {
+    if (v1->type == SCAM_INT) {
+        if (v2->type == SCAM_INT) {
+            return v1->vals.n > v2->vals.n;
+        } else {
+            return v1->vals.n > v2->vals.d;
+        }
+    } else {
+        if (v2->type == SCAM_INT) {
+            return v1->vals.d > v2->vals.n;
+        } else {
+            return v1->vals.d > v2->vals.d;
+        }
+    }
+}
+
+int scamval_gt(const scamval* v1, const scamval* v2) {
+    if (scamval_typecheck(v1, SCAM_NUM) && scamval_typecheck(v2, SCAM_NUM)) {
+        return scamval_numeric_gt(v1, v2);
+    } else if (scamval_typecheck(v1, SCAM_STR) && 
+               scamval_typecheck(v2, SCAM_STR)) {
+        return strcmp(v1->vals.s, v2->vals.s) > 0;
     } else {
         return 0;
     }

@@ -4,6 +4,7 @@
 #include "tests.h"
 
 void evaltest_arith(scamenv*);
+void evaltest_cmp(scamenv*);
 void evaltest_lists(scamenv*);
 void evaltest_val_def(scamenv*);
 void evaltest_fun_def(scamenv*);
@@ -17,6 +18,7 @@ void eval_tests() {
     scamenv* env = scamenv_init(NULL);
     register_builtins(env);
     evaltest_arith(env);
+    evaltest_cmp(env);
     evaltest_lists(env);
     evaltest_val_def(env);
     evaltest_fun_def(env);
@@ -32,6 +34,8 @@ void evaltest(char*, scamenv*, scamval* what_we_expect);
 void evaltest_list(char*, scamenv*, int n, ...);
 void evaltest_err(char*, scamenv*);
 void evaldef(char*, scamenv*);
+void evaltrue(char*, scamenv*);
+void evalfalse(char*, scamenv*);
 
 void evaltest_arith(scamenv* env) {
     // test addition
@@ -84,6 +88,26 @@ void evaltest_arith(scamenv* env) {
     evaltest_err("(%)", env);
     evaltest_err("(% 10)", env);
     evaltest_err("(% 10 \"abc\")", env);
+}
+
+void evaltest_cmp(scamenv* env) {
+    // test numeric =
+    evaltrue("(= 1 1)", env);
+    evaltrue("(= 1 1.0)", env);
+    evaltrue("(= 1.0 1)", env);
+    evalfalse("(= 1  0.999)", env);
+    evalfalse("(= 10 \"10\")", env);
+    // test string =
+    evaltrue("(= \"abc\" \"abc\")", env);
+    evaltrue("(= \"\" \"\")", env);
+    evalfalse("(= \"hello\" \"hallo\")", env);
+    evalfalse("(= \"short\" \"a longer string\")", env);
+    // test list =
+    evaltrue("(= [1 2 3] [1 2 3])", env);
+    evaltrue("(= [1 2 3] [1.0 2.0 3.0])", env);
+    evaltrue("(= [] [])", env);
+    evaltrue("(= [\"a string\" 10 true] [\"a string\" 10 true])", env);
+    evalfalse("(= [1 2 3] [1 2 3 4])", env);
 }
 
 void evaltest_lists(scamenv* env) {
@@ -197,4 +221,12 @@ void evaldef(char* line, scamenv* env) {
         scamval_println(v);
     }
     scamval_free(v);
+}
+
+void evaltrue(char* line, scamenv* env) {
+    evaltest(line, env, scambool(1));
+}
+
+void evalfalse(char* line, scamenv* env) {
+    evaltest(line, env, scambool(0));
 }

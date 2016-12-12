@@ -1,10 +1,12 @@
 #include "scamtypes.h"
 
-int scamval_typecheck(scamval* v, int type) {
+int scamval_typecheck(const scamval* v, int type) {
     switch (type) {
         case SCAM_ANY: return 1;
         case SCAM_SEQ: return v->type == SCAM_LIST || v->type == SCAM_STR;
         case SCAM_NUM: return v->type == SCAM_INT || v->type == SCAM_DEC;
+        case SCAM_CMP: return v->type == SCAM_STR || v->type == SCAM_INT ||
+                              v->type == SCAM_DEC;
         default: return v->type == type;
     }
 }
@@ -52,8 +54,10 @@ const char* scamtype_name(int type) {
         case SCAM_SYM: return "symbol";
         case SCAM_ERR: return "error";
         case SCAM_NULL: return "null";
+        // abstract types
         case SCAM_SEQ: return "list or string";
         case SCAM_NUM: return "integer or decimal";
+        case SCAM_CMP: return "integer, decimal or string";
         case SCAM_ANY: return "any value";
         default: return "bad scamval type";
     }
@@ -73,8 +77,10 @@ const char* scamtype_debug_name(int type) {
         case SCAM_SYM: return "SCAM_SYM";
         case SCAM_ERR: return "SCAM_ERR";
         case SCAM_NULL: return "SCAM_NULL";
+        // abstract types
         case SCAM_SEQ: return "SCAM_SEQ";
         case SCAM_NUM: return "SCAM_NUM";
+        case SCAM_CMP: return "SCAM_CMP";
         case SCAM_ANY: return "SCAM_ANY";
         default: return "bad scamval type";
     }

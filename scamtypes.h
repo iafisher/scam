@@ -6,7 +6,7 @@ const char* scamtype_name(int type);
 const char* scamtype_debug_name(int type);
 
 // Check if the scamvalue belongs to the given type
-int scamval_typecheck(scamval*, int type);
+int scamval_typecheck(const scamval*, int type);
 
 // Return the narrowest type applicable to both types
 int narrowest_type(int, int);

@@ -7,7 +7,7 @@ enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_FUNCTION,
       SCAM_PORT, SCAM_BUILTIN, SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL};
 
 // Type values that are only used for typechecking
-enum {SCAM_SEQ=1000, SCAM_NUM, SCAM_ANY};
+enum {SCAM_SEQ=1000, SCAM_NUM, SCAM_CMP, SCAM_ANY};
 
 // Forward declaration of scamval and scamenv
 struct scamval;
@@ -59,6 +59,7 @@ typedef struct {
 
 struct scamval {
     int type;
+    int line, col;
     size_t count, mem_size; // used by SCAM_LIST, SCAM_SEXPR and SCAM_STR
     union {
         long long n; // used by SCAM_INT and SCAM_BOOL
@@ -104,8 +105,9 @@ void scamval_println(const scamval*);
 void scamval_print_debug(const scamval*);
 void scamval_print_ast(const scamval*, int indent);
 
-// Return 1 if the two values are equal
+// Comparisons between scamvals
 int scamval_eq(const scamval*, const scamval*);
+int scamval_gt(const scamval*, const scamval*);
 
 struct scamenv {
     scamenv* enclosing;
