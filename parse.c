@@ -92,7 +92,7 @@ scamval* match_sexpr(Tokenizer* tz) {
 }
 
 scamval* match_sexpr_plus(Tokenizer* tz) {
-    scamval* ast = scamcode();
+    scamval* ast = scamsexpr();
     scamval* first_expr = match_sexpr(tz);
     if (first_expr->type != SCAM_ERR) {
         scamseq_append(ast, first_expr);
@@ -106,7 +106,7 @@ scamval* match_sexpr_plus(Tokenizer* tz) {
 }
 
 scamval* match_sexpr_star(Tokenizer* tz) {
-    scamval* ast = scamcode();
+    scamval* ast = scamsexpr();
     while (starts_expr(tz->tkn.type))
         scamseq_append(ast, match_sexpr(tz));
     return ast;
@@ -184,19 +184,17 @@ int transform_define_pred(scamval* ast) {
 
 void transform_define(scamval* ast) {
     // ast == (define (...) body)
-    scamval* lambda = scamcode();
     scamval* parameters = scamseq_pop(ast, 1);
     // ast == (define body)
     scamval* name = scamseq_pop(parameters, 0);
-    scamseq_append(lambda, scamsym("lambda"));
-    scamseq_append(lambda, parameters);
-    scamval* lambda_body = scamcode();
+    scamval* lambda_body = scamsexpr();
     scamseq_append(lambda_body, scamsym("begin"));
     // lambda == (lambda (...))
     while (scamseq_len(ast) > 1)
         scamseq_append(lambda_body, scamseq_pop(ast, 1));
-    scamseq_append(lambda, lambda_body);
     // ast == (define)
+    scamval* lambda = scamsexpr_from_vals(3, scamsym("lambda"), parameters,
+                                             lambda_body);
     // lambda == (lambda (...) body)
     scamseq_append(ast, name);
     scamseq_append(ast, lambda);

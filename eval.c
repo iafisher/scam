@@ -1,6 +1,7 @@
 #include <string.h>
 #include "eval.h"
 #include "parse.h"
+#include "scamtypes.h"
 
 #define SCAM_ASSERT(cond, ast, err, ...) { \
     if (!(cond)) { \

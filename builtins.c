@@ -5,6 +5,7 @@
 #include <string.h>
 #include "builtins.h"
 #include "eval.h"
+#include "scamtypes.h"
 
 #define TYPECHECK_ARGS(name, args, n, ...) { \
     scamval* check_result = typecheck_args(name, args, n, ##__VA_ARGS__); \
@@ -69,22 +70,6 @@ scamval* typecheck_all(char* name, scamval* args, int min, int type_we_need) {
     }
     return NULL;
 }
-
-// Return SCAM_INT if all args are ints, SCAM_DEC if at least one is a decimal,
-// or the first non-numeric type if one is found
-int args_type(scamval* args) {
-    int found_decimal = 0;
-    for (int i = 0; i < scamseq_len(args); i++) {
-        int type = scamseq_get(args, i)->type;
-        if (type == SCAM_DEC) {
-            found_decimal = 1;
-        } else if (type != SCAM_INT) {
-            return type;
-        }
-    }
-    return found_decimal ? SCAM_DEC : SCAM_INT;
-}
-
 
 typedef long long (int_arith_func)(long long, long long);
 scamval* generic_int_arith(char* name, scamval* args, int_arith_func op) {
@@ -381,8 +366,7 @@ scamval* builtin_prepend(scamval* args) {
     return list_arg;
 }
 
-scamval* builtin_concat(scamval* args) {
-    TYPECHECK_ALL("concat", args, 2, SCAM_LIST);
+scamval* builtin_list_concat(scamval* args) {
     size_t n = scamseq_len(args);
     scamval* first_arg = scamseq_pop(args, 0);
     for (int i = 1; i < n; i++) {
@@ -393,6 +377,31 @@ scamval* builtin_concat(scamval* args) {
         }
     }
     return first_arg;
+}
+
+scamval* builtin_str_concat(scamval* args) {
+    size_t n = scamseq_len(args);
+    size_t total_length = 0;
+    for (int i = 0; i < n; i++) {
+        total_length += scamstr_len(scamseq_get(args, i));
+    }
+    char* s = my_malloc(total_length + 1);
+    for (int i = 0; i < n; i++) {
+        strcat(s, scamseq_get(args, i)->vals.s);
+    }
+    return scamstr(s);
+}
+
+scamval* builtin_concat(scamval* args) {
+    TYPECHECK_ALL("concat", args, 2, SCAM_SEQ);
+    int narrowest_type = scamseq_narrowest_type(args);
+    if (narrowest_type == SCAM_LIST) {
+        return builtin_list_concat(args);
+    } else if (narrowest_type == SCAM_STR) {
+        return builtin_str_concat(args);
+    } else {
+        return scamerr("cannot concatenate lists and strings");
+    }
 }
 
 scamval* builtin_find(scamval* args) {

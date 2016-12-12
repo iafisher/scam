@@ -9,9 +9,6 @@ enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_FUNCTION,
 // Type values that are only used for typechecking
 enum {SCAM_SEQ=1000, SCAM_NUM, SCAM_ANY};
 
-const char* scamtype_name(int type);
-const char* scamtype_debug_name(int type);
-
 // Forward declaration of scamval and scamenv
 struct scamval;
 typedef struct scamval scamval;
@@ -47,6 +44,9 @@ size_t scamstr_len(const scamval*);
 void scamseq_append(scamval* seq, scamval* v);
 void scamseq_prepend(scamval* seq, scamval* v);
 
+// Free the internal sequence of a scamval, without freeing the actual value
+void scamseq_free(scamval*);
+
 typedef struct {
     scamenv* env; // the environment the function was created in
     scamval* parameters;
@@ -72,7 +72,8 @@ scamval* scamint(long long);
 scamval* scamdec(double);
 scamval* scambool(int);
 scamval* scamlist();
-scamval* scamcode();
+scamval* scamsexpr();
+scamval* scamsexpr_from_vals(size_t, ...);
 scamval* scamport(FILE*);
 scamval* scamstr(const char*);
 // Create a string from the first n characters of the given string
@@ -88,7 +89,6 @@ scamval* scamnull();
 // Useful error message constructors
 scamval* scamerr_arity(const char* name, size_t got, size_t expected);
 scamval* scamerr_min_arity(const char* name, size_t got, size_t expected);
-scamval* scamerr_type(const char* name, size_t pos, int got, int expected);
 
 // Return a copy of the given value
 scamval* scamval_copy(const scamval*);
@@ -102,9 +102,6 @@ void scamval_print_ast(const scamval*, int indent);
 
 // Return 1 if the two values are equal
 int scamval_eq(const scamval*, const scamval*);
-
-// Check if the scamvalue belongs to the given type
-int scamval_typecheck(scamval*, int type);
 
 struct scamenv {
     scamenv* enclosing;
@@ -129,3 +126,7 @@ void scamenv_bind(scamenv*, scamval* sym, scamval* val);
 // Lookup the symbol in the environment, returning a copy of the value if it
 // exists and an error if it doesn't
 scamval* scamenv_lookup(scamenv*, scamval* sym);
+
+// Wrappers that exit the program if allocation fails
+void* my_malloc(size_t);
+void* my_realloc(void*, size_t);

@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include "parse.h"
+#include "scamtypes.h"
 
 void parsetest(char* line, int n, ...);
 void parsetest_lit(char* line, int type_we_want);

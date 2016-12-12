@@ -3,12 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "scamval.h"
+#include "scamtypes.h"
 
 #define MAX_ERROR_SIZE 100
-#define SEQ_SIZE_INITIAL 5
-#define SEQ_SIZE_INCREMENT 5
 
-// a wrapper around malloc that exits the program if malloc returns NULL
 void* my_malloc(size_t size) {
     void* ret = malloc(size);
     if (ret == NULL) {
@@ -18,7 +16,6 @@ void* my_malloc(size_t size) {
     return ret;
 }
 
-// a wrapper around realloc that exits the program if realloc returns NULL
 void* my_realloc(void* ptr, size_t size) {
     void* ret = realloc(ptr, size);
     if (ret == NULL) {
@@ -26,93 +23,6 @@ void* my_realloc(void* ptr, size_t size) {
         exit(EXIT_FAILURE);
     }
     return ret;
-}
-
-void scamseq_free(scamval* seq) {
-    if (seq->vals.arr) {
-        for (int i = 0; i < seq->count; i++) {
-            scamval_free(seq->vals.arr[i]);
-        }
-        free(seq->vals.arr);
-    }
-}
-
-void scamseq_grow(scamval* seq, size_t min_new_sz) {
-    if (seq->vals.arr == NULL) {
-        seq->mem_size = SEQ_SIZE_INITIAL;
-        if (seq->mem_size < min_new_sz)
-            seq->mem_size = min_new_sz;
-        seq->vals.arr = my_malloc(seq->mem_size * sizeof *seq->vals.arr);
-    } else {
-        // update the memory size and make sure it is at least big enough as
-        // requested
-        seq->mem_size += SEQ_SIZE_INCREMENT;
-        if (seq->mem_size < min_new_sz)
-            seq->mem_size = min_new_sz;
-        seq->vals.arr = my_realloc(seq->vals.arr, 
-                                   seq->mem_size * sizeof *seq->vals.arr);
-    }
-}
-
-void scamseq_append(scamval* seq, scamval* v) {
-    size_t new_sz = seq->count + 1;
-    if (new_sz > seq->mem_size) {
-        scamseq_grow(seq, new_sz);
-    }
-    seq->count = new_sz;
-    seq->vals.arr[new_sz - 1] = v;
-}
-
-void scamseq_prepend(scamval* seq, scamval* v) {
-    size_t new_sz = seq->count + 1;
-    if (new_sz > seq->mem_size) {
-        scamseq_grow(seq, new_sz);
-    }
-    seq->count = new_sz;
-    for (size_t i = new_sz - 1; i > 0; i--) {
-        seq->vals.arr[i] = seq->vals.arr[i - 1];
-    }
-    seq->vals.arr[0] = v;
-}
-
-size_t scamseq_len(const scamval* seq) {
-    return seq->count;
-}
-
-void scamseq_set(scamval* seq, size_t i, scamval* v) {
-    if (i >= 0 && i < seq->count) {
-        seq->vals.arr[i] = v;
-    }
-}
-
-void scamseq_replace(scamval* seq, size_t i, scamval* v) {
-    scamval_free(scamseq_get(seq, i));
-    scamseq_set(seq, i, v);
-}
-
-scamval* scamseq_get(const scamval* seq, size_t i) {
-    if (i >= 0 && i < seq->count) {
-        return seq->vals.arr[i];
-    } else {
-        return scamerr("attempted sequence access out of range");
-    }
-}
-
-scamval* scamseq_pop(scamval* seq, size_t i) {
-    if (i >= 0 && i < seq->count) {
-        scamval* ret = seq->vals.arr[i];
-        for (size_t j = i; j < seq->count - 1; j++) {
-            seq->vals.arr[j] = seq->vals.arr[j + 1];
-        }
-        seq->count--;
-        return ret;
-    } else {
-        return scamerr("attempted sequence access out of range");
-    }
-}
-
-size_t scamstr_len(const scamval* s) {
-    return strlen(s->vals.s);
 }
 
 scamval* scamint(long long n) {
@@ -150,14 +60,32 @@ scamval* scamlist() {
     return scam_internal_seq(SCAM_LIST);
 }
 
-scamval* scamcode() {
+scamval* scamsexpr() {
     return scam_internal_seq(SCAM_SEXPR);
+}
+
+scamval* scamsexpr_from_vals(size_t n, ...) {
+    va_list vlist;
+    va_start(vlist, n);
+    scamval* ret = my_malloc(sizeof *ret);
+    ret->type = SCAM_SEXPR;
+    ret->count = n;
+    ret->mem_size = n;
+    ret->vals.arr = my_malloc(n * sizeof *ret->vals.arr);
+    for (int i = 0; i < n; i++) {
+        scamval* v = va_arg(vlist, scamval*);
+        ret->vals.arr[i] = v;
+    }
+    va_end(vlist);
+    return ret;
 }
 
 // Make a scamval that is internally a string (strings, symbols and errors)
 scamval* scam_internal_str(int type, const char* s) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = type;
+    ret->count = strlen(s);
+    ret->mem_size = ret->count + 1;
     ret->vals.s = strdup(s);
     return ret;
 }
@@ -172,6 +100,8 @@ scamval* scamstr_n(const char* s, size_t n) {
     ret->vals.s = my_malloc(n + 1);
     strncpy(ret->vals.s, s, n);
     ret->vals.s[n] = '\0';
+    ret->count = n;
+    ret->mem_size = n + 1;
     return ret;
 }
 
@@ -181,6 +111,8 @@ scamval* scamstr_from_char(char c) {
     ret->vals.s = my_malloc(2);
     ret->vals.s[0] = c;
     ret->vals.s[1] = '\0';
+    ret->count = 1;
+    ret->mem_size = 2;
     return ret;
 }
 
@@ -206,11 +138,6 @@ scamval* scamerr_arity(const char* name, size_t got, size_t expected) {
 scamval* scamerr_min_arity(const char* name, size_t got, size_t expected) {
     return scamerr("'%s' got %d arg(s), expected at least %d", name, got, 
                    expected);
-}
-
-scamval* scamerr_type(const char* name, size_t pos, int got, int expected) {
-    return scamerr("'%s' got %s as arg %d, expected %s", name, 
-                   scamtype_name(got), pos + 1, scamtype_name(expected));
 }
 
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
@@ -336,15 +263,6 @@ int scamval_eq(const scamval* v1, const scamval* v2) {
         }
     } else {
         return 0;
-    }
-}
-
-int scamval_typecheck(scamval* v, int type) {
-    switch (type) {
-        case SCAM_ANY: return 1;
-        case SCAM_SEQ: return v->type == SCAM_LIST || v->type == SCAM_STR;
-        case SCAM_NUM: return v->type == SCAM_INT || v->type == SCAM_DEC;
-        default: return v->type == type;
     }
 }
 
@@ -494,47 +412,5 @@ void scamval_print_ast(const scamval* ast, int indent) {
         }
     } else {
         scamval_println(ast);
-    }
-}
-
-const char* scamtype_name(int type) {
-    switch (type) {
-        case SCAM_INT: return "integer";
-        case SCAM_DEC: return "decimal";
-        case SCAM_BOOL: return "boolean";
-        case SCAM_LIST: return "list";
-        case SCAM_STR: return "string";
-        case SCAM_FUNCTION: return "function";
-        case SCAM_PORT: return "port";
-        case SCAM_BUILTIN: return "function";
-        case SCAM_SEXPR: return "S-expression";
-        case SCAM_SYM: return "symbol";
-        case SCAM_ERR: return "error";
-        case SCAM_NULL: return "null";
-        case SCAM_SEQ: return "list or string";
-        case SCAM_NUM: return "integer or decimal";
-        case SCAM_ANY: return "any value";
-        default: return "bad scamval type";
-    }
-}
-
-const char* scamtype_debug_name(int type) {
-    switch (type) {
-        case SCAM_INT: return "SCAM_INT";
-        case SCAM_DEC: return "SCAM_DEC";
-        case SCAM_BOOL: return "SCAM_BOOL";
-        case SCAM_LIST: return "SCAM_LIST";
-        case SCAM_STR: return "SCAM_STR";
-        case SCAM_FUNCTION: return "SCAM_FUNCTION";
-        case SCAM_PORT: return "SCAM_PORT";
-        case SCAM_BUILTIN: return "SCAM_BUILTIN";
-        case SCAM_SEXPR: return "SCAM_SEXPR";
-        case SCAM_SYM: return "SCAM_SYM";
-        case SCAM_ERR: return "SCAM_ERR";
-        case SCAM_NULL: return "SCAM_NULL";
-        case SCAM_SEQ: return "SCAM_SEQ";
-        case SCAM_NUM: return "SCAM_NUM";
-        case SCAM_ANY: return "SCAM_ANY";
-        default: return "bad scamval type";
     }
 }
