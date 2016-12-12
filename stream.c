@@ -18,8 +18,7 @@ void stream_init(Stream* strm, int type) {
 void stream_from_str(Stream* strm, const char* s) {
     stream_init(strm, STREAM_STR);
     strm->s_len = strlen(s);
-    strm->s = malloc(strm->s_len + 1);
-    strcpy(strm->s, s);
+    strm->s = strdup(s);
 }
 
 void stream_from_file(Stream* strm, const char* fp) {
