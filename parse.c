@@ -144,12 +144,8 @@ scamval* scamval_from_token(Token* tkn) {
             {
                 // remove the quotes from string literals
                 scamval* ret = scamstr(tkn->val + 1);
-                if (ret && ret->type == SCAM_STR) {
-                    size_t n = strlen(ret->vals.s);
-                    if (n > 0) {
-                        ret->vals.s[n - 1] = '\0';
-                    }
-                }
+                ret->vals.s[ret->count - 1] = '\0';
+                ret->count--;
                 return ret;
             }
         default: return scamerr("unknown token type");

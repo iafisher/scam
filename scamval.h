@@ -44,6 +44,10 @@ size_t scamstr_len(const scamval*);
 void scamseq_append(scamval* seq, scamval* v);
 void scamseq_prepend(scamval* seq, scamval* v);
 
+// Concatenate the second argument to the first, freeing the second arg
+void scamseq_concat(scamval* seq1, scamval* seq2);
+void scamstr_concat(scamval* s1, scamval* s2);
+
 // Free the internal sequence of a scamval, without freeing the actual value
 void scamseq_free(scamval*);
 

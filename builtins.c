@@ -367,29 +367,19 @@ scamval* builtin_prepend(scamval* args) {
 }
 
 scamval* builtin_list_concat(scamval* args) {
-    size_t n = scamseq_len(args);
     scamval* first_arg = scamseq_pop(args, 0);
-    for (int i = 1; i < n; i++) {
-        scamval* this_arg = scamseq_get(args, 0);
-        size_t n2 = scamseq_len(this_arg);
-        for (int j = 0; j < n2; j++) {
-            scamseq_append(first_arg, scamseq_pop(this_arg, 0));
-        }
+    while (scamseq_len(args) > 0) {
+        scamseq_concat(first_arg, scamseq_pop(args, 0));
     }
     return first_arg;
 }
 
 scamval* builtin_str_concat(scamval* args) {
-    size_t n = scamseq_len(args);
-    size_t total_length = 0;
-    for (int i = 0; i < n; i++) {
-        total_length += scamstr_len(scamseq_get(args, i));
+    scamval* first_arg = scamseq_pop(args, 0);
+    while (scamseq_len(args) > 0) {
+        scamstr_concat(first_arg, scamseq_pop(args, 0));
     }
-    char* s = my_malloc(total_length + 1);
-    for (int i = 0; i < n; i++) {
-        strcat(s, scamseq_get(args, i)->vals.s);
-    }
-    return scamstr(s);
+    return first_arg;
 }
 
 scamval* builtin_concat(scamval* args) {

@@ -21,6 +21,18 @@ void scamseq_grow(scamval* seq, size_t min_new_sz) {
     }
 }
 
+// Unlike scamseq_grow, the new sequence is guaranteed to be exactly the new
+// size provided
+void scamseq_resize(scamval* seq, size_t new_sz) {
+    seq->mem_size = new_sz;
+    if (seq->vals.arr == NULL) {
+        seq->vals.arr = my_malloc(seq->mem_size * sizeof *seq->vals.arr);
+    } else {
+        seq->vals.arr = my_realloc(seq->vals.arr,
+                                   seq->mem_size * sizeof *seq->vals.arr);
+    }
+}
+
 scamval* scamseq_pop(scamval* seq, size_t i) {
     if (i >= 0 && i < seq->count) {
         scamval* ret = seq->vals.arr[i];
@@ -76,6 +88,14 @@ void scamseq_append(scamval* seq, scamval* v) {
     }
     seq->count = new_sz;
     seq->vals.arr[new_sz - 1] = v;
+}
+
+void scamseq_concat(scamval* seq1, scamval* seq2) {
+    scamseq_resize(seq1, scamseq_len(seq1) + scamseq_len(seq2));
+    while (scamseq_len(seq2) > 0) {
+        scamseq_append(seq1, scamseq_pop(seq2, 0));
+    }
+    scamval_free(seq2);
 }
 
 void scamseq_free(scamval* seq) {
