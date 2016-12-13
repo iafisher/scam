@@ -198,6 +198,28 @@ void transform_define(scamval* ast) {
     scamseq_append(ast, lambda);
 }
 
+int transform_and_pred(scamval* ast) {
+    if (scamseq_len(ast) == 3) {
+        scamval* first = scamseq_get(ast, 0);
+        if (first->type == SCAM_SYM && strcmp(first->vals.s, "and") == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// (and cond1 cond2) (if cond1 cond2 false)
+// (and cond1 cond2 cond3) (if cond1 (and cond2 cond3) false)
+void transform_and(scamval* ast) {
+    // ast == (and cond1 cond2)
+    scamval_free(scamseq_pop(ast, 0));
+    // ast == (cond1 cond2)
+    scamseq_prepend(ast, scamsym("if"));
+    // ast == (if cond1 cond2)
+    scamseq_append(ast, scambool(0));
+    // ast == (if cond1 cond2 false)
+}
+
 void do_transform(scamval* ast, transform_pred_t pred, transform_func_t func) {
     if (ast->type == SCAM_SEXPR) {
         if (pred(ast)) {
@@ -211,4 +233,5 @@ void do_transform(scamval* ast, transform_pred_t pred, transform_func_t func) {
 
 void transform_ast(scamval* ast) {
     do_transform(ast, transform_define_pred, transform_define);
+    //do_transform(ast, transform_and_pred, transform_and);
 }

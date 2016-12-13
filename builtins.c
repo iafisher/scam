@@ -459,6 +459,33 @@ scamval* builtin_trim(scamval* args) {
     return str_arg;
 }
 
+scamval* builtin_split(scamval* args) {
+    TYPECHECK_ARGS("split", args, 1, SCAM_STR);
+    scamval* ret = scamlist();
+    scamval* str_arg = scamseq_get(args, 0);
+    int start = 0;
+    int in_word = 0;
+    for (int i = 0; i < scamstr_len(str_arg); i++) {
+        if (!isspace(str_arg->vals.s[i])) {
+            if (!in_word) {
+                in_word = 1;
+                start = i;
+            }
+        } else {
+            if (in_word) {
+                in_word = 0;
+                scamseq_append(ret, scamstr_n(str_arg->vals.s + start,
+                                              i - start));
+            }
+        }
+    }
+    // make sure to add the last word
+    if (in_word) {
+        scamseq_append(ret, scamstr(str_arg->vals.s + start));
+    }
+    return ret;
+}
+
 scamval* builtin_print(scamval* args) {
     TYPECHECK_ARGS("print", args, 1, SCAM_ANY);
     scamval* arg = scamseq_get(args, 0);
@@ -506,6 +533,24 @@ scamval* builtin_assert(scamval* args) {
     }
 }
 
+scamval* builtin_range(scamval* args) {
+    TYPECHECK_ARGS("range", args, 2, SCAM_INT, SCAM_INT);
+    scamval* lower = scamseq_get(args, 0);
+    scamval* upper = scamseq_get(args, 1);
+    if (lower->vals.n <= upper->vals.n) {
+        int count = lower->vals.n;
+        scamval* ret = scamlist();
+        while (count < upper->vals.n) {
+            scamseq_append(ret, scamint(count));
+            count++;
+        }
+        return ret;
+    } else {
+        return scamerr("lower bound must be less than or equal to upper bound "
+                       "in function 'range'");
+    }
+}
+
 scamval* builtin_begin(scamval* args) {
     TYPECHECK_ALL("begin", args, 1, SCAM_ANY);
     return scamseq_pop(args, scamseq_len(args) - 1);
@@ -518,17 +563,6 @@ scamval* builtin_eq(scamval* args) {
     return scambool(scamval_eq(left, right));
 }
 
-typedef int (comp_func)(double, double);
-scamval* generic_comparison(char* name, scamval* args, comp_func op) {
-    TYPECHECK_ARGS(name, args, 2, SCAM_NUM, SCAM_NUM);
-    scamval* left = scamseq_get(args, 0);
-    scamval* right = scamseq_get(args, 1);
-    int l_val = left->type == SCAM_INT ? left->vals.n : left->vals.d;
-    int r_val = right->type == SCAM_INT ? right->vals.n : right->vals.d;
-    return scambool(op(l_val, r_val));
-}
-
-int comp_gt(double x, double y) { return x > y; }
 scamval* builtin_gt(scamval* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
     scamval* left = scamseq_get(args, 0);
@@ -536,7 +570,6 @@ scamval* builtin_gt(scamval* args) {
     return scambool(scamval_gt(left, right));
 }
 
-int comp_lt(double x, double y) { return x < y; }
 scamval* builtin_lt(scamval* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
     scamval* left = scamseq_get(args, 0);
@@ -544,8 +577,6 @@ scamval* builtin_lt(scamval* args) {
     return scambool(!scamval_gt(left, right) && !scamval_eq(left, right));
 }
 
-
-int comp_gte(double x, double y) { return x >= y; }
 scamval* builtin_gte(scamval* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
     scamval* left = scamseq_get(args, 0);
@@ -553,7 +584,6 @@ scamval* builtin_gte(scamval* args) {
     return scambool(scamval_gt(left, right) || scamval_eq(left, right));
 }
 
-int comp_lte(double x, double y) { return x <= y; }
 scamval* builtin_lte(scamval* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
     scamval* left = scamseq_get(args, 0);
@@ -604,10 +634,12 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "upper", builtin_upper);
     add_builtin(env, "lower", builtin_lower);
     add_builtin(env, "trim", builtin_trim);
+    add_builtin(env, "split", builtin_split);
     // IO functions
     add_builtin(env, "print", builtin_print);
     add_builtin(env, "println", builtin_println);
     add_builtin(env, "input", builtin_input);
     // miscellaneous functions
     add_builtin(env, "assert", builtin_assert);
+    add_builtin(env, "range", builtin_range);
 }
