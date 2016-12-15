@@ -142,7 +142,7 @@ scamval* scamerr_min_arity(const char* name, size_t got, size_t expected) {
 
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     scamval* ret = my_malloc(sizeof *ret);
-    ret->type = SCAM_FUNCTION;
+    ret->type = SCAM_LAMBDA;
     ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
     ret->vals.fun->env = env;
     env->references++;
@@ -161,7 +161,9 @@ scamval* scambuiltin(scambuiltin_t* bltin) {
 scamval* scamport(FILE* fp) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = SCAM_PORT;
-    ret->vals.port = fp;
+    ret->vals.port = my_malloc(sizeof *ret->vals.port);
+    ret->vals.port->status = (fp == NULL ? SCAMPORT_CLOSED : SCAMPORT_OPEN);
+    ret->vals.port->fp = fp;
     return ret;
 }
 
@@ -196,16 +198,20 @@ scamval* scamval_copy(const scamval* v) {
         case SCAM_ERR:
             ret->vals.s = strdup(v->vals.s);
             break;
-        case SCAM_FUNCTION:
-            ret->vals.fun = my_malloc(sizeof(scamfun_t));
+        case SCAM_LAMBDA:
+            ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
             ret->vals.fun->env = scamenv_init(v->vals.fun->env);
             ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
             ret->vals.fun->body = scamval_copy(v->vals.fun->body);
             break;
         case SCAM_BUILTIN:
             ret->vals.bltin = v->vals.bltin;
+            break;
         case SCAM_PORT:
-            ret->vals.port = v->vals.port;
+            ret->vals.port = my_malloc(sizeof *ret->vals.port);
+            ret->vals.port->status = v->vals.port->status;
+            ret->vals.port->fp = v->vals.port->fp;
+            break;
     }
     return ret;
 }
@@ -306,9 +312,14 @@ void scamval_free(scamval* v) {
         case SCAM_ERR:
             if (v->vals.s) free(v->vals.s); break;
         case SCAM_PORT:
-            fclose(v->vals.port);
+            // this doesn't work... yay!
+            if (v->vals.port) {
+                if (v->vals.port->status == SCAMPORT_OPEN)
+                    fclose(v->vals.port->fp);
+                free(v->vals.port);
+            }
             break;
-        case SCAM_FUNCTION:
+        case SCAM_LAMBDA:
             v->vals.fun->env->references--;
             if (v->vals.fun->env->references == 0) {
                 scamenv_free(v->vals.fun->env);
@@ -352,7 +363,7 @@ void scamenv_reset_refs(scamenv* env) {
     env->already_seen = 1;
     for (int i = 0; i < scamseq_len(env->vals); i++) {
         scamval* v = scamseq_get(env->vals, i);
-        if (v->type == SCAM_FUNCTION) {
+        if (v->type == SCAM_LAMBDA) {
             scamenv_reset_refs(v->vals.fun->env);
         }
     }
@@ -362,7 +373,7 @@ void scamenv_mark(scamenv* env) {
     env->enclosing->references++;
     for (int i = 0; i < scamseq_len(env->vals); i++) {
         scamval* v = scamseq_get(env->vals, i);
-        if (v->type == SCAM_FUNCTION) {
+        if (v->type == SCAM_LAMBDA) {
             scamenv_mark(v->vals.fun->env);
         }
     }
@@ -411,8 +422,8 @@ void scamval_print(const scamval* v) {
         case SCAM_BOOL: printf("%s", v->vals.n ? "true" : "false"); break;
         case SCAM_LIST: scamseq_print(v, "[", "]"); break;
         case SCAM_SEXPR: scamseq_print(v, "(", ")"); break;
-        case SCAM_FUNCTION:
-        case SCAM_BUILTIN: printf("<Scam function>"); break;
+        case SCAM_LAMBDA: printf("<Scam function>"); break;
+        case SCAM_BUILTIN: printf("<Scam builtin>"); break;
         case SCAM_PORT: printf("<Scam port>"); break;
         case SCAM_STR: printf("\"%s\"", v->vals.s); break;
         case SCAM_SYM: printf("%s", v->vals.s); break;

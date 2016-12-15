@@ -522,6 +522,26 @@ scamval* builtin_input(scamval* args) {
     return ret;
 }
 
+scamval* builtin_open(scamval* args) {
+    TYPECHECK_ARGS("open", args, 2, SCAM_STR, SCAM_STR);
+    char* fname = scamseq_get(args, 0)->vals.s;
+    char* mode = scamseq_get(args, 1)->vals.s;
+    FILE* fp = fopen(fname, mode);
+    return scamport(fp);
+}
+
+scamval* builtin_close(scamval* args) {
+    TYPECHECK_ARGS("close", args, 1, SCAM_PORT);
+    scamval* port_arg = scamseq_get(args, 0);
+    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
+        fclose(port_arg->vals.port->fp);
+        port_arg->vals.port->status = SCAMPORT_CLOSED;
+        return scamnull();
+    } else {
+        return scamerr("file is already closed");
+    }
+}
+
 scamval* builtin_assert(scamval* args) {
     TYPECHECK_ARGS("assert", args, 1, SCAM_BOOL);
     scamval* cond = scamseq_get(args, 0);
@@ -549,6 +569,18 @@ scamval* builtin_range(scamval* args) {
         return scamerr("lower bound must be less than or equal to upper bound "
                        "in function 'range'");
     }
+}
+
+scamval* builtin_map(scamval* args) {
+    TYPECHECK_ARGS("map", args, 2, SCAM_FUNCTION, SCAM_LIST);
+    scamval* fun = scamseq_pop(args, 0);
+    scamval* list_arg = scamseq_pop(args, 0);
+    for (size_t i = 0; i < scamseq_len(list_arg); i++) {
+        scamval* v = scamseq_get(list_arg, i);
+        // eval_apply frees the function, so this doesn't work
+        scamseq_set(v, i, eval_apply(fun, v));
+    }
+    return list_arg;
 }
 
 scamval* builtin_begin(scamval* args) {
@@ -639,7 +671,10 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "print", builtin_print);
     add_builtin(env, "println", builtin_println);
     add_builtin(env, "input", builtin_input);
+    add_builtin(env, "open", builtin_open);
+    add_builtin(env, "close", builtin_close);
     // miscellaneous functions
     add_builtin(env, "assert", builtin_assert);
     add_builtin(env, "range", builtin_range);
+    add_builtin(env, "map", builtin_map);
 }

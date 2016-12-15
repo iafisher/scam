@@ -10,3 +10,6 @@ scamval* eval_str(char* s, scamenv*);
 
 // Parse a file into a Scam AST and evaluate it
 scamval* eval_file(char* fp, scamenv*);
+
+// Evaluate a function application
+scamval* eval_apply(scamval* fun, scamval* arglist);

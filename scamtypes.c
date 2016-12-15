@@ -7,6 +7,8 @@ int scamval_typecheck(const scamval* v, int type) {
         case SCAM_NUM: return v->type == SCAM_INT || v->type == SCAM_DEC;
         case SCAM_CMP: return v->type == SCAM_STR || v->type == SCAM_INT ||
                               v->type == SCAM_DEC;
+        case SCAM_FUNCTION: return v->type == SCAM_LAMBDA ||
+                                   v->type == SCAM_BUILTIN;
         default: return v->type == type;
     }
 }
@@ -47,9 +49,9 @@ const char* scamtype_name(int type) {
         case SCAM_BOOL: return "boolean";
         case SCAM_LIST: return "list";
         case SCAM_STR: return "string";
-        case SCAM_FUNCTION: return "function";
+        case SCAM_LAMBDA: return "function";
         case SCAM_PORT: return "port";
-        case SCAM_BUILTIN: return "function";
+        case SCAM_BUILTIN: return "builtin";
         case SCAM_SEXPR: return "S-expression";
         case SCAM_SYM: return "symbol";
         case SCAM_ERR: return "error";
@@ -70,7 +72,7 @@ const char* scamtype_debug_name(int type) {
         case SCAM_BOOL: return "SCAM_BOOL";
         case SCAM_LIST: return "SCAM_LIST";
         case SCAM_STR: return "SCAM_STR";
-        case SCAM_FUNCTION: return "SCAM_FUNCTION";
+        case SCAM_LAMBDA: return "SCAM_LAMBDA";
         case SCAM_PORT: return "SCAM_PORT";
         case SCAM_BUILTIN: return "SCAM_BUILTIN";
         case SCAM_SEXPR: return "SCAM_SEXPR";

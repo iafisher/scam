@@ -32,7 +32,6 @@ scamval* eval_lambda(scamval*, scamenv*);
 scamval* eval_if(scamval*, scamenv*);
 scamval* eval_and(scamval*, scamenv*);
 scamval* eval_or(scamval*, scamenv*);
-scamval* eval_apply(scamval*, scamenv*);
 scamval* eval_list(scamval*, scamenv*);
 
 scamval* eval(scamval* ast, scamenv* env) {
@@ -57,7 +56,16 @@ scamval* eval(scamval* ast, scamenv* env) {
                 return eval_or(ast, env);
             }
         }
-        return eval_apply(ast, env);
+        scamval* arglist = eval_list(ast, env);
+        if (arglist->type == SCAM_ERR) return arglist;
+        scamval* fun_val = scamseq_pop(arglist, 0);
+        if (scamval_typecheck(fun_val, SCAM_FUNCTION)) {
+            return eval_apply(fun_val, arglist);
+        } else {
+            scamval_free(arglist);
+            scamval_free(fun_val);
+            return scamerr("first element of S-expression must be function");
+        }
     } else if (ast->type == SCAM_LIST) {
         return eval_list(ast, env);
     } else {
@@ -175,12 +183,9 @@ scamval* eval_or(scamval* ast, scamenv* env) {
 }
 
 // Evaluate a function application
-scamval* eval_apply(scamval* ast, scamenv* env) {
-    scamval* arglist = eval_list(ast, env);
-    if (arglist->type == SCAM_ERR) return arglist;
-    scamval* fun_val = scamseq_pop(arglist, 0);
-    if (fun_val->type == SCAM_FUNCTION) {
-        // extract the function from the scamval, for convenience
+scamval* eval_apply(scamval* fun_val, scamval* arglist) {
+    if (fun_val->type == SCAM_LAMBDA) {
+        // extract the function, for convenience
         scamfun_t* fun = fun_val->vals.fun;
         // make sure the right number of arguments were given
         size_t expected = scamseq_len(fun->parameters);
@@ -201,15 +206,11 @@ scamval* eval_apply(scamval* ast, scamenv* env) {
         scamval_free(fun_val);
         scamval_free(arglist);
         return ret;
-    } else if (fun_val->type == SCAM_BUILTIN) {
+    } else {
         scamval* ret = fun_val->vals.bltin(arglist);
         scamval_free(fun_val); 
         scamval_free(arglist);
         return ret;
-    } else {
-        scamval_free(fun_val);
-        scamval_free(arglist); 
-        return scamerr("first element in expression not a function");
     }
 }
 

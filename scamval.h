@@ -3,11 +3,11 @@
 
 // Possible values for the type field of the scamval struct
 // Note that some of these types are never exposed to the user
-enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_FUNCTION, 
+enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA, 
       SCAM_PORT, SCAM_BUILTIN, SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL};
 
 // Type values that are only used for typechecking
-enum {SCAM_SEQ=1000, SCAM_NUM, SCAM_CMP, SCAM_ANY};
+enum {SCAM_SEQ=1000, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY};
 
 // Forward declaration of scamval and scamenv
 struct scamval;
@@ -15,9 +15,8 @@ typedef struct scamval scamval;
 struct scamenv;
 typedef struct scamenv scamenv;
 
-// Other convenient typedefs
+// Another convenient typedef
 typedef scamval* (scambuiltin_t)(scamval*);
-typedef FILE scamport_t;
 
 // Return a reference to the i'th element of the sequence
 // Make sure not to free this reference!
@@ -57,6 +56,12 @@ typedef struct {
     scamval* body;
 } scamfun_t;
 
+enum { SCAMPORT_OPEN, SCAMPORT_CLOSED };
+typedef struct {
+    int status;
+    FILE* fp;
+} scamport_t;
+
 struct scamval {
     int type;
     int line, col;
@@ -66,7 +71,7 @@ struct scamval {
         double d; // SCAM_DEC
         char* s; // SCAM_STR, SCAM_SYM and SCAM_ERR
         scamval** arr; // SCAM_LIST and SCAM_SEXPR
-        scamfun_t* fun; // SCAM_FUNCTION
+        scamfun_t* fun; // SCAM_LAMBDA
         scamport_t* port; // SCAM_PORT
         scambuiltin_t* bltin; // SCAM_BUILTIN
     } vals;
