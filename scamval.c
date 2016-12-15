@@ -142,7 +142,6 @@ scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     scamval* ret = scamval_new(SCAM_LAMBDA);
     ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
     ret->vals.fun->env = env;
-    env->is_tmp = 0;
     ret->vals.fun->parameters = parameters;
     ret->vals.fun->body = body;
     return ret;
@@ -166,58 +165,32 @@ scamval* scamnull() {
     return scamval_new(SCAM_NULL);
 }
 
-scamval* scamval_new_ref(scamval* v) {
-    v->refs++;
-    return v;
-}
-
 scamval* scamval_copy(scamval* v) {
-    // ports and functions cannot be copied
-    if (v->type == SCAM_PORT || v->type == SCAM_BUILTIN ||
-        v->type == SCAM_FUNCTION) {
-        return scamval_new_ref(v);
-    }
-    scamval* ret = scamval_new(v->type);
-    ret->line = v->line;
-    ret->col = v->col;
     switch (v->type) {
-        case SCAM_BOOL:
-        case SCAM_INT: 
-            ret->vals.n = v->vals.n; break;
-        case SCAM_DEC: 
-            ret->vals.d = v->vals.d; break;
         case SCAM_LIST:
         case SCAM_SEXPR:
+        {
+            scamval* ret = scamval_new(v->type);
             ret->vals.arr = my_malloc(v->count * sizeof *v->vals.arr);
             ret->count = v->count;
             ret->mem_size = v->count;
             for (int i = 0; i < v->count; i++) {
                 ret->vals.arr[i] = scamval_copy(v->vals.arr[i]);
             }
-            break;
+            return ret;
+        }
         case SCAM_STR:
         case SCAM_SYM:
         case SCAM_ERR:
+        {
+            scamval* ret = scamval_new(v->type);
             ret->vals.s = strdup(v->vals.s);
-            break;
-            /*
-        case SCAM_LAMBDA:
-            ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
-            ret->vals.fun->env = scamenv_init(v->vals.fun->env);
-            ret->vals.fun->parameters = scamval_copy(v->vals.fun->parameters);
-            ret->vals.fun->body = scamval_copy(v->vals.fun->body);
-            break;
-        case SCAM_BUILTIN:
-            ret->vals.bltin = v->vals.bltin;
-            break;
-        case SCAM_PORT:
-            ret->vals.port = my_malloc(sizeof *ret->vals.port);
-            ret->vals.port->status = v->vals.port->status;
-            ret->vals.port->fp = v->vals.port->fp;
-            break;
-            */
+            return ret;
+        }
+        default:
+            v->refs++;
+            return v;
     }
-    return ret;
 }
 
 int is_numeric_type(const scamval* v) {
@@ -307,8 +280,8 @@ int scamval_gt(const scamval* v1, const scamval* v2) {
 
 void scamval_free(scamval* v) {
     if (!v) return;
-    if (v->refs > 1) {
-        v->refs--;
+    v->refs--;
+    if (v->refs > 0) {
         return;
     }
     switch (v->type) {
@@ -339,16 +312,9 @@ void scamval_free(scamval* v) {
 
 scamenv* scamenv_init(scamenv* enclosing) {
     scamenv* ret = my_malloc(sizeof *ret);
-    ret->is_tmp = 0;
     ret->enclosing = enclosing;
     ret->syms = scamlist();
     ret->vals = scamlist();
-    return ret;
-}
-
-scamenv* scamenv_init_tmp(scamenv* enclosing) {
-    scamenv* ret = scamenv_init(enclosing);
-    ret->is_tmp = 1;
     return ret;
 }
 
@@ -367,21 +333,16 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
 }
 
 void scamenv_free(scamenv* env) {
+    if (!env) return;
     scamval_free(env->syms);
     scamval_free(env->vals);
     free(env);
 }
 
-void scamenv_free_tmp(scamenv* env) {
-    if (env->is_tmp) {
-        scamenv_free(env);
-    }
-}
-
 scamval* scamenv_lookup(scamenv* env, scamval* name) {
     for (int i = 0; i < scamseq_len(env->syms); i++) {
         if (strcmp(scamseq_get(env->syms, i)->vals.s, name->vals.s) == 0) {
-            return scamval_new_ref(scamseq_get(env->vals, i));
+            return scamval_copy(scamseq_get(env->vals, i));
         }
     }
     if (env->enclosing != NULL) {

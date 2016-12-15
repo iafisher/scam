@@ -62,9 +62,7 @@ scamval* eval(scamval* ast, scamenv* env) {
         }
         scamval* fun_val = scamseq_pop(arglist, 0);
         if (scamval_typecheck(fun_val, SCAM_FUNCTION)) {
-            scamval* copied_arglist = scamval_copy(arglist);
-            scamval_free(arglist);
-            return eval_apply(fun_val, copied_arglist);
+            return eval_apply(fun_val, arglist);
         } else {
             scamval_free(arglist);
             scamval_free(fun_val);
@@ -95,10 +93,12 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
         SCAM_ASSERT(scamseq_get(parameters_copy, i)->type == SCAM_SYM, ast,
                     "lambda parameter must be symbol");
     }
-    scamval* parameters = scamseq_pop(ast, 1);
-    // replace the 'lambda' symbol with 'begin'
-    scamseq_replace(ast, 0, scamsym("begin"));
-    return scamfunction(env, parameters, ast);
+    // remove and free the 'lambda' symbol
+    scamval_free(scamseq_pop(ast, 0));
+    scamval* parameters = scamseq_pop(ast, 0);
+    scamval* body = scamseq_pop(ast, 0);
+    scamval_free(ast);
+    return scamfunction(env, parameters, body);
 }
 
 // Evaluate a define statement
@@ -197,17 +197,17 @@ scamval* eval_apply(scamval* fun_val, scamval* arglist) {
         if (got != expected) {
             scamval_free(arglist);
             scamval_free(fun_val);
-            return scamerr("'lambda' got %d argument(s), expected %d", 
+            return scamerr("user function got %d argument(s), expected %d", 
                            got, expected);
         }
-        scamenv* inner_env = scamenv_init_tmp(fun->env);
+        scamenv* inner_env = scamenv_init(fun->env);
         for (int i = 0; i < scamseq_len(fun->parameters); i++) {
             scamenv_bind(inner_env,
                          scamval_copy(scamseq_get(fun->parameters, i)),
                          scamval_copy(scamseq_get(arglist, i)));
         }
         scamval* ret = eval(scamval_copy(fun->body), inner_env);
-        scamenv_free_tmp(inner_env);
+        scamenv_free(inner_env);
         scamval_free(fun_val);
         scamval_free(arglist);
         return ret;
