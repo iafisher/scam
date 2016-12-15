@@ -538,13 +538,52 @@ scamval* builtin_close(scamval* args) {
         port_arg->vals.port->status = SCAMPORT_CLOSED;
         return scamnull();
     } else {
-        return scamerr("file is already closed");
+        return scamerr("port is already closed");
     }
 }
 
 scamval* builtin_port_good(scamval* args) {
     TYPECHECK_ARGS("port-good?", args, 1, SCAM_PORT);
-    return scambool(scamseq_get(args, 0)->vals.port->status == SCAMPORT_OPEN);
+    scamval* port_arg = scamseq_get(args, 0);
+    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
+        FILE* fp = port_arg->vals.port->fp;
+        return scambool(!ferror(fp) && !feof(fp));
+    } else {
+        return scambool(0);
+    }
+}
+
+scamval* builtin_readline(scamval* args) {
+    TYPECHECK_ARGS("readline", args, 1, SCAM_PORT);
+    scamval* port_arg = scamseq_get(args, 0);
+    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
+        scamval* ret = scamstr_empty();
+        int err = getline(&ret->vals.s, &ret->count, port_arg->vals.port->fp);
+        if (err != -1) {
+            ret->mem_size = ret->count;
+            return ret;
+        } else {
+            scamval_free(ret);
+            return scamerr_eof();
+        }
+    } else {
+        return scamerr("cannot read from closed port");
+    }
+}
+
+scamval* builtin_readchar(scamval* args) {
+    TYPECHECK_ARGS("readline", args, 1, SCAM_PORT);
+    scamval* port_arg = scamseq_get(args, 0);
+    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
+        char c = fgetc(port_arg->vals.port->fp);
+        if (c != EOF) {
+            return scamstr_from_char(c);
+        } else {
+            return scamerr_eof();
+        }
+    } else {
+        return scamerr("cannot read from closed port");
+    }
 }
 
 scamval* builtin_assert(scamval* args) {
@@ -679,8 +718,14 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "open", builtin_open);
     add_builtin(env, "close", builtin_close);
     add_builtin(env, "port-good?", builtin_port_good);
+    add_builtin(env, "readline", builtin_readline);
+    add_builtin(env, "readchar", builtin_readchar);
     // miscellaneous functions
     add_builtin(env, "assert", builtin_assert);
     add_builtin(env, "range", builtin_range);
     add_builtin(env, "map", builtin_map);
+    // stdin, stdout and stderr
+    scamenv_bind(env, scamsym("stdin"), scamport(stdin));
+    scamenv_bind(env, scamsym("stdout"), scamport(stdout));
+    scamenv_bind(env, scamsym("stderr"), scamport(stderr));
 }

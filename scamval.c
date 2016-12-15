@@ -95,6 +95,14 @@ scamval* scamstr(const char* s) {
     return scam_internal_str(SCAM_STR, s);
 }
 
+scamval* scamstr_empty() {
+    scamval* ret = scamval_new(SCAM_STR);
+    ret->count = 0;
+    ret->mem_size = 0;
+    ret->vals.s = NULL;
+    return ret;
+}
+
 scamval* scamstr_n(const char* s, size_t n) {
     scamval* ret = scamval_new(SCAM_STR);
     ret->vals.s = my_malloc(n + 1);
@@ -136,6 +144,10 @@ scamval* scamerr_arity(const char* name, size_t got, size_t expected) {
 scamval* scamerr_min_arity(const char* name, size_t got, size_t expected) {
     return scamerr("'%s' got %d arg(s), expected at least %d", name, got, 
                    expected);
+}
+
+scamval* scamerr_eof() {
+    return scamerr("reached EOF while reading from a port");
 }
 
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {

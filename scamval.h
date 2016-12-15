@@ -89,6 +89,7 @@ scamval* scamsexpr();
 scamval* scamsexpr_from_vals(size_t, ...);
 scamval* scamport(FILE*);
 scamval* scamstr(const char*);
+scamval* scamstr_empty();
 // Create a string from the first n characters of the given string
 scamval* scamstr_n(const char*, size_t n);
 scamval* scamstr_from_char(char);
@@ -102,6 +103,7 @@ scamval* scamnull();
 // Useful error message constructors
 scamval* scamerr_arity(const char* name, size_t got, size_t expected);
 scamval* scamerr_min_arity(const char* name, size_t got, size_t expected);
+scamval* scamerr_eof();
 
 // Return a copy of the given value
 scamval* scamval_copy(scamval*);
