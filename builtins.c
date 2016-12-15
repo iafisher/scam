@@ -542,6 +542,11 @@ scamval* builtin_close(scamval* args) {
     }
 }
 
+scamval* builtin_port_good(scamval* args) {
+    TYPECHECK_ARGS("port-good?", args, 1, SCAM_PORT);
+    return scambool(scamseq_get(args, 0)->vals.port->status == SCAMPORT_OPEN);
+}
+
 scamval* builtin_assert(scamval* args) {
     TYPECHECK_ARGS("assert", args, 1, SCAM_BOOL);
     scamval* cond = scamseq_get(args, 0);
@@ -673,6 +678,7 @@ void register_builtins(scamenv* env) {
     add_builtin(env, "input", builtin_input);
     add_builtin(env, "open", builtin_open);
     add_builtin(env, "close", builtin_close);
+    add_builtin(env, "port-good?", builtin_port_good);
     // miscellaneous functions
     add_builtin(env, "assert", builtin_assert);
     add_builtin(env, "range", builtin_range);

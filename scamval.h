@@ -75,9 +75,12 @@ struct scamval {
         scamport_t* port; // SCAM_PORT
         scambuiltin_t* bltin; // SCAM_BUILTIN
     } vals;
+    // accounting info for the garbage collector
+    int refs;
 };
 
 // Make scamvals out of various C types
+scamval* scamval_new(int type);
 scamval* scamint(long long);
 scamval* scamdec(double);
 scamval* scambool(int);
@@ -101,7 +104,8 @@ scamval* scamerr_arity(const char* name, size_t got, size_t expected);
 scamval* scamerr_min_arity(const char* name, size_t got, size_t expected);
 
 // Return a copy of the given value
-scamval* scamval_copy(const scamval*);
+scamval* scamval_copy(scamval*);
+scamval* scamval_new_ref(scamval*);
 // Free all resources used by a scamval, including the pointer itself
 void scamval_free(scamval*);
 
@@ -120,13 +124,14 @@ struct scamenv {
     scamval* syms;
     scamval* vals;
     // garbage collection accounting
-    int references;
-    int already_seen;
+    int is_tmp;
 };
 
 // Initialize and free environments
 scamenv* scamenv_init(scamenv* enclosing);
+scamenv* scamenv_init_tmp(scamenv* enclosing);
 void scamenv_free(scamenv*);
+void scamenv_free_tmp(scamenv*);
 
 // Create a new binding in the environment, or update an existing one
 // sym should be of type SCAM_STR

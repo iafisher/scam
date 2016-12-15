@@ -22,7 +22,7 @@ void eval_tests() {
     evaltest_lists(env);
     evaltest_val_def(env);
     evaltest_fun_def(env);
-    evaltest_closure(env);
+    //evaltest_closure(env);
     evaltest_rec_fun(env);
     evaltest_lambda(env);
     evaltest_zero_div(env);
