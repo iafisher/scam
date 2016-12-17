@@ -1,9 +1,12 @@
 #include <stdlib.h>
+#include <string.h>
 #include "scamval.h"
 
-#define SEQ_SIZE_INITIAL 5
-#define SEQ_SIZE_INCREMENT 5
+// constants for the scamseq_grow function
+enum { SEQ_SIZE_INITIAL = 5, SEQ_SIZE_GROW = 2};
 
+// Grow the size of the sequence in memory so that it is at least the given
+// minimum size, and possibly larger
 void scamseq_grow(scamval* seq, size_t min_new_sz) {
     if (seq->vals.arr == NULL) {
         seq->mem_size = SEQ_SIZE_INITIAL;
@@ -11,9 +14,7 @@ void scamseq_grow(scamval* seq, size_t min_new_sz) {
             seq->mem_size = min_new_sz;
         seq->vals.arr = my_malloc(seq->mem_size * sizeof *seq->vals.arr);
     } else {
-        // update the memory size and make sure it is at least big enough as
-        // requested
-        seq->mem_size += SEQ_SIZE_INCREMENT;
+        seq->mem_size *= SEQ_SIZE_GROW;
         if (seq->mem_size < min_new_sz)
             seq->mem_size = min_new_sz;
         seq->vals.arr = my_realloc(seq->vals.arr, 
@@ -36,9 +37,8 @@ void scamseq_resize(scamval* seq, size_t new_sz) {
 scamval* scamseq_pop(scamval* seq, size_t i) {
     if (i >= 0 && i < seq->count) {
         scamval* ret = seq->vals.arr[i];
-        for (size_t j = i; j < seq->count - 1; j++) {
-            seq->vals.arr[j] = seq->vals.arr[j + 1];
-        }
+        memmove(seq->vals.arr + i, seq->vals.arr + i + 1,
+                (seq->count - i - 1) * sizeof *seq->vals.arr);
         seq->count--;
         return ret;
     } else {
@@ -75,9 +75,8 @@ void scamseq_prepend(scamval* seq, scamval* v) {
         scamseq_grow(seq, new_sz);
     }
     seq->count = new_sz;
-    for (size_t i = new_sz - 1; i > 0; i--) {
-        seq->vals.arr[i] = seq->vals.arr[i - 1];
-    }
+    memmove(seq->vals.arr + 1, seq->vals.arr, 
+            (seq->count - 1) * sizeof *seq->vals.arr);
     seq->vals.arr[0] = v;
 }
 
