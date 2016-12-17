@@ -26,15 +26,15 @@
 #define ASSERT_NO_ZEROS(args) { \
     if (scamseq_len(args) > 2) { \
         scamval* first = scamseq_get(args, 0); \
-        if ((first->type == SCAM_INT && first->vals.n == 0) || \
-            (first->type == SCAM_DEC && first->vals.d == 0.0)) { \
+        if ((first->type == SCAM_INT && scam_as_int(first) == 0) || \
+            (first->type == SCAM_DEC && scam_as_dec(first) == 0.0)) { \
             return scamerr("cannot divide by zero"); \
         } \
     } \
     for (int i = 1; i < scamseq_len(args); i++) { \
         scamval* v = scamseq_get(args, i); \
-        if ((v->type == SCAM_INT && v->vals.n == 0) || \
-            (v->type == SCAM_DEC && v->vals.d == 0.0)) { \
+        if ((v->type == SCAM_INT && scam_as_int(v) == 0) || \
+            (v->type == SCAM_DEC && scam_as_dec(v) == 0.0)) { \
             return scamerr("cannot divide by zero"); \
         } \
     } \
@@ -75,9 +75,9 @@ typedef long long (int_arith_func)(long long, long long);
 scamval* generic_int_arith(char* name, scamval* args, int_arith_func op) {
     TYPECHECK_ALL(name, args, 2, SCAM_INT);
     scamval* first = scamseq_get(args, 0);
-    long long sum = first->vals.n;
+    long long sum = scam_as_int(first);
     for (int i = 1; i < scamseq_len(args); i++) {
-        sum = op(sum, scamseq_get(args, i)->vals.n);
+        sum = op(sum, scam_as_int(scamseq_get(args, i)));
     }
     return scamint(sum);
 }
@@ -87,14 +87,15 @@ scamval* generic_mixed_arith(char* name, scamval* args, arith_func op,
                              int coerce_to_double) {
     TYPECHECK_ALL(name, args, 2, SCAM_NUM);
     scamval* first = scamseq_get(args, 0);
-    double sum = first->type == SCAM_INT ? first->vals.n : first->vals.d;
+    double sum = first->type == SCAM_INT ? scam_as_int(first) : 
+                                           scam_as_dec(first);
     int seen_double = 0;
     for (int i = 1; i < scamseq_len(args); i++) {
         scamval* v = scamseq_get(args, i);
         if (v->type == SCAM_INT) {
-            sum = op(sum, v->vals.n);
+            sum = op(sum, scam_as_int(v));
         } else {
-            sum = op(sum, v->vals.d);
+            sum = op(sum, scam_as_dec(v));
             seen_double = 1;
         }
     }
@@ -114,9 +115,9 @@ scamval* builtin_negate(scamval* args) {
     TYPECHECK_ARGS("-", args, 1, SCAM_NUM);
     scamval* v = scamseq_get(args, 0);
     if (v->type == SCAM_INT) {
-        return scamint(-1 * v->vals.n);
+        return scamint(-1 * scam_as_int(v));
     } else {
-        return scamdec(-1 * v->vals.d);
+        return scamint(-1 * scam_as_dec(v));
     }
 }
 
@@ -174,15 +175,15 @@ scamval* builtin_empty(scamval* args) {
 
 scamval* builtin_list_get(scamval* args) {
     scamval* list_arg = scamseq_get(args, 0);
-    size_t i = scamseq_get(args, 1)->vals.n;
+    size_t i = scam_as_int(scamseq_get(args, 1));
     return scamseq_pop(list_arg, i);
 }
 
 scamval* builtin_str_get(scamval* args) {
     scamval* str_arg = scamseq_get(args, 0);
-    size_t i = scamseq_get(args, 1)->vals.n;
+    size_t i = scam_as_int(scamseq_get(args, 1));
     if (i >= 0 && i < scamstr_len(str_arg)) {
-        return scamstr_from_char(str_arg->vals.s[i]);
+        return scamstr_from_char(scamstr_get(str_arg, i));
     } else {
         return scamerr("attempted string access out of bounds");
     }
@@ -200,8 +201,8 @@ scamval* builtin_get(scamval* args) {
 
 scamval* builtin_slice(scamval* args) {
     TYPECHECK_ARGS("slice", args, 3, SCAM_LIST, SCAM_INT, SCAM_INT);
-    size_t start = scamseq_get(args, 1)->vals.n;
-    size_t end = scamseq_get(args, 2)->vals.n;
+    size_t start = scam_as_int(scamseq_get(args, 1));
+    size_t end = scam_as_int(scamseq_get(args, 2));
     scamval* list_arg = scamseq_pop(args, 0);
     size_t n = scamseq_len(list_arg);
     if (start < 0 || start >= n || end < 0 || end >= n || start > end) {
@@ -220,7 +221,7 @@ scamval* builtin_slice(scamval* args) {
 
 scamval* builtin_take(scamval* args) {
     TYPECHECK_ARGS("take", args, 2, SCAM_LIST, SCAM_INT);
-    size_t start = scamseq_get(args, 1)->vals.n;
+    size_t start = scam_as_int(scamseq_get(args, 1));
     scamval* list_arg = scamseq_pop(args, 0);
     size_t n = scamseq_len(list_arg);
     for (int i = start; i < n; i++) {
@@ -231,7 +232,7 @@ scamval* builtin_take(scamval* args) {
 
 scamval* builtin_drop(scamval* args) {
     TYPECHECK_ARGS("drop", args, 2, SCAM_LIST, SCAM_INT);
-    size_t end = scamseq_get(args, 1)->vals.n;
+    size_t end = scam_as_int(scamseq_get(args, 1));
     scamval* list_arg = scamseq_pop(args, 0);
     size_t n = scamseq_len(list_arg);
     for (int i = 0; i < n; i++) {
@@ -256,7 +257,7 @@ scamval* builtin_list_head(scamval* args) {
 scamval* builtin_str_head(scamval* args) {
     scamval* str_arg = scamseq_get(args, 0);
     if (scamstr_len(str_arg) > 0) {
-        return scamstr_from_char(str_arg->vals.s[0]);
+        return scamstr_from_char(scamstr_get(str_arg, 0));
     } else {
         return scamerr("cannot take head of empty string");
     }
@@ -280,10 +281,7 @@ scamval* builtin_list_tail(scamval* args) {
 
 scamval* builtin_str_tail(scamval* args) {
     scamval* str_arg = scamseq_pop(args, 0);
-    size_t n = scamstr_len(str_arg);
-    for (int i = 1; i < n + 1; i++) {
-        str_arg->vals.s[i - 1] = str_arg->vals.s[i];
-    }
+    scamstr_pop(str_arg, 0);
     return str_arg;
 }
 
@@ -310,7 +308,7 @@ scamval* builtin_str_last(scamval* args) {
     scamval* str_arg = scamseq_get(args, 0);
     size_t n = scamstr_len(str_arg);
     if (n > 0) {
-        return scamstr_from_char(str_arg->vals.s[n - 1]);
+        return scamstr_from_char(scamstr_get(str_arg, n - 1));
     } else {
         return scamerr("cannot take last of empty string");
     }
@@ -335,8 +333,7 @@ scamval* builtin_list_init(scamval* args) {
 scamval* builtin_str_init(scamval* args) {
     scamval* str_arg = scamseq_pop(args, 0);
     size_t n = scamstr_len(str_arg);
-    if (n > 0)
-        str_arg->vals.s[n - 1] = '\0';
+    scamstr_pop(str_arg, n - 1);
     return str_arg;
 }
 
@@ -421,18 +418,14 @@ scamval* builtin_rfind(scamval* args) {
 scamval* builtin_upper(scamval* args) {
     TYPECHECK_ARGS("upper", args, 1, SCAM_STR);
     scamval* str_arg = scamseq_pop(args, 0);
-    for (int i = 0; i < strlen(str_arg->vals.s); i++) {
-        str_arg->vals.s[i] = toupper(str_arg->vals.s[i]);
-    }
+    scamstr_map(str_arg, toupper);
     return str_arg;
 }
 
 scamval* builtin_lower(scamval* args) {
     TYPECHECK_ARGS("lower", args, 1, SCAM_STR);
     scamval* str_arg = scamseq_pop(args, 0);
-    for (int i = 0; i < strlen(str_arg->vals.s); i++) {
-        str_arg->vals.s[i] = tolower(str_arg->vals.s[i]);
-    }
+    scamstr_map(str_arg, tolower);
     return str_arg;
 }
 
@@ -442,20 +435,17 @@ scamval* builtin_trim(scamval* args) {
     size_t n = scamstr_len(str_arg);
     // remove left whitespace
     size_t left_ws = 0;
-    while (isspace(str_arg->vals.s[left_ws]) && left_ws < n)
+    while (isspace(scamstr_get(str_arg, left_ws)) && left_ws < n)
         left_ws++;
     if (left_ws > 0) {
-        for (int i = left_ws; i < n; i++) {
-            str_arg->vals.s[i - left_ws] = str_arg->vals.s[i];
-        }
-        str_arg->vals.s[n - left_ws] = '\0';
+        scamstr_remove(str_arg, 0, left_ws);
     }
     // remove right whitespace
     n -= left_ws;
     size_t right_ws = 0;
-    while (isspace(str_arg->vals.s[n - (right_ws + 1)]) && right_ws < n)
+    while (isspace(scamstr_get(str_arg, n - (right_ws + 1))) && right_ws < n)
         right_ws++;
-    str_arg->vals.s[n - right_ws] = '\0';
+    scamstr_truncate(str_arg, n - right_ws);
     return str_arg;
 }
 
@@ -466,7 +456,7 @@ scamval* builtin_split(scamval* args) {
     int start = 0;
     int in_word = 0;
     for (int i = 0; i < scamstr_len(str_arg); i++) {
-        if (!isspace(str_arg->vals.s[i])) {
+        if (!isspace(scamstr_get(str_arg, i))) {
             if (!in_word) {
                 in_word = 1;
                 start = i;
@@ -474,14 +464,13 @@ scamval* builtin_split(scamval* args) {
         } else {
             if (in_word) {
                 in_word = 0;
-                scamseq_append(ret, scamstr_n(str_arg->vals.s + start,
-                                              i - start));
+                scamseq_append(ret, scamstr_substr(str_arg, start, i));
             }
         }
     }
     // make sure to add the last word
     if (in_word) {
-        scamseq_append(ret, scamstr(str_arg->vals.s + start));
+        scamseq_append(ret, scamstr_substr(str_arg, start, scamstr_len(str_arg)));
     }
     return ret;
 }
@@ -492,7 +481,7 @@ scamval* builtin_print(scamval* args) {
     if (arg->type != SCAM_STR) {
         scamval_print(arg);
     } else {
-        printf("%s", arg->vals.s);
+        printf("%s", scam_as_str(arg));
     }
     return scamnull();
 }
@@ -503,7 +492,7 @@ scamval* builtin_println(scamval* args) {
     if (arg->type != SCAM_STR) {
         scamval_println(arg);
     } else {
-        printf("%s\n", arg->vals.s);
+        printf("%s\n", scam_as_str(arg));
     }
     return scamnull();
 }
@@ -517,15 +506,14 @@ scamval* builtin_input(scamval* args) {
     if (last > 0 && s[last - 1] == '\n') {
         s[last - 1] = '\0';
     }
-    scamval* ret = scamstr(s);
-    free(s);
+    scamval* ret = scamstr_no_copy(s);
     return ret;
 }
 
 scamval* builtin_open(scamval* args) {
     TYPECHECK_ARGS("open", args, 2, SCAM_STR, SCAM_STR);
-    char* fname = scamseq_get(args, 0)->vals.s;
-    char* mode = scamseq_get(args, 1)->vals.s;
+    char* fname = scam_as_str(scamseq_get(args, 0));
+    char* mode = scam_as_str(scamseq_get(args, 1));
     FILE* fp = fopen(fname, mode);
     return scamport(fp);
 }
@@ -533,9 +521,9 @@ scamval* builtin_open(scamval* args) {
 scamval* builtin_close(scamval* args) {
     TYPECHECK_ARGS("close", args, 1, SCAM_PORT);
     scamval* port_arg = scamseq_get(args, 0);
-    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
-        fclose(port_arg->vals.port->fp);
-        port_arg->vals.port->status = SCAMPORT_CLOSED;
+    if (scamport_status(port_arg) == SCAMPORT_OPEN) {
+        fclose(scam_as_file(port_arg));
+        scamport_set_status(port_arg, SCAMPORT_CLOSED);
         return scamnull();
     } else {
         return scamerr("port is already closed");
@@ -545,8 +533,8 @@ scamval* builtin_close(scamval* args) {
 scamval* builtin_port_good(scamval* args) {
     TYPECHECK_ARGS("port-good?", args, 1, SCAM_PORT);
     scamval* port_arg = scamseq_get(args, 0);
-    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
-        FILE* fp = port_arg->vals.port->fp;
+    if (scamport_status(port_arg) == SCAMPORT_OPEN) {
+        FILE* fp = scam_as_file(port_arg);
         return scambool(!ferror(fp) && !feof(fp));
     } else {
         return scambool(0);
@@ -556,7 +544,9 @@ scamval* builtin_port_good(scamval* args) {
 scamval* builtin_readline(scamval* args) {
     TYPECHECK_ARGS("readline", args, 1, SCAM_PORT);
     scamval* port_arg = scamseq_get(args, 0);
-    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
+    if (scamport_status(port_arg) == SCAMPORT_OPEN) {
+        return scamstr_read(scam_as_file(port_arg));
+        /*
         scamval* ret = scamstr_empty();
         int err = getline(&ret->vals.s, &ret->count, port_arg->vals.port->fp);
         if (err != -1) {
@@ -566,15 +556,16 @@ scamval* builtin_readline(scamval* args) {
             scamval_free(ret);
             return scamerr_eof();
         }
+        */
     } else {
         return scamerr("cannot read from closed port");
     }
 }
 
 scamval* builtin_readchar(scamval* args) {
-    TYPECHECK_ARGS("readline", args, 1, SCAM_PORT);
+    TYPECHECK_ARGS("readchar", args, 1, SCAM_PORT);
     scamval* port_arg = scamseq_get(args, 0);
-    if (port_arg->vals.port->status == SCAMPORT_OPEN) {
+    if (scamport_status(port_arg) == SCAMPORT_OPEN) {
         char c = fgetc(port_arg->vals.port->fp);
         if (c != EOF) {
             return scamstr_from_char(c);
@@ -589,7 +580,7 @@ scamval* builtin_readchar(scamval* args) {
 scamval* builtin_assert(scamval* args) {
     TYPECHECK_ARGS("assert", args, 1, SCAM_BOOL);
     scamval* cond = scamseq_get(args, 0);
-    if (cond->vals.n) {
+    if (scam_as_bool(cond)) {
         return scambool(1);
     } else {
         return scamerr("failed assert at line %d, col %d", cond->line, 
@@ -601,10 +592,10 @@ scamval* builtin_range(scamval* args) {
     TYPECHECK_ARGS("range", args, 2, SCAM_INT, SCAM_INT);
     scamval* lower = scamseq_get(args, 0);
     scamval* upper = scamseq_get(args, 1);
-    if (lower->vals.n <= upper->vals.n) {
-        int count = lower->vals.n;
+    if (scam_as_int(lower) <= scam_as_int(upper)) {
+        int count = scam_as_int(lower);
         scamval* ret = scamlist();
-        while (count < upper->vals.n) {
+        while (count < scam_as_int(upper)) {
             scamseq_append(ret, scamint(count));
             count++;
         }
@@ -669,7 +660,7 @@ scamval* builtin_lte(scamval* args) {
 
 scamval* builtin_not(scamval* args) {
     TYPECHECK_ARGS("not", args, 1, SCAM_BOOL);
-    return scambool(!(scamseq_get(args, 0)->vals.n));
+    return scambool(!scam_as_bool(scamseq_get(args, 0)));
 }
 
 void add_builtin(scamenv* env, char* sym, scambuiltin_t bltin) {

@@ -18,38 +18,6 @@ typedef struct scamenv scamenv;
 // Another convenient typedef
 typedef scamval* (scambuiltin_t)(scamval*);
 
-// Return a reference to the i'th element of the sequence
-// Make sure not to free this reference!
-scamval* scamseq_get(const scamval*, size_t i);
-
-// Remove and return the i'th element of the sequence
-// The caller assumes responsibility for freeing the value
-scamval* scamseq_pop(scamval*, size_t i);
-
-// Set the i'th element of the sequence, obliterating the old element without
-// freeing it (DO NOT USE unless you know the i'th element is already free)
-void scamseq_set(scamval* seq, size_t i, scamval* v);
-
-// Same as scamval_set, except the previous element is free'd before
-void scamseq_replace(scamval*, size_t, scamval*);
-
-// Return the actual number of elements in the sequence or string
-size_t scamseq_len(const scamval*);
-size_t scamstr_len(const scamval*);
-
-// Append/prepend a value to a sequence
-// The sequence takes responsibility for freeing the value, so it's best not
-// to use a value once you've appended or prepended it somewhere
-void scamseq_append(scamval* seq, scamval* v);
-void scamseq_prepend(scamval* seq, scamval* v);
-
-// Concatenate the second argument to the first, freeing the second arg
-void scamseq_concat(scamval* seq1, scamval* seq2);
-void scamstr_concat(scamval* s1, scamval* s2);
-
-// Free the internal sequence of a scamval, without freeing the actual value
-void scamseq_free(scamval*);
-
 typedef struct {
     scamenv* env; // the environment the function was created in
     scamval* parameters;
@@ -79,46 +47,113 @@ struct scamval {
     int refs;
 };
 
-// Make scamvals out of various C types
+
+/*** SCAMVAL CONSTRUCTORS ***/
 scamval* scamval_new(int type);
-scamval* scamint(long long);
-scamval* scamdec(double);
-scamval* scambool(int);
-scamval* scamlist();
-scamval* scamsexpr();
-scamval* scamsexpr_from_vals(size_t, ...);
-scamval* scamport(FILE*);
-scamval* scamstr(const char*);
-scamval* scamstr_empty();
-// Create a string from the first n characters of the given string
-scamval* scamstr_n(const char*, size_t n);
-scamval* scamstr_from_char(char);
 scamval* scamsym(const char*);
-// Create a formatted error message
-scamval* scamerr(const char*, ...);
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body);
 scamval* scambuiltin(scambuiltin_t*);
 scamval* scamnull();
 
-// Useful error message constructors
+
+/*** NUMERIC API ***/
+scamval* scamint(long long);
+scamval* scamdec(double);
+scamval* scambool(int);
+long long scam_as_int(const scamval*);
+long long scam_as_bool(const scamval*);
+double scam_as_dec(const scamval*);
+
+
+/*** SEQUENCE API ***/
+scamval* scamlist();
+scamval* scamsexpr();
+scamval* scamsexpr_from_vals(size_t, ...);
+
+// Return a reference to the i'th element of the sequence
+// Make sure not to free this reference!
+scamval* scamseq_get(const scamval*, size_t i);
+
+// Remove and return the i'th element of the sequence
+// The caller assumes responsibility for freeing the value
+scamval* scamseq_pop(scamval*, size_t i);
+
+// Set the i'th element of the sequence, obliterating the old element without
+// freeing it (DO NOT USE unless you know the i'th element is already free)
+void scamseq_set(scamval* seq, size_t i, scamval* v);
+
+// Same as scamval_set, except the previous element is free'd before
+void scamseq_replace(scamval*, size_t, scamval*);
+
+// Return the actual number of elements in the sequence or string
+size_t scamseq_len(const scamval*);
+
+// Append/prepend a value to a sequence
+// The sequence takes responsibility for freeing the value, so it's best not
+// to use a value once you've appended or prepended it somewhere
+void scamseq_append(scamval* seq, scamval* v);
+void scamseq_prepend(scamval* seq, scamval* v);
+
+// Concatenate the second argument to the first, freeing the second arg
+void scamseq_concat(scamval* seq1, scamval* seq2);
+
+// Free the internal sequence of a scamval, without freeing the actual value
+void scamseq_free(scamval*);
+
+
+/*** STRING API ***/
+scamval* scamstr(const char*);
+scamval* scamstr_read(FILE*);
+scamval* scamstr_no_copy(char*);
+scamval* scamstr_empty();
+scamval* scamstr_from_char(char);
+char* scam_as_str(scamval*);
+const char* scam_as_cstr(const scamval*);
+void scamstr_set(const scamval*, size_t, char);
+void scamstr_map(const scamval*, int map_f(int));
+char scamstr_get(const scamval*, size_t);
+char scamstr_pop(scamval*, size_t);
+void scamstr_remove(scamval*, size_t, size_t);
+void scamstr_truncate(scamval*, size_t);
+scamval* scamstr_substr(scamval*, size_t, size_t);
+void scamstr_concat(scamval* s1, scamval* s2);
+size_t scamstr_len(const scamval*);
+
+
+/*** ERROR API ***/
+scamval* scamerr(const char*, ...);
 scamval* scamerr_arity(const char* name, size_t got, size_t expected);
 scamval* scamerr_min_arity(const char* name, size_t got, size_t expected);
 scamval* scamerr_eof();
 
+
+/*** PORT API ***/
+scamval* scamport(FILE*);
+FILE* scam_as_file(scamval*);
+int scamport_status(const scamval*);
+void scamport_set_status(scamval*, int);
+
+
+/*** SCAMVAL MEMORY MANAGEMENT ***/
 // Return a copy of the given value
 scamval* scamval_copy(scamval*);
 // Free all resources used by a scamval, including the pointer itself
 void scamval_free(scamval*);
 
+
+/*** SCAMVAL PRINTING ***/
 void scamval_print(const scamval*);
 void scamval_println(const scamval*);
 void scamval_print_debug(const scamval*);
 void scamval_print_ast(const scamval*, int indent);
 
-// Comparisons between scamvals
+
+/*** SCAMVAL COMPARISONS ***/
 int scamval_eq(const scamval*, const scamval*);
 int scamval_gt(const scamval*, const scamval*);
 
+
+/*** SCAMENV ***/
 struct scamenv {
     scamenv* enclosing;
     // symbols and values are stored as scamval lists
@@ -143,3 +178,21 @@ scamval* scamenv_lookup(scamenv*, scamval* sym);
 // Wrappers that exit the program if allocation fails
 void* my_malloc(size_t);
 void* my_realloc(void*, size_t);
+
+
+/*** TYPECHECKING ***/
+// Return the names of types as strings
+const char* scamtype_name(int type);
+const char* scamtype_debug_name(int type);
+
+// Check if the value belongs to the given type
+int scamval_typecheck(const scamval*, int type);
+
+// Return the narrowest type applicable to both types
+int narrowest_type(int, int);
+
+// Return the narrowest type applicable to all elements of the sequence
+int scamseq_narrowest_type(scamval*);
+
+// Construct a type error message
+scamval* scamerr_type(const char* name, size_t pos, int got, int expected);
