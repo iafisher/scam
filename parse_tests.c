@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdlib.h>
 #include "parse.h"
 #include "scamtypes.h"
 
@@ -6,7 +7,6 @@ void parsetest(char* line, int n, ...);
 void parsetest_lit(char* line, int type_we_want);
 
 void parse_tests() {
-    printf("Running parse tests\n");
     parsetest_lit("-103", SCAM_INT);
     parsetest_lit("-103.7", SCAM_DEC);
     parsetest_lit("hello", SCAM_SYM);
@@ -21,7 +21,7 @@ void parsetest(char* line, int n, ...) {
     if (ast->type != SCAM_SEXPR) {
         printf("Failed parse test \"%s\": expected SCAM_SEXPR object\n", line);
         scamval_free(ast);
-        return;
+        exit(EXIT_FAILURE);
     }
     va_list args;
     va_start(args, n);
@@ -32,7 +32,7 @@ void parsetest(char* line, int n, ...) {
             printf("Failed parse test \"%s\" on element %d; ", line, i);
             printf("got %s, expected %s\n", scamtype_debug_name(given_type),
                                             scamtype_debug_name(req_type));
-            break;
+            exit(EXIT_FAILURE);
         }
     }
     va_end(args);
@@ -45,6 +45,7 @@ void parsetest_lit(char* line, int type_we_want) {
         printf("Failed parse test \"%s\" ", line);
         printf("got %s, expected %s\n", scamtype_debug_name(v->type),
                                         scamtype_debug_name(type_we_want));
+        exit(EXIT_FAILURE);
     }
     scamval_free(v);
 }

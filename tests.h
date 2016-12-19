@@ -1,6 +1,10 @@
 #pragma once
 
-#define MY_ASSERT(cond) if (!cond) return 0;
+#define TEST_ASSERT(cond) \
+    if (!(cond)) { \
+        fprintf(stderr, "failure at %s:%d\n", __FILE__, __LINE__); \
+        exit(EXIT_FAILURE); \
+    }
 
 void stream_tests();
 void tokenize_tests();

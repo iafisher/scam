@@ -14,7 +14,6 @@ void evaltest_lambda(scamenv*);
 void evaltest_zero_div(scamenv*);
 
 void eval_tests() {
-    printf("Running eval tests\n");
     scamenv* env = scamenv_init(NULL);
     register_builtins(env);
     evaltest_arith(env);

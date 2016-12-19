@@ -1,10 +1,10 @@
 #include <stdarg.h>
+#include <stdlib.h>
 #include "tokenize.h"
 
 void tkntest(char* s, int n, ...);
 
 void tokenize_tests() {
-    printf("Running tokenize tests\n");
     tkntest("-2730", 1, TKN_INT);
     tkntest("valid-identifier", 1, TKN_SYM);
     tkntest("[8.9 -92.0]", 4, TKN_LBRACKET, TKN_DEC, TKN_DEC, TKN_RBRACKET);
@@ -29,7 +29,7 @@ void tkntest(char* s, int n, ...) {
             printf("Failed tokenize test \"%s\" on token %d; ", s, i);
             printf("got %s, expected %s\n", token_type_name(tz.tkn.type),
                                             token_type_name(this_type));
-            return;
+            exit(EXIT_FAILURE);
         }
         tokenizer_advance(&tz);
         i++;

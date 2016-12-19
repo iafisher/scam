@@ -4,7 +4,7 @@
 void* my_malloc(size_t size) {
     void* ret = malloc(size);
     if (ret == NULL) {
-        fputs("malloc returned a NULL pointer... exiting program\n", stderr);
+        fputs("out of memory... exiting program\n", stderr);
         exit(EXIT_FAILURE);
     }
     return ret;
