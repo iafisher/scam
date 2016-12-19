@@ -152,8 +152,9 @@ void tokenizer_advance(Tokenizer* tz) {
         tokenizer_advance(tz);
     } else if (is_token(c)) {
         stream_mark(&tz->strm);
-        stream_getchar(&tz->strm);
+        c = stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
+        stream_putchar(&tz->strm, c);
     } else if (c == '"') {
         stream_mark(&tz->strm);
         // find the end of the string literal
@@ -161,14 +162,18 @@ void tokenizer_advance(Tokenizer* tz) {
         c = stream_getchar(&tz->strm);
         while (c != '"')
             c = stream_getchar(&tz->strm);
-        stream_getchar(&tz->strm);
+        // advance one past the end quote so that stream_recall returns it
+        c = stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
+        // put the extraneous char back on the stream
+        stream_putchar(&tz->strm, c);
     } else {
         stream_mark(&tz->strm);
         // find the end of the token
         while (!is_token_boundary(c))
             c = stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
+        stream_putchar(&tz->strm, c);
     }
 }
 

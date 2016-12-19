@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "progutils.h"
 #include "scamval.h"
 #include "scamtypes.h"
 
@@ -278,7 +279,7 @@ int scamval_eq(const scamval* v1, const scamval* v2) {
                 return scamval_list_eq(v1, v2);
             case SCAM_SYM:
             case SCAM_STR:
-                return (strcmp(scam_as_cstr(v1), scam_as_cstr(v2)) == 0);
+                return (strcmp(scam_as_str(v1), scam_as_str(v2)) == 0);
             case SCAM_NULL:
                 return 1;
             default:
@@ -438,8 +439,7 @@ void scamstr_resize(scamval* s, size_t new_sz) {
     }
 }
 
-char* scam_as_str(scamval* v) { return v->vals.s; }
-const char* scam_as_cstr(const scamval* v) { return v->vals.s; }
+const char* scam_as_str(const scamval* v) { return v->vals.s; }
 
 void scamstr_set(scamval* v, size_t i, char c) {
     if (i >= 0 && i < v->count) {
@@ -454,30 +454,46 @@ void scamstr_map(scamval* v, int map_f(int)) {
 }
 
 char scamstr_get(const scamval* v, size_t i) {
-    return v->vals.s[i];
+    if (i >= 0 && i < scamstr_len(v)) {
+        return v->vals.s[i];
+    } else {
+        return EOF;
+    }
 }
 
 char scamstr_pop(scamval* v, size_t i) {
-    char ret = v->vals.s[i];
-    scamstr_remove(v, i, i + 1);
-    return ret;
+    if (i >= 0 && i < scamstr_len(v)) {
+        char ret = v->vals.s[i];
+        scamstr_remove(v, i, i + 1);
+        return ret;
+    } else {
+        return EOF;
+    }
 }
 
 void scamstr_remove(scamval* v, size_t start, size_t end) {
-    memmove(v->vals.s + start, v->vals.s + end, v->count - start - end);
-    v->count -= (end - start);
-    v->vals.s[v->count] = '\0';
+    if (start >= 0 && end < scamstr_len(v) && start < end) {
+        memmove(v->vals.s + start, v->vals.s + end, v->count - start - end);
+        v->count -= (end - start);
+        v->vals.s[v->count] = '\0';
+    }
 }
 
 void scamstr_truncate(scamval* v, size_t i) {
-    v->vals.s[i] = '\0';
+    if (i >= 0 && i < scamstr_len(v)) {
+        v->vals.s[i] = '\0';
+    }
 }
 
 scamval* scamstr_substr(scamval* v, size_t start, size_t end) {
-    char* s = my_malloc(end - start + 1);
-    strncpy(s, v->vals.s + start, end - start);
-    s[end - start] = '\0';
-    return scamstr_no_copy(s);
+    if (start >= 0 && end < scamstr_len(v) && start < end) {
+        char* s = my_malloc(end - start + 1);
+        strncpy(s, v->vals.s + start, end - start);
+        s[end - start] = '\0';
+        return scamstr_no_copy(s);
+    } else {
+        return scamerr("string access out of bounds");
+    }
 }
 
 size_t scamstr_len(const scamval* s) {
@@ -570,9 +586,9 @@ void scamval_print(const scamval* v) {
         case SCAM_LAMBDA: printf("<Scam function>"); break;
         case SCAM_BUILTIN: printf("<Scam builtin>"); break;
         case SCAM_PORT: printf("<Scam port>"); break;
-        case SCAM_STR: printf("\"%s\"", scam_as_cstr(v)); break;
-        case SCAM_SYM: printf("%s", scam_as_cstr(v)); break;
-        case SCAM_ERR: printf("Error: %s", scam_as_cstr(v)); break;
+        case SCAM_STR: printf("\"%s\"", scam_as_str(v)); break;
+        case SCAM_SYM: printf("%s", scam_as_str(v)); break;
+        case SCAM_ERR: printf("Error: %s", scam_as_str(v)); break;
     }
 }
 
@@ -598,24 +614,6 @@ void scamval_print_ast(const scamval* ast, int indent) {
     } else {
         scamval_println(ast);
     }
-}
-
-void* my_malloc(size_t size) {
-    void* ret = malloc(size);
-    if (ret == NULL) {
-        fputs("malloc returned a NULL pointer... exiting program\n", stderr);
-        exit(EXIT_FAILURE);
-    }
-    return ret;
-}
-
-void* my_realloc(void* ptr, size_t size) {
-    void* ret = realloc(ptr, size);
-    if (ret == NULL) {
-        fputs("realloc returned a NULL pointer... exiting program", stderr);
-        exit(EXIT_FAILURE);
-    }
-    return ret;
 }
 
 

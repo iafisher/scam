@@ -110,8 +110,7 @@ scamval* scamstr_read(FILE*);
 scamval* scamstr_no_copy(char*);
 scamval* scamstr_empty();
 scamval* scamstr_from_char(char);
-char* scam_as_str(scamval*);
-const char* scam_as_cstr(const scamval*);
+const char* scam_as_str(const scamval*);
 void scamstr_set(scamval*, size_t, char);
 void scamstr_map(scamval*, int map_f(int));
 // Return the i'th character without removing it
@@ -180,10 +179,6 @@ void scamenv_bind(scamenv*, scamval* sym, scamval* val);
 // Lookup the symbol in the environment, returning a copy of the value if it
 // exists and an error if it doesn't
 scamval* scamenv_lookup(scamenv*, scamval* sym);
-
-// Wrappers that exit the program if allocation fails
-void* my_malloc(size_t);
-void* my_realloc(void*, size_t);
 
 
 /*** TYPECHECKING ***/

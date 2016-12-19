@@ -512,8 +512,8 @@ scamval* builtin_input(scamval* args) {
 
 scamval* builtin_open(scamval* args) {
     TYPECHECK_ARGS("open", args, 2, SCAM_STR, SCAM_STR);
-    char* fname = scam_as_str(scamseq_get(args, 0));
-    char* mode = scam_as_str(scamseq_get(args, 1));
+    const char* fname = scam_as_str(scamseq_get(args, 0));
+    const char* mode = scam_as_str(scamseq_get(args, 1));
     FILE* fp = fopen(fname, mode);
     return scamport(fp);
 }

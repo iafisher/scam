@@ -8,7 +8,7 @@
 #include "tokenize.h"
 #include "tests.h"
 
-void stream_repl(char*, size_t, Stream**);
+void stream_repl(char*, size_t, Stream*);
 void tokenize_repl(char*);
 void parse_repl(char*);
 void eval_repl(char*, scamenv*);
@@ -37,7 +37,8 @@ int main(int argc, char** argv) {
     // Run the REPL
     char* buffer = NULL;
     size_t s_len = 0;
-    Stream* strm = NULL;
+    Stream strm;
+    stream_from_str(&strm, "");
     scamenv* env = scamenv_init(NULL);
     register_builtins(env);
     while (1) {
@@ -80,35 +81,37 @@ int main(int argc, char** argv) {
         }
     }
     if (buffer) free(buffer);
-    if (strm)
-        stream_close(strm);
+    stream_close(&strm);
     scamenv_free(env);
     return 0;
 }
 
-void stream_repl(char* command, size_t s_len, Stream** strm) {
+void stream_repl(char* command, size_t s_len, Stream* strm) {
     if (strstr(command, "open") == command && s_len >= 6) {
         char* fp = command + 5;
-        stream_close(*strm);
-        stream_from_file(*strm, fp);
+        stream_close(strm);
+        stream_from_file(strm, fp);
     } else if (strstr(command, "feed") == command && s_len >= 6) {
         char* line = command + 5;
-        stream_close(*strm);
-        stream_from_str(*strm, line);
+        stream_close(strm);
+        stream_from_str(strm, line);
     } else {
         if (!strm) {
             printf("Stream not yet opened\n");
             return;
         }
         if (strcmp(command, "getchar") == 0) {
-            printf("'%c'\n", stream_getchar(*strm));
+            printf("'%c'\n", stream_getchar(strm));
         } else if (strcmp(command, "mark") == 0) {
-            stream_mark(*strm);
-            printf("Set mem_flag to %d\n", (*strm)->mem_flag);
+            stream_mark(strm);
+            printf("Set mem_flag to %d\n", strm->mem_flag);
         } else if (strcmp(command, "recall") == 0) {
-            char* s = stream_recall(*strm);
+            char* s = stream_recall(strm);
             printf("\"%s\"\n", s);
             free(s);
+        } else if (strstr(command, "putchar") == command && s_len >= 9) {
+            char c = command[8];
+            stream_putchar(strm, c);
         } else {
             printf("unknown command\n");
         }

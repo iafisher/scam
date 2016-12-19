@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "progutils.h"
 #include "stream.h"
 
 // Initialize a generic Stream object
@@ -9,6 +10,7 @@ void stream_init(Stream* strm, int type) {
     strm->col = strm->mem_col = FIRST_COL;
     strm->line = strm->mem_line = FIRST_LINE;
     strm->mem_flag = -1;
+    strm->chbuf = EOF;
     // initialize everything to 0 to placate valgrind
     strm->s_len = strm->last_pos = strm->mem_len = 0;
     strm->s = NULL;
@@ -35,7 +37,12 @@ int stream_good(Stream* strm) {
 }
 
 char stream_getchar(Stream* strm) {
-    if (!stream_good(strm)) return '\0';
+    if (!stream_good(strm)) return EOF;
+    if (strm->chbuf != EOF) {
+        char ret = strm->chbuf;
+        strm->chbuf = EOF;
+        return ret;
+    }
     if (strm->mem_flag > -1) 
         strm->mem_len++;
     if (strm->type == STREAM_STR) {
@@ -53,22 +60,8 @@ char stream_getchar(Stream* strm) {
     }
 }
 
-// Retreat the stream backwards by one character
-void stream_retreat(Stream* strm) {
-    if (strm->mem_flag == -1) {
-        if (strm->type == STREAM_STR) {
-            if (strm->col > FIRST_COL) {
-                strm->col--;
-            }
-        } else {
-            fseek(strm->fp, strm->last_pos, SEEK_SET);
-            // note that this may give inaccurate results if the stream is
-            // currently on the first character of the line
-            if (strm->col > FIRST_COL) {
-                strm->col--;
-            }
-        }
-    }
+void stream_putchar(Stream* strm, char c) {
+    strm->chbuf = c;
 }
 
 void stream_mark(Stream* strm) {
@@ -84,7 +77,7 @@ void stream_mark(Stream* strm) {
 
 char* stream_recall(Stream* strm) {
     if (strm->mem_flag > -1) {
-        char* ret = malloc(strm->mem_len + 1);
+        char* ret = my_malloc(strm->mem_len + 1);
         if (strm->type == STREAM_STR) {
             strncpy(ret, strm->s + strm->mem_flag, strm->mem_len);
             ret[strm->mem_len] = '\0';
@@ -96,7 +89,6 @@ char* stream_recall(Stream* strm) {
         }
         strm->mem_flag = -1;
         strm->mem_len = 0;
-        stream_retreat(strm);
         return ret;
     } else {
         return NULL;

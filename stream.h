@@ -13,6 +13,7 @@ typedef struct {
     int mem_flag; // -1 if not remembering, > -1 otherwise
     int mem_len; // length of characters remembered so far
     int mem_line, mem_col; // line and col when memory mode began
+    char chbuf; // buffer used by stream_putchar
     // used by string streams
     int s_len;
     char* s;
@@ -30,6 +31,7 @@ int stream_good(Stream*);
 
 // Get the current character from the stream and advance the stream forward
 char stream_getchar(Stream*);
+void stream_putchar(Stream*, char);
 
 // Turn memory mode on
 void stream_mark(Stream*);

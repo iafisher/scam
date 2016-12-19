@@ -8,15 +8,22 @@ int stream_test_103_27(Stream* strm) {
     MY_ASSERT(stream_good(strm));
     // token: (
     MY_ASSERT(stream_getchar(strm) == '(');
+    stream_mark(strm);
+    MY_ASSERT(stream_getchar(strm) == '+');
+    char* s = stream_recall(strm);
+    MY_ASSERT(strcmp(s, "(") == 0);
+    free(s);
+    stream_putchar(strm, '+');
     // token: +
     MY_ASSERT(stream_getchar(strm) == '+');
     stream_mark(strm);
     MY_ASSERT(stream_getchar(strm) == ' ');
-    char* s = stream_recall(strm);
+    s = stream_recall(strm);
     MY_ASSERT(strcmp(s, "+") == 0);
     free(s);
+    stream_putchar(strm, ' ');
     // token: 103
-    MY_ASSERT(stream_getchar(strm) == ' '); // getchar repeats itself after recall
+    MY_ASSERT(stream_getchar(strm) == ' ');
     MY_ASSERT(stream_getchar(strm) == '1');
     stream_mark(strm);
     MY_ASSERT(stream_getchar(strm) == '0');
@@ -25,6 +32,7 @@ int stream_test_103_27(Stream* strm) {
     s = stream_recall(strm);
     MY_ASSERT(strcmp(s, "103") == 0);
     free(s);
+    stream_putchar(strm, ' ');
     // token: 27
     MY_ASSERT(stream_getchar(strm) == ' ');
     MY_ASSERT(stream_getchar(strm) == '2');
@@ -34,8 +42,14 @@ int stream_test_103_27(Stream* strm) {
     s = stream_recall(strm);
     MY_ASSERT(strcmp(s, "27") == 0);
     free(s);
+    stream_putchar(strm, ')');
     // token: )
     MY_ASSERT(stream_getchar(strm) == ')');
+    stream_mark(strm);
+    MY_ASSERT(stream_getchar(strm) == EOF);
+    s = stream_recall(strm);
+    MY_ASSERT(strcmp(s, ")") == 0);
+    free(s);
     return 1;
 }
 
