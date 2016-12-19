@@ -441,15 +441,15 @@ void scamstr_resize(scamval* s, size_t new_sz) {
 char* scam_as_str(scamval* v) { return v->vals.s; }
 const char* scam_as_cstr(const scamval* v) { return v->vals.s; }
 
-void scamstr_set(const scamval* v, size_t i, char c) {
+void scamstr_set(scamval* v, size_t i, char c) {
     if (i >= 0 && i < v->count) {
         v->vals.s[i] = c;
     }
 }
 
-void scamstr_map(const scamval* v, int map_f(int)) {
-    for (size_t i = 0; i < v->count; i++) {
-        v->vals.s[i] = map_f(v->vals.s[i]);
+void scamstr_map(scamval* v, int map_f(int)) {
+    for (char* p = v->vals.s; *p != '\0'; p++) {
+        *p = map_f(*p);
     }
 }
 

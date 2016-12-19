@@ -102,19 +102,25 @@ void scamseq_free(scamval*);
 
 
 /*** STRING API ***/
+// Initialize a string from a character array (a copy is made)
 scamval* scamstr(const char*);
+// Read a line from a file
 scamval* scamstr_read(FILE*);
+// Initialize a string from a character array without making a copy
 scamval* scamstr_no_copy(char*);
 scamval* scamstr_empty();
 scamval* scamstr_from_char(char);
 char* scam_as_str(scamval*);
 const char* scam_as_cstr(const scamval*);
-void scamstr_set(const scamval*, size_t, char);
-void scamstr_map(const scamval*, int map_f(int));
-char scamstr_get(const scamval*, size_t);
-char scamstr_pop(scamval*, size_t);
-void scamstr_remove(scamval*, size_t, size_t);
+void scamstr_set(scamval*, size_t, char);
+void scamstr_map(scamval*, int map_f(int));
+// Return the i'th character without removing it
+char scamstr_get(const scamval*, size_t i);
+// Remove and return the i'th character
+char scamstr_pop(scamval*, size_t i);
+void scamstr_remove(scamval*, size_t beg, size_t end);
 void scamstr_truncate(scamval*, size_t);
+// Return a newly-allocated substring
 scamval* scamstr_substr(scamval*, size_t, size_t);
 void scamstr_concat(scamval* s1, scamval* s2);
 size_t scamstr_len(const scamval*);
