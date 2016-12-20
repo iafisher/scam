@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     stream_from_str(&strm, "");
     scamenv* env = scamenv_init(NULL);
     register_builtins(env);
-    while (1) {
+    for (;;) {
         switch (mode) {
             case REPL_STREAM: printf("stream"); break;
             case REPL_TOKENIZE: printf("tokenize"); break;
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
         int end = getline(&buffer, &s_len, stdin);
         // remove trailing newline
         if (end > 0) {
-            buffer[end - 1] = '\0';
+            buffer[--end] = '\0';
         }
         if (strcmp(buffer, "quit") == 0) {
             break;
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (mode == REPL_STREAM) {
-            stream_repl(buffer, s_len, &strm);
+            stream_repl(buffer, end, &strm);
         } else if (mode == REPL_TOKENIZE) {
             tokenize_repl(buffer);
         } else if (mode == REPL_PARSE) {
@@ -89,11 +89,11 @@ void stream_repl(char* command, size_t s_len, Stream* strm) {
         stream_from_str(strm, line);
     } else {
         if (!strm) {
-            printf("Stream not yet opened\n");
+            printf("Error: stream not yet opened\n");
             return;
         }
-        if (strcmp(command, "getchar") == 0) {
-            char c = stream_getchar(strm);
+        if (strcmp(command, "getc") == 0) {
+            char c = stream_getc(strm);
             printf("'%c' (%d)\n", c, c);
         } else if (strcmp(command, "mark") == 0) {
             stream_mark(strm);
@@ -102,8 +102,8 @@ void stream_repl(char* command, size_t s_len, Stream* strm) {
             char* s = stream_recall(strm);
             printf("\"%s\"\n", s);
             free(s);
-        } else if (strcmp(command, "retreat") == 0) {
-            stream_retreat(strm);
+        } else if (strstr(command, "ungetc") == command && s_len == 8) {
+            stream_ungetc(strm, command[7]);
         } else if (strcmp(command, "status") == 0) {
             print_stream(strm);
         } else {
@@ -142,10 +142,8 @@ void eval_repl(char* command, scamenv* env) {
 }
 
 void print_stream(Stream* strm) {
-    printf("type=%s, ", strm->type == STREAM_STR ? "string" : "file");
     printf("line=%d, col=%d, good=%d, ", strm->line, strm->col, strm->good);
     printf("mem_flag=%d, mem_line=%d, ", strm->mem_flag, strm->mem_line);
-    printf("mem_col=%d, chbuf=%c, ", strm->mem_col, strm->chbuf);
-    printf("s_len=%d, last_pos=%d, ", strm->s_len, strm->last_pos);
+    printf("mem_col=%d, last_pos=%d, ", strm->mem_col, strm->last_pos);
     printf("mem_len=%d\n", strm->mem_len);
 }

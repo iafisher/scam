@@ -39,7 +39,5 @@ void run_repl(scamenv* env) {
         scamval_println(v);
         scamval_free(v);
     }
-    if (buffer) {
-        free(buffer);
-    }
+    free(buffer);
 }

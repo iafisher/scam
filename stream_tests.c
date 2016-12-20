@@ -4,12 +4,11 @@
 #include "stream.h"
 #include "tests.h"
 
-#define GETCHAR_ASSERT(strm, c) { \
-    int got = stream_getchar(strm); \
+#define GETC_ASSERT(strm, c) { \
+    int got = stream_getc(strm); \
     if (got != c) { \
         fprintf(stderr, "failure at %s:%d ", __FILE__, __LINE__); \
-        fprintf(stderr, "(%s)", strm->type == STREAM_STR ? "string":"file"); \
-        fprintf(stderr, " expected %c (%d), ", c, c); \
+        fprintf(stderr, "expected %c (%d), ", c, c); \
         fprintf(stderr, "got %c (%d)\n", got, got); \
         exit(EXIT_FAILURE); \
     } \
@@ -19,7 +18,6 @@
     char* got = stream_recall(strm); \
     if (strcmp(got, s) != 0) { \
         fprintf(stderr, "failure at %s:%d ", __FILE__, __LINE__); \
-        fprintf(stderr, "(%s)", strm->type == STREAM_STR ? "string":"file"); \
         fprintf(stderr, " expected \"%s\", got \"%s\"\n", s, got); \
         exit(EXIT_FAILURE); \
     } \
@@ -40,7 +38,7 @@ void run_stream_test(streamtest_f func, char* line, char* fp) {
     Stream fstream, sstream; 
     stream_from_file(&fstream, fp);
     stream_from_str(&sstream, line);
-    //func(&fstream);
+    func(&fstream);
     func(&sstream);
     stream_close(&fstream); 
     stream_close(&sstream);
@@ -48,38 +46,38 @@ void run_stream_test(streamtest_f func, char* line, char* fp) {
 
 void stream_test_103_27(Stream* strm) {
     // token: (
-    GETCHAR_ASSERT(strm, '(');
+    GETC_ASSERT(strm, '(');
     stream_mark(strm);
-    GETCHAR_ASSERT(strm, '+');
+    GETC_ASSERT(strm, '+');
     RECALL_ASSERT(strm, "(");
-    stream_retreat(strm);
+    stream_ungetc(strm, '+');
     // token: +
-    GETCHAR_ASSERT(strm, '+');
+    GETC_ASSERT(strm, '+');
     stream_mark(strm);
-    GETCHAR_ASSERT(strm, ' ');
+    GETC_ASSERT(strm, ' ');
     RECALL_ASSERT(strm, "+");
-    stream_retreat(strm);
+    stream_ungetc(strm, ' ');
     // token: 103
-    GETCHAR_ASSERT(strm, ' ');
-    GETCHAR_ASSERT(strm, '1');
+    GETC_ASSERT(strm, ' ');
+    GETC_ASSERT(strm, '1');
     stream_mark(strm);
-    GETCHAR_ASSERT(strm, '0');
-    GETCHAR_ASSERT(strm, '3');
-    GETCHAR_ASSERT(strm, ' ');
+    GETC_ASSERT(strm, '0');
+    GETC_ASSERT(strm, '3');
+    GETC_ASSERT(strm, ' ');
     RECALL_ASSERT(strm, "103");
-    stream_retreat(strm);
+    stream_ungetc(strm, ' ');
     // token: 27
-    GETCHAR_ASSERT(strm, ' ');
-    GETCHAR_ASSERT(strm, '2');
+    GETC_ASSERT(strm, ' ');
+    GETC_ASSERT(strm, '2');
     stream_mark(strm);
-    GETCHAR_ASSERT(strm, '7');
-    GETCHAR_ASSERT(strm, ')');
+    GETC_ASSERT(strm, '7');
+    GETC_ASSERT(strm, ')');
     RECALL_ASSERT(strm, "27");
-    stream_retreat(strm);
+    stream_ungetc(strm, ')');
     // token: )
-    GETCHAR_ASSERT(strm, ')');
+    GETC_ASSERT(strm, ')');
     stream_mark(strm);
-    stream_getchar(strm);
+    stream_getc(strm);
     RECALL_ASSERT(strm, ")");
-    GETCHAR_ASSERT(strm, EOF);
+    GETC_ASSERT(strm, EOF);
 }
