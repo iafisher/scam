@@ -10,10 +10,11 @@ enum { STREAM_STR, STREAM_FILE };
 typedef struct {
     int type; // STREAM_STR or STREAM_FILE
     int line, col;
+    int good;
     int mem_flag; // -1 if not remembering, > -1 otherwise
     int mem_len; // length of characters remembered so far
     int mem_line, mem_col; // line and col when memory mode began
-    char chbuf; // buffer used by stream_putchar
+    int chbuf; // buffer used by stream_putchar
     // used by string streams
     int s_len;
     char* s;
@@ -26,12 +27,10 @@ typedef struct {
 void stream_from_str(Stream*, const char*);
 void stream_from_file(Stream*, const char*);
 
-// Return 1 if the stream can still be read from
-int stream_good(Stream*);
-
 // Get the current character from the stream and advance the stream forward
 char stream_getchar(Stream*);
-void stream_putchar(Stream*, char);
+// Move back one char (multiple consecutive calls to this function don't work)
+void stream_retreat(Stream*);
 
 // Turn memory mode on
 void stream_mark(Stream*);

@@ -91,7 +91,7 @@ int is_token(char c) {
 
 // Return 1 if the character is a token boundary
 int is_token_boundary(char c) {
-    return is_token(c)  || isspace(c) || c == '"' || c == '\0';
+    return is_token(c)  || isspace(c) || c == '"' || c == '\0' || c == EOF;
 }
 
 // Return the token type of the given string
@@ -140,21 +140,21 @@ void set_eof_token(Tokenizer* tz) {
 
 void tokenizer_advance(Tokenizer* tz) {
     // skip whitespace
-    char c = ' ';
-    while (stream_good(&tz->strm) && isspace(c))
+    int c = ' ';
+    while (c != EOF && isspace(c))
         c = stream_getchar(&tz->strm);
-    if (!stream_good(&tz->strm)) {
+    if (c == EOF) {
         set_eof_token(tz);
     } else if (c == ';') {
         // skip comments
-        while (stream_good(&tz->strm) && c != '\n')
+        while (c != EOF && c != '\n')
             c = stream_getchar(&tz->strm);
         tokenizer_advance(tz);
     } else if (is_token(c)) {
         stream_mark(&tz->strm);
-        c = stream_getchar(&tz->strm);
+        stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
-        stream_putchar(&tz->strm, c);
+        stream_retreat(&tz->strm);
     } else if (c == '"') {
         stream_mark(&tz->strm);
         // find the end of the string literal
@@ -163,17 +163,16 @@ void tokenizer_advance(Tokenizer* tz) {
         while (c != '"')
             c = stream_getchar(&tz->strm);
         // advance one past the end quote so that stream_recall returns it
-        c = stream_getchar(&tz->strm);
+        stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
-        // put the extraneous char back on the stream
-        stream_putchar(&tz->strm, c);
+        stream_retreat(&tz->strm);
     } else {
         stream_mark(&tz->strm);
         // find the end of the token
         while (!is_token_boundary(c))
             c = stream_getchar(&tz->strm);
         set_token_from_stream_memory(tz);
-        stream_putchar(&tz->strm, c);
+        stream_retreat(&tz->strm);
     }
 }
 

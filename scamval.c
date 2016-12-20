@@ -216,7 +216,7 @@ void scamval_free(scamval* v) {
         case SCAM_STR:
         case SCAM_SYM:
         case SCAM_ERR:
-            if (v->vals.s) free(v->vals.s); break;
+            free(v->vals.s); break;
         case SCAM_PORT:
             if (v->vals.port) {
                 if (v->vals.port->status == SCAMPORT_OPEN)

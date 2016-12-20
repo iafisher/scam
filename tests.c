@@ -23,18 +23,8 @@ int main(int argc, char** argv) {
         eval_tests();
         return 0;
     }
-    // set mode based on the command line argument
-    int mode = REPL_EVAL;
-    if (argc == 2) {
-        if (strcmp(argv[1], "stream") == 0) {
-            mode = REPL_STREAM;
-        } else if (strcmp(argv[1], "tokenize") == 0) {
-            mode = REPL_TOKENIZE;
-        } else if (strcmp(argv[1], "parse") == 0) {
-            mode = REPL_PARSE;
-        }
-    }
     // Run the REPL
+    int mode = REPL_EVAL;
     char* buffer = NULL;
     size_t s_len = 0;
     Stream strm;
@@ -86,6 +76,8 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+void print_stream(Stream* strm);
+
 void stream_repl(char* command, size_t s_len, Stream* strm) {
     if (strstr(command, "open") == command && s_len >= 6) {
         char* fp = command + 5;
@@ -101,7 +93,8 @@ void stream_repl(char* command, size_t s_len, Stream* strm) {
             return;
         }
         if (strcmp(command, "getchar") == 0) {
-            printf("'%c'\n", stream_getchar(strm));
+            char c = stream_getchar(strm);
+            printf("'%c' (%d)\n", c, c);
         } else if (strcmp(command, "mark") == 0) {
             stream_mark(strm);
             printf("Set mem_flag to %d\n", strm->mem_flag);
@@ -109,9 +102,10 @@ void stream_repl(char* command, size_t s_len, Stream* strm) {
             char* s = stream_recall(strm);
             printf("\"%s\"\n", s);
             free(s);
-        } else if (strstr(command, "putchar") == command && s_len >= 9) {
-            char c = command[8];
-            stream_putchar(strm, c);
+        } else if (strcmp(command, "retreat") == 0) {
+            stream_retreat(strm);
+        } else if (strcmp(command, "status") == 0) {
+            print_stream(strm);
         } else {
             printf("unknown command\n");
         }
@@ -145,4 +139,13 @@ void eval_repl(char* command, scamenv* env) {
     scamval* v = eval_str(command, env);
     scamval_println(v);
     scamval_free(v);
+}
+
+void print_stream(Stream* strm) {
+    printf("type=%s, ", strm->type == STREAM_STR ? "string" : "file");
+    printf("line=%d, col=%d, good=%d, ", strm->line, strm->col, strm->good);
+    printf("mem_flag=%d, mem_line=%d, ", strm->mem_flag, strm->mem_line);
+    printf("mem_col=%d, chbuf=%c, ", strm->mem_col, strm->chbuf);
+    printf("s_len=%d, last_pos=%d, ", strm->s_len, strm->last_pos);
+    printf("mem_len=%d\n", strm->mem_len);
 }
