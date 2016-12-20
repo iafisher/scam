@@ -204,7 +204,7 @@ scamval* eval_apply(scamval* fun_val, scamval* arglist) {
         for (int i = 0; i < scamseq_len(fun->parameters); i++) {
             scamenv_bind(inner_env,
                          scamval_copy(scamseq_get(fun->parameters, i)),
-                         scamval_copy(scamseq_get(arglist, i)));
+                         scamseq_pop(arglist, 0));
         }
         scamval* ret = eval(scamval_copy(fun->body), inner_env);
         scamenv_free(inner_env);

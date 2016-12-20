@@ -164,6 +164,7 @@ struct scamenv {
     // symbols and values are stored as scamval lists
     scamval* syms;
     scamval* vals;
+    int refs;
 };
 
 // Initialize and free environments

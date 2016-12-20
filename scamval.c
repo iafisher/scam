@@ -149,6 +149,7 @@ scamval* scamerr_eof() {
 scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     scamval* ret = scamval_new(SCAM_LAMBDA);
     ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
+    env->refs++;
     ret->vals.fun->env = env;
     ret->vals.fun->parameters = parameters;
     ret->vals.fun->body = body;
@@ -197,6 +198,9 @@ scamval* scamval_copy(scamval* v) {
             ret->vals.s = strdup(v->vals.s);
             return ret;
         }
+        // this should cascade into the default case
+        case SCAM_FUNCTION:
+            v->vals.fun->env->refs++;
         default:
             v->refs++;
             return v;
@@ -225,7 +229,7 @@ void scamval_free(scamval* v) {
             }
             break;
         case SCAM_LAMBDA:
-            //scamenv_free(v->vals.fun->env);
+            scamenv_free(v->vals.fun->env);
             scamval_free(v->vals.fun->parameters);
             scamval_free(v->vals.fun->body);
             free(v->vals.fun);
@@ -525,17 +529,24 @@ void scamport_set_status(scamval* v, int new_status) {
 scamenv* scamenv_init(scamenv* enclosing) {
     scamenv* ret = my_malloc(sizeof *ret);
     ret->enclosing = enclosing;
+    ret->refs = 1;
     ret->syms = scamlist();
     ret->vals = scamlist();
     return ret;
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
+    if (val->type == SCAM_LAMBDA && val->vals.fun->env == env) {
+        env->refs--;
+    }
     for (int i = 0; i < scamseq_len(env->syms); i++) {
         if (scamval_eq(scamseq_get(env->syms, i), sym)) {
             // free the symbol and the old value
             scamval_free(sym);
-            scamval_free(scamseq_get(env->vals, i));
+            scamval* old_val = scamseq_get(env->vals, i);
+            if (old_val->type == SCAM_LAMBDA && old_val->vals.fun->env == env)
+                env->refs++;
+            scamval_free(old_val);
             scamseq_set(env->vals, i, val);
             return;
         }
@@ -546,9 +557,12 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
 
 void scamenv_free(scamenv* env) {
     if (!env) return;
-    scamval_free(env->syms);
-    scamval_free(env->vals);
-    free(env);
+    env->refs--;
+    if (env->refs == 0) {
+        scamval_free(env->syms);
+        scamval_free(env->vals);
+        free(env);
+    }
 }
 
 scamval* scamenv_lookup(scamenv* env, scamval* name) {

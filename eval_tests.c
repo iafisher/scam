@@ -24,7 +24,7 @@ void eval_tests() {
     evaltest_rec_fun(env);
     evaltest_lambda(env);
     evaltest_zero_div(env);
-    //evaltest_closure(env);
+    evaltest_closure(env);
     scamenv_free(env);
 }
 
@@ -63,9 +63,6 @@ void evaltest_arith(scamenv* env) {
     evaltest("(/ 10 2)", env, scamdec(5.0));
     evaltest("(/ -72 2.2)", env, scamdec(-72 / 2.2));
     evaltest("(/ 0 42)", env, scamdec(0.0));
-    evaltest_err("(/ 10 0)", env);
-    evaltest_err("(/ 10 23 0)", env);
-    evaltest_err("(+ 10 (/ 10 0))", env);
     evaltest_err("(/)", env);
     evaltest_err("(/ 10)", env);
     evaltest_err("(/ 10 \"abc\")", env);
@@ -74,7 +71,6 @@ void evaltest_arith(scamenv* env) {
     evaltest("(// 50 11 2)", env, scamint(2));
     evaltest("(// 0 42)", env, scamint(0.0));
     evaltest_err("(// 10 3.0)", env);
-    evaltest_err("(// 10 0)", env);
     evaltest_err("(//)", env);
     evaltest_err("(// 10)", env);
     evaltest_err("(// 10 \"abc\")", env);
@@ -83,7 +79,6 @@ void evaltest_arith(scamenv* env) {
     evaltest("(% 67 7)", env, scamint(67 % 7));
     evaltest("(% 0 10)", env, scamint(0));
     evaltest_err("(% 42 4.7)", env);
-    evaltest_err("(% 10 0)", env);
     evaltest_err("(%)", env);
     evaltest_err("(% 10)", env);
     evaltest_err("(% 10 \"abc\")", env);
@@ -155,16 +150,16 @@ void evaltest_closure(scamenv* env) {
     evaldef("(define foo (make-fun 5))", env);
     evaltest("(foo 37)", env, scamint(42));
     // doubly nested closure
-    evaldef("(define (make-fun x) (lambda (y) (lambda (z) (+ x y z))))", env);
-    evaldef("(define foo (make-fun 5))", env);
+    evaldef("(define (make-fun1 x) (lambda (y) (lambda (z) (+ x y z))))", env);
+    evaldef("(define foo (make-fun1 5))", env);
     evaldef("(define bar (foo 32))", env);
     evaltest("(bar 5)", env, scamint(42));
 }
 
 void evaltest_rec_fun(scamenv* env) {
-    evaldef("(define (range i) (if (= i 0) [] (append (range (- i 1)) i)))", 
+    evaldef("(define (range1 i) (if (= i 0) [] (append (range1 (- i 1)) i)))", 
             env);
-    evaltest_list("(range 5)", env, 5, scamint(1), scamint(2), scamint(3), 
+    evaltest_list("(range1 5)", env, 5, scamint(1), scamint(2), scamint(3), 
                                        scamint(4), scamint(5));
 }
 
@@ -178,12 +173,18 @@ void evaltest_lambda(scamenv* env) {
 }
 
 void evaltest_zero_div(scamenv* env) {
+    evaltest_err("(/ 10 0)", env);
+    evaltest_err("(/ 10 23 0)", env);
+    evaltest_err("(+ 10 (/ 10 0))", env);
+    evaltest_err("(// 10 0)", env);
+    evaltest_err("(% 10 0)", env);
 }
 
 void evaltest(char* line, scamenv* env, scamval* what_we_expect) {
     scamval* what_we_got = eval_str(line, env);
     if (!scamval_eq(what_we_got, what_we_expect)) {
-        printf("Failed eval test \"%s\"; expected ", line);
+        printf("Failure at %s:%d ", __FILE__, __LINE__);
+        printf("(test \"%s\"); expected ", line);
         scamval_print_debug(what_we_expect);
         printf(" got ");
         scamval_print_debug(what_we_got);
@@ -208,7 +209,8 @@ void evaltest_list(char* line, scamenv* env, int n, ...) {
 void evaltest_err(char* line, scamenv* env) {
     scamval* v = eval_str(line, env);
     if (v->type != SCAM_ERR) {
-        printf("Failed eval test \"%s\" (expected error)\n", line);
+        printf("Failure at %s:%d ", __FILE__, __LINE__);
+        printf("(test \"%s\"), expected error\n", line);
     }
     scamval_free(v);
 }
@@ -216,7 +218,8 @@ void evaltest_err(char* line, scamenv* env) {
 void evaldef(char* line, scamenv* env) {
     scamval* v = eval_str(line, env);
     if (v->type == SCAM_ERR) {
-        printf("Failed eval test \"%s\"\n", line);
+        printf("Failure at %s:%d ", __FILE__, __LINE__);
+        printf("(test \"%s\")\n", line);
         scamval_println(v);
     }
     scamval_free(v);
