@@ -61,13 +61,15 @@ scamval* eval(scamval* ast, scamenv* env) {
             return arglist;
         }
         scamval* fun_val = scamseq_pop(arglist, 0);
+        scamval* ret;
         if (scamval_typecheck(fun_val, SCAM_FUNCTION)) {
-            return eval_apply(fun_val, arglist);
+            ret = eval_apply(fun_val, arglist);
         } else {
-            scamval_free(arglist);
-            scamval_free(fun_val);
-            return scamerr("first element of S-expression must be function");
+            ret = scamerr("first element of S-expression must be function");
         }
+        scamval_free(arglist);
+        scamval_free(fun_val);
+        return ret;
     } else if (ast->type == SCAM_LIST) {
         return eval_list(ast, env);
     } else {
@@ -98,7 +100,7 @@ scamval* eval_lambda(scamval* ast, scamenv* env) {
     scamval* parameters = scamseq_pop(ast, 0);
     scamval* body = scamseq_pop(ast, 0);
     scamval_free(ast);
-    return scamfunction(env, parameters, body);
+    return scamlambda(env, parameters, body);
 }
 
 // Evaluate a define statement
@@ -189,33 +191,31 @@ scamval* eval_or(scamval* ast, scamenv* env) {
 // Evaluate a function application
 scamval* eval_apply(scamval* fun_val, scamval* arglist) {
     if (fun_val->type == SCAM_LAMBDA) {
-        // extract the function, for convenience
-        scamfun_t* fun = fun_val->vals.fun;
         // make sure the right number of arguments were given
-        size_t expected = scamseq_len(fun->parameters);
+        size_t expected = scamlambda_nparams(fun_val);
         size_t got = scamseq_len(arglist);
         if (got != expected) {
-            scamval_free(arglist);
-            scamval_free(fun_val);
             return scamerr("user function got %d argument(s), expected %d", 
                            got, expected);
         }
-        scamenv* inner_env = scamenv_init(fun->env);
-        for (int i = 0; i < scamseq_len(fun->parameters); i++) {
-            scamenv_bind(inner_env,
-                         scamval_copy(scamseq_get(fun->parameters, i)),
+        scamenv* inner_env = scamlambda_env(fun_val);
+        for (int i = 0; i < expected; i++) {
+            scamenv_bind(inner_env, scamlambda_param(fun_val, i),
                          scamseq_pop(arglist, 0));
         }
-        scamval* ret = eval(scamval_copy(fun->body), inner_env);
+        scamval* ret = eval(scamlambda_body(fun_val), inner_env);
         scamenv_free(inner_env);
-        scamval_free(fun_val);
-        scamval_free(arglist);
         return ret;
     } else {
-        scamval* ret = fun_val->vals.bltin(arglist);
-        scamval_free(fun_val); 
-        scamval_free(arglist);
-        return ret;
+        if (scambuiltin_is_const(fun_val)) {
+            scamval* ret = scambuiltin_function(fun_val)(arglist);
+            return ret;
+        } else {
+            scamval* arglist_copy = scamval_copy(arglist);
+            scamval* ret = scambuiltin_function(fun_val)(arglist_copy);
+            scamval_free(arglist_copy);
+            return ret;
+        }
     }
 }
 

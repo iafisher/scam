@@ -176,7 +176,11 @@ scamval* builtin_empty(scamval* args) {
 scamval* builtin_list_get(scamval* args) {
     scamval* list_arg = scamseq_get(args, 0);
     size_t i = scam_as_int(scamseq_get(args, 1));
-    return scamseq_pop(list_arg, i);
+    if (i >= 0 && i < scamseq_len(list_arg)) {
+        return scamval_copy(scamseq_get(list_arg, i));
+    } else {
+        return scamerr("attempted sequence access out of range");
+    }
 }
 
 scamval* builtin_str_get(scamval* args) {
@@ -185,7 +189,7 @@ scamval* builtin_str_get(scamval* args) {
     if (i >= 0 && i < scamstr_len(str_arg)) {
         return scamstr_from_char(scamstr_get(str_arg, i));
     } else {
-        return scamerr("attempted string access out of bounds");
+        return scamerr("attempted string access out of range");
     }
 }
 
@@ -248,7 +252,7 @@ scamval* builtin_drop(scamval* args) {
 scamval* builtin_list_head(scamval* args) {
     scamval* list_arg = scamseq_get(args, 0);
     if (scamseq_len(list_arg) > 0) {
-        return scamseq_pop(list_arg, 0);
+        return scamval_copy(scamseq_get(list_arg, 0));
     } else {
         return scamerr("cannot take head of empty list");
     }
@@ -298,7 +302,7 @@ scamval* builtin_tail(scamval* args) {
 scamval* builtin_list_last(scamval* args) {
     scamval* list_arg = scamseq_get(args, 0);
     if (scamseq_len(list_arg) > 0) {
-        return scamseq_pop(list_arg, scamseq_len(list_arg) - 1);
+        return scamval_copy(scamseq_get(list_arg, scamseq_len(list_arg) - 1));
     } else {
         return scamerr("cannot take last of empty list");
     }
@@ -612,10 +616,17 @@ scamval* builtin_map(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
     for (size_t i = 0; i < scamseq_len(list_arg); i++) {
         scamval* v = scamseq_get(list_arg, i);
-        // eval_apply frees the function, so this doesn't work
-        scamseq_set(v, i, eval_apply(fun, v));
+        scamval* arglist = scamsexpr_from_vals(1, v);
+        scamseq_set(list_arg, i, eval_apply(fun, arglist));
+        scamval_free(arglist);
     }
+    scamval_free(fun);
     return list_arg;
+}
+
+scamval* builtin_id(scamval* args) {
+    TYPECHECK_ARGS("id", args, 1, SCAM_ANY);
+    return scamint((long long)scamseq_get(args, 0));
 }
 
 scamval* builtin_begin(scamval* args) {
@@ -663,58 +674,63 @@ scamval* builtin_not(scamval* args) {
     return scambool(!scam_as_bool(scamseq_get(args, 0)));
 }
 
-void add_builtin(scamenv* env, char* sym, scambuiltin_t bltin) {
+void add_builtin(scamenv* env, char* sym, scambuiltin_fun bltin) {
     scamenv_bind(env, scamsym(sym), scambuiltin(bltin));
+}
+
+void add_const_builtin(scamenv* env, char* sym, scambuiltin_fun bltin) {
+    scamenv_bind(env, scamsym(sym), scambuiltin_const(bltin));
 }
 
 void register_builtins(scamenv* env) {
     add_builtin(env, "begin", builtin_begin);
-    add_builtin(env, "+", builtin_add);
-    add_builtin(env, "-", builtin_sub);
-    add_builtin(env, "*", builtin_mult);
-    add_builtin(env, "/", builtin_real_div);
-    add_builtin(env, "//", builtin_floor_div);
-    add_builtin(env, "%", builtin_rem);
-    add_builtin(env, "=", builtin_eq);
-    add_builtin(env, ">", builtin_gt);
-    add_builtin(env, "<", builtin_lt);
-    add_builtin(env, ">=", builtin_gte);
-    add_builtin(env, "<=", builtin_lte);
-    add_builtin(env, "not", builtin_not);
+    add_const_builtin(env, "+", builtin_add);
+    add_const_builtin(env, "-", builtin_sub);
+    add_const_builtin(env, "*", builtin_mult);
+    add_const_builtin(env, "/", builtin_real_div);
+    add_const_builtin(env, "//", builtin_floor_div);
+    add_const_builtin(env, "%", builtin_rem);
+    add_const_builtin(env, "=", builtin_eq);
+    add_const_builtin(env, ">", builtin_gt);
+    add_const_builtin(env, "<", builtin_lt);
+    add_const_builtin(env, ">=", builtin_gte);
+    add_const_builtin(env, "<=", builtin_lte);
+    add_const_builtin(env, "not", builtin_not);
     // sequence functions
-    add_builtin(env, "len", builtin_len);
-    add_builtin(env, "empty?", builtin_empty);
-    add_builtin(env, "head", builtin_head);
+    add_const_builtin(env, "len", builtin_len);
+    add_const_builtin(env, "empty?", builtin_empty);
+    add_const_builtin(env, "head", builtin_head);
     add_builtin(env, "tail", builtin_tail);
-    add_builtin(env, "last", builtin_last);
+    add_const_builtin(env, "last", builtin_last);
     add_builtin(env, "init", builtin_init);
-    add_builtin(env, "get", builtin_get);
+    add_const_builtin(env, "get", builtin_get);
     add_builtin(env, "slice", builtin_slice);
     add_builtin(env, "take", builtin_take);
     add_builtin(env, "drop", builtin_drop);
     add_builtin(env, "append", builtin_append);
     add_builtin(env, "prepend", builtin_prepend);
     add_builtin(env, "concat", builtin_concat);
-    add_builtin(env, "find", builtin_find);
-    add_builtin(env, "rfind", builtin_rfind);
+    add_const_builtin(env, "find", builtin_find);
+    add_const_builtin(env, "rfind", builtin_rfind);
     // string functions
     add_builtin(env, "upper", builtin_upper);
     add_builtin(env, "lower", builtin_lower);
     add_builtin(env, "trim", builtin_trim);
     add_builtin(env, "split", builtin_split);
     // IO functions
-    add_builtin(env, "print", builtin_print);
-    add_builtin(env, "println", builtin_println);
-    add_builtin(env, "input", builtin_input);
+    add_const_builtin(env, "print", builtin_print);
+    add_const_builtin(env, "println", builtin_println);
+    add_const_builtin(env, "input", builtin_input);
     add_builtin(env, "open", builtin_open);
     add_builtin(env, "close", builtin_close);
-    add_builtin(env, "port-good?", builtin_port_good);
+    add_const_builtin(env, "port-good?", builtin_port_good);
     add_builtin(env, "readline", builtin_readline);
     add_builtin(env, "readchar", builtin_readchar);
     // miscellaneous functions
-    add_builtin(env, "assert", builtin_assert);
-    add_builtin(env, "range", builtin_range);
+    add_const_builtin(env, "assert", builtin_assert);
+    add_const_builtin(env, "range", builtin_range);
     add_builtin(env, "map", builtin_map);
+    add_const_builtin(env, "id", builtin_id);
     // stdin, stdout and stderr
     scamenv_bind(env, scamsym("stdin"), scamport(stdin));
     scamenv_bind(env, scamsym("stdout"), scamport(stdout));

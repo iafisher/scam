@@ -15,8 +15,11 @@ typedef struct scamval scamval;
 struct scamenv;
 typedef struct scamenv scamenv;
 
-// Another convenient typedef
-typedef scamval* (scambuiltin_t)(scamval*);
+typedef scamval* (*scambuiltin_fun)(scamval*);
+typedef struct {
+    scambuiltin_fun fun;
+    int constant;
+} scambuiltin_t;
 
 typedef struct {
     scamenv* env; // the environment the function was created in
@@ -35,6 +38,8 @@ struct scamval {
     int line, col;
     size_t count, mem_size; // used by SCAM_LIST, SCAM_SEXPR and SCAM_STR
     union {
+        // DO NOT ACCESS THESE VALUES DIRECTLY! 
+        // Use the APIs defined below 
         long long n; // used by SCAM_INT and SCAM_BOOL
         double d; // SCAM_DEC
         char* s; // SCAM_STR, SCAM_SYM and SCAM_ERR
@@ -51,8 +56,6 @@ struct scamval {
 /*** SCAMVAL CONSTRUCTORS ***/
 scamval* scamval_new(int type);
 scamval* scamsym(const char*);
-scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body);
-scamval* scambuiltin(scambuiltin_t*);
 scamval* scamnull();
 
 
@@ -125,6 +128,20 @@ void scamstr_concat(scamval* s1, scamval* s2);
 size_t scamstr_len(const scamval*);
 
 
+/*** FUNCTION API ***/
+scamval* scamlambda(scamenv* env, scamval* parameters, scamval* body);
+scamval* scambuiltin(scambuiltin_fun);
+// Construct a scambuiltin that doesn't change its arguments
+scamval* scambuiltin_const(scambuiltin_fun);
+size_t scamlambda_nparams(const scamval*);
+scamval* scamlambda_param(const scamval*, size_t);
+scamval* scamlambda_body(const scamval*);
+scamenv* scamlambda_env(const scamval*);
+const scamenv* scamlambda_env_ref(const scamval*);
+scambuiltin_fun scambuiltin_function(const scamval*);
+int scambuiltin_is_const(const scamval*);
+
+
 /*** ERROR API ***/
 scamval* scamerr(const char*, ...);
 scamval* scamerr_arity(const char* name, size_t got, size_t expected);
@@ -142,6 +159,8 @@ void scamport_set_status(scamval*, int);
 /*** SCAMVAL MEMORY MANAGEMENT ***/
 // Return a copy of the given value
 scamval* scamval_copy(scamval*);
+// Return a new reference to the same value
+scamval* scamval_new_ref(scamval*);
 // Free all resources used by a scamval, including the pointer itself
 void scamval_free(scamval*);
 
@@ -164,6 +183,7 @@ struct scamenv {
     // symbols and values are stored as scamval lists
     scamval* syms;
     scamval* vals;
+    // accounting info for the garbage collector
     int refs;
 };
 

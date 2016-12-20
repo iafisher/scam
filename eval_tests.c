@@ -136,12 +136,20 @@ void evaltest_val_def(scamenv* env) {
 }
 
 void evaltest_fun_def(scamenv* env) {
+    // basic square function
     evaldef("(define (square x) (* x x))", env);
     evaltest("(square 9)", env, scamint(81));
     evaltest("(square (square 3))", env, scamint(81));
     evaltest_err("(square)", env);
     evaltest_err("(square 2 3)", env);
     evaltest_err("(square [])", env);
+    // more complicated power function
+    evaldef("(define (power b n) (define (even? x) (= (% x 2) 0)) (if (= n 0) 1 (if (even? n) (square (power b (// n 2))) (* b (power b (- n 1))))))", env);
+    evaltest("(power 287 0)", env, scamint(1));
+    evaltest("(power 2 2)", env, scamint(4));
+    evaltest("(power 2 8)", env, scamint(256));
+    evaltest("(power 17 8)", env, scamint(6975757441));
+    evaltest_err("even?", env);
 }
 
 void evaltest_closure(scamenv* env) {

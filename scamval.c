@@ -146,7 +146,7 @@ scamval* scamerr_eof() {
     return scamerr("reached EOF while reading from a port");
 }
 
-scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
+scamval* scamlambda(scamenv* env, scamval* parameters, scamval* body) {
     scamval* ret = scamval_new(SCAM_LAMBDA);
     ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
     env->refs++;
@@ -156,9 +156,19 @@ scamval* scamfunction(scamenv* env, scamval* parameters, scamval* body) {
     return ret;
 }
 
-scamval* scambuiltin(scambuiltin_t* bltin) {
+scamval* scambuiltin(scambuiltin_fun bltin) {
     scamval* ret = scamval_new(SCAM_BUILTIN);
-    ret->vals.bltin = bltin;
+    ret->vals.bltin = my_malloc(sizeof *ret->vals.bltin);
+    ret->vals.bltin->fun = bltin;
+    ret->vals.bltin->constant = 0;
+    return ret;
+}
+
+scamval* scambuiltin_const(scambuiltin_fun bltin) {
+    scamval* ret = scamval_new(SCAM_BUILTIN);
+    ret->vals.bltin = my_malloc(sizeof *ret->vals.bltin);
+    ret->vals.bltin->fun = bltin;
+    ret->vals.bltin->constant = 1;
     return ret;
 }
 
@@ -198,13 +208,16 @@ scamval* scamval_copy(scamval* v) {
             ret->vals.s = strdup(v->vals.s);
             return ret;
         }
-        // this should cascade into the default case
-        case SCAM_FUNCTION:
-            v->vals.fun->env->refs++;
         default:
-            v->refs++;
-            return v;
+            return scamval_new_ref(v);
     }
+}
+
+scamval* scamval_new_ref(scamval* v) {
+    if (v->type == SCAM_FUNCTION)
+        v->vals.fun->env->refs++;
+    v->refs++;
+    return v;
 }
 
 void scamval_free(scamval* v) {
@@ -233,6 +246,9 @@ void scamval_free(scamval* v) {
             scamval_free(v->vals.fun->parameters);
             scamval_free(v->vals.fun->body);
             free(v->vals.fun);
+            break;
+        case SCAM_BUILTIN:
+            free(v->vals.bltin);
             break;
     }
     free(v);
@@ -378,11 +394,7 @@ void scamseq_replace(scamval* seq, size_t i, scamval* v) {
 }
 
 scamval* scamseq_get(const scamval* seq, size_t i) {
-    if (i >= 0 && i < seq->count) {
-        return seq->vals.arr[i];
-    } else {
-        return scamerr("attempted sequence access out of range");
-    }
+    return seq->vals.arr[i];
 }
 
 size_t scamseq_len(const scamval* seq) {
@@ -396,23 +408,19 @@ void scamseq_set(scamval* seq, size_t i, scamval* v) {
 }
 
 void scamseq_prepend(scamval* seq, scamval* v) {
-    size_t new_sz = seq->count + 1;
-    if (new_sz > seq->mem_size) {
-        scamseq_grow(seq, new_sz);
+    if (++seq->count > seq->mem_size) {
+        scamseq_grow(seq, seq->count);
     }
-    seq->count = new_sz;
     memmove(seq->vals.arr + 1, seq->vals.arr, 
             (seq->count - 1) * sizeof *seq->vals.arr);
     seq->vals.arr[0] = v;
 }
 
 void scamseq_append(scamval* seq, scamval* v) {
-    size_t new_sz = seq->count + 1;
-    if (new_sz > seq->mem_size) {
-        scamseq_grow(seq, new_sz);
+    if (++seq->count > seq->mem_size) {
+        scamseq_grow(seq, seq->count);
     }
-    seq->count = new_sz;
-    seq->vals.arr[new_sz - 1] = v;
+    seq->vals.arr[seq->count - 1] = v;
 }
 
 void scamseq_concat(scamval* seq1, scamval* seq2) {
@@ -430,6 +438,36 @@ void scamseq_free(scamval* seq) {
         }
         free(seq->vals.arr);
     }
+}
+
+
+/*** FUNCTION API ***/
+size_t scamlambda_nparams(const scamval* v) {
+    return scamseq_len(v->vals.fun->parameters);
+}
+
+scamval* scamlambda_param(const scamval* v, size_t i) {
+    return scamval_copy(scamseq_get(v->vals.fun->parameters, i));
+}
+
+scamval* scamlambda_body(const scamval* v) {
+    return scamval_copy(v->vals.fun->body);
+}
+
+scamenv* scamlambda_env(const scamval* v) {
+    return scamenv_init(v->vals.fun->env);
+}
+
+const scamenv* scamlambda_env_ref(const scamval* v) {
+    return v->vals.fun->env;
+}
+
+scambuiltin_fun scambuiltin_function(const scamval* v) {
+    return v->vals.bltin->fun;
+}
+
+int scambuiltin_is_const(const scamval* v) {
+    return v->vals.bltin->constant;
 }
 
 
@@ -536,7 +574,7 @@ scamenv* scamenv_init(scamenv* enclosing) {
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
-    if (val->type == SCAM_LAMBDA && val->vals.fun->env == env) {
+    if (val->type == SCAM_LAMBDA && scamlambda_env_ref(val) == env) {
         env->refs--;
     }
     for (int i = 0; i < scamseq_len(env->syms); i++) {
@@ -544,7 +582,8 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
             // free the symbol and the old value
             scamval_free(sym);
             scamval* old_val = scamseq_get(env->vals, i);
-            if (old_val->type == SCAM_LAMBDA && old_val->vals.fun->env == env)
+            if (old_val->type == SCAM_LAMBDA && 
+                scamlambda_env_ref(old_val) == env)
                 env->refs++;
             scamval_free(old_val);
             scamseq_set(env->vals, i, val);
@@ -569,7 +608,7 @@ scamval* scamenv_lookup(scamenv* env, scamval* name) {
     for (int i = 0; i < scamseq_len(env->syms); i++) {
         scamval* this_name = scamseq_get(env->syms, i);
         if (strcmp(scam_as_str(this_name), scam_as_str(name)) == 0) {
-            return scamval_copy(scamseq_get(env->vals, i));
+            return scamval_new_ref(scamseq_get(env->vals, i));
         }
     }
     if (env->enclosing != NULL) {
