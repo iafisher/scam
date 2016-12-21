@@ -7,7 +7,7 @@
 void run_repl(scamval*);
 
 int main(int argc, char** argv) {
-    scamval* env = scamenv_default();
+    scamval* env = scamdict_builtins();
     int load_flag = 0;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-l") == 0) {

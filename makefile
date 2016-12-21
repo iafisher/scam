@@ -16,6 +16,3 @@ tests: *.c *.h test_files/*.c test_files/*.h
 	$(CC) $(FILES) test_files/test_err.c -o test_files/test_err $(FLAGS)
 	valgrind -q --leak-check=full ./test_files/tests
 	./test_files/run_tests.py
-
-gctests: *.c *.h
-	$(CC) scamval.c collector.c gctests.c progutils.c -o gctests $(FLAGS) -g

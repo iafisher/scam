@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
         printf("Usage: ./%s <code>\n", argv[0]);
         return 2;
     } else {
-        scamval* env = scamenv_default();
+        scamval* env = scamdict_builtins();
         scamval* v = eval_str(argv[1], env);
         return (v->type != SCAM_ERR);
     }

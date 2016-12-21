@@ -8,3 +8,5 @@ void gc_del_scamval(scamval*);
 
 void gc_collect();
 void gc_close();
+
+void gc_print();

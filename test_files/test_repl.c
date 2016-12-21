@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     size_t s_len = 0;
     Stream strm;
     stream_from_str(&strm, "");
-    scamval* env = scamenv_default();
+    scamval* env = scamdict_builtins();
     for (;;) {
         switch (mode) {
             case REPL_STREAM: printf("stream"); break;
@@ -124,8 +124,14 @@ void parse_repl(char* command) {
 }
 
 void eval_repl(char* command, scamval* env) {
-    scamval* v = eval_str(command, env);
-    scamval_println(v);
+    if (strcmp(command, "gc") == 0) {
+        gc_print();
+    } else if (strcmp(command, "collect") == 0) {
+        gc_collect();
+    } else {
+        scamval* v = eval_str(command, env);
+        scamval_println(v);
+    }
 }
 
 void print_stream(Stream* strm) {

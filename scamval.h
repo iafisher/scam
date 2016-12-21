@@ -13,8 +13,8 @@ enum { SCAM_SEQ=1000, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY };
 // Forward declaration of scamval and scamdict
 struct scamval;
 typedef struct scamval scamval;
-struct scamdict;
-typedef struct scamdict scamdict;
+struct scamdict_t;
+typedef struct scamdict_t scamdict_t;
 
 typedef scamval* (*scambuiltin_fun)(scamval*);
 typedef struct {
@@ -34,7 +34,7 @@ typedef struct {
     FILE* fp;
 } scamport_t;
 
-struct scamdict {
+struct scamdict_t {
     // pointer to enclosing dict (if dict is an environment)
     scamval* enclosing;
     // symbols and values are stored as scamval lists
@@ -56,7 +56,7 @@ struct scamval {
         scamfun_t* fun; // SCAM_LAMBDA
         scamport_t* port; // SCAM_PORT
         scambuiltin_t* bltin; // SCAM_BUILTIN
-        scamdict* dct; // SCAM_DICT
+        scamdict_t* dct; // SCAM_DICT
     } vals;
     // accounting info for the garbage collector
     int seen;
@@ -157,24 +157,24 @@ int scamport_status(const scamval*);
 void scamport_set_status(scamval*, int);
 
 
-/*** DICTIONARY/ENVIRONMENT API ***/
-// Initialize and free environments
-scamval* scamenv_init(scamval* enclosing);
-scamval* scamenv_default();
-// Create a new binding in the environment, or update an existing one
+/*** DICTIONARY API ***/
+// Initialize dictionaries
+scamval* scamdict(scamval* enclosing);
+scamval* scamdict_builtins();
+// Create a new binding in the dictionary, or update an existing one
 // sym should be of type SCAM_STR
-// Both sym and val are appropriated by the environment, so don't use them
-// after calling this function
-void scamenv_bind(scamval* env, scamval* sym, scamval* val);
-// Lookup the symbol in the environment, returning a copy of the value if it
+// Both sym and val are appropriated by the dict, so don't use them after 
+// calling this function
+void scamdict_bind(scamval* dct, scamval* sym, scamval* val);
+// Lookup the symbol in the dictionary, returning a copy of the value if it
 // exists and an error if it doesn't
-size_t scamenv_len(const scamval* env);
-scamval* scamenv_key(scamval* env, size_t);
-scamval* scamenv_val(scamval* env, size_t);
-scamval* scamenv_lookup(scamval* env, scamval* sym);
-scamval* scamenv_keys(scamval*);
-scamval* scamenv_vals(scamval*);
-scamval* scamenv_enclosing(scamval*);
+size_t scamdict_len(const scamval* dct);
+scamval* scamdict_key(scamval* dct, size_t);
+scamval* scamdict_val(scamval* dct, size_t);
+scamval* scamdict_lookup(scamval* dct, scamval* sym);
+scamval* scamdict_keys(scamval*);
+scamval* scamdict_vals(scamval*);
+scamval* scamdict_enclosing(scamval*);
 
 /*** SCAMVAL PRINTING ***/
 void scamval_print(const scamval*);

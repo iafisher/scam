@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
         printf("Usage: ./%s <code> <expected result>\n", argv[0]);
         return 2;
     } else {
-        scamval* env = scamenv_default();
+        scamval* env = scamdict_builtins();
         scamval* v1 = eval_str(argv[1], env);
         scamval* v2 = eval_str(argv[2], env);
         return !scamval_eq(v1, v2);

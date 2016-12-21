@@ -663,15 +663,15 @@ scamval* builtin_not(scamval* args) {
 }
 
 void add_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
-    scamenv_bind(env, scamsym(sym), scambuiltin(bltin));
+    scamdict_bind(env, scamsym(sym), scambuiltin(bltin));
 }
 
 void add_const_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
-    scamenv_bind(env, scamsym(sym), scambuiltin_const(bltin));
+    scamdict_bind(env, scamsym(sym), scambuiltin_const(bltin));
 }
 
-scamval* scamenv_default() {
-    scamval* env = scamenv_init(NULL);
+scamval* scamdict_builtins() {
+    scamval* env = scamdict(NULL);
     add_builtin(env, "begin", builtin_begin);
     add_const_builtin(env, "+", builtin_add);
     add_const_builtin(env, "-", builtin_sub);
@@ -721,8 +721,8 @@ scamval* scamenv_default() {
     add_builtin(env, "map", builtin_map);
     add_const_builtin(env, "id", builtin_id);
     // stdin, stdout and stderr
-    scamenv_bind(env, scamsym("stdin"), scamport(stdin));
-    scamenv_bind(env, scamsym("stdout"), scamport(stdout));
-    scamenv_bind(env, scamsym("stderr"), scamport(stderr));
+    scamdict_bind(env, scamsym("stdin"), scamport(stdin));
+    scamdict_bind(env, scamsym("stdout"), scamport(stdout));
+    scamdict_bind(env, scamsym("stderr"), scamport(stderr));
     return env;
 }

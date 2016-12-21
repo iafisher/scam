@@ -5,7 +5,6 @@
 
 #define SCAM_ASSERT(cond, ast, err, ...) { \
     if (!(cond)) { \
-        gc_unset_root(ast); \
         return scamerr(err, ##__VA_ARGS__); \
     } \
 }
@@ -13,7 +12,6 @@
 #define SCAM_ASSERT_ARITY(name, ast, expected) { \
     size_t got = scamseq_len(ast); \
     if (got != expected) { \
-        gc_unset_root(ast); \
         return scamerr_arity(name, got, expected); \
     } \
 }
@@ -21,7 +19,6 @@
 #define SCAM_ASSERT_MIN_ARITY(name, ast, expected) { \
     size_t got = scamseq_len(ast); \
     if (got < expected) { \
-        gc_unset_root(ast); \
         return scamerr_arity(name, got, expected); \
     } \
 }
@@ -36,9 +33,7 @@ scamval* eval_list(scamval*, scamval*);
 
 scamval* eval(scamval* ast, scamval* env) {
     if (ast->type == SCAM_SYM) {
-        scamval* ret = scamenv_lookup(env, ast);
-        gc_unset_root(ast);
-        return ret;
+        return scamdict_lookup(env, ast);
     } else if (ast->type == SCAM_SEXPR) {
         SCAM_ASSERT(scamseq_len(ast) > 0, ast, "empty expression");
         // handle special expressions and statements
@@ -78,11 +73,17 @@ scamval* eval(scamval* ast, scamval* env) {
 }
 
 scamval* eval_str(char* line, scamval* env) {
-    return eval(parse_str(line), env);
+    scamval* ast = parse_str(line);
+    scamval* ret = eval(ast, env);
+    gc_unset_root(ast);
+    return ret;
 }
 
 scamval* eval_file(char* fp, scamval* env) {
-    return eval(parse_file(fp), env);
+    scamval* ast = parse_file(fp);
+    scamval* ret = eval(ast, env);
+    gc_unset_root(ast);
+    return ret;
 }
 
 // Evaluate a lambda expression
@@ -99,7 +100,6 @@ scamval* eval_lambda(scamval* ast, scamval* env) {
     gc_unset_root(scamseq_pop(ast, 0));
     scamval* parameters = scamseq_pop(ast, 0);
     scamval* body = scamseq_pop(ast, 0);
-    gc_unset_root(ast);
     return scamlambda(env, parameters, body);
 }
 
@@ -110,9 +110,8 @@ scamval* eval_define(scamval* ast, scamval* env) {
                 "cannot define non-symbol");
     scamval* k = scamseq_pop(ast, 1);
     scamval* v = eval(scamseq_pop(ast, 1), env);
-    gc_unset_root(ast);
     if (v->type != SCAM_ERR) {
-        scamenv_bind(env, k, v);
+        scamdict_bind(env, k, v);
         return scamnull();
     } else {
         gc_unset_root(k);
@@ -152,17 +151,14 @@ scamval* eval_and(scamval* ast, scamval* env) {
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
             gc_unset_root(v);
-            gc_unset_root(ast);
             return scamerr_type("and", i, v_type, SCAM_BOOL);
         } else if (!scam_as_bool(v)) {
             gc_unset_root(v);
-            gc_unset_root(ast);
             return scambool(0);
         } else {
             gc_unset_root(v);
         }
     }
-    gc_unset_root(ast);
     return scambool(1);
 }
 
@@ -174,17 +170,14 @@ scamval* eval_or(scamval* ast, scamval* env) {
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
             gc_unset_root(v);
-            gc_unset_root(ast);
             return scamerr_type("or", i, v_type, SCAM_BOOL);
         } else if (scam_as_bool(v)) {
             gc_unset_root(v);
-            gc_unset_root(ast);
             return scambool(1);
         } else {
             gc_unset_root(v);
         }
     }
-    gc_unset_root(ast);
     return scambool(0);
 }
 
@@ -200,8 +193,8 @@ scamval* eval_apply(scamval* fun_val, scamval* arglist) {
         }
         scamval* inner_env = scamlambda_env(fun_val);
         for (int i = 0; i < expected; i++) {
-            scamenv_bind(inner_env, scamlambda_param(fun_val, i),
-                         scamseq_pop(arglist, 0));
+            scamdict_bind(inner_env, scamlambda_param(fun_val, i),
+                          scamseq_pop(arglist, 0));
         }
         scamval* ret = eval(scamlambda_body(fun_val), inner_env);
         gc_unset_root(inner_env);

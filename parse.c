@@ -97,19 +97,26 @@ scamval* match_sexpr_plus(Tokenizer* tz) {
     scamval* first_expr = match_sexpr(tz);
     if (first_expr->type != SCAM_ERR) {
         scamseq_append(ast, first_expr);
+        gc_unset_root(first_expr);
     } else {
         gc_unset_root(ast);
         return first_expr;
     }
-    while (starts_expr(tz->tkn.type))
-        scamseq_append(ast, match_sexpr(tz));
+    while (starts_expr(tz->tkn.type)) {
+        scamval* next_expr = match_sexpr(tz);
+        scamseq_append(ast, next_expr);
+        gc_unset_root(next_expr);
+    }
     return ast;
 }
 
 scamval* match_sexpr_star(Tokenizer* tz) {
     scamval* ast = scamsexpr();
-    while (starts_expr(tz->tkn.type))
-        scamseq_append(ast, match_sexpr(tz));
+    while (starts_expr(tz->tkn.type)) {
+        scamval* next_expr = match_sexpr(tz);
+        scamseq_append(ast, next_expr);
+        gc_unset_root(next_expr);
+    }
     return ast;
 }
 

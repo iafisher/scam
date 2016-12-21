@@ -160,3 +160,15 @@ void gc_close() {
     }
     free(scamval_objs);
 }
+
+void gc_print() {
+    for (size_t i = 0; i < count; i++) {
+        scamval* v = scamval_objs[i];
+        if (v != NULL && v->type != SCAM_BUILTIN) {
+            scamval_print(v);
+            if (v->is_root)
+                printf(" (root)");
+            printf("\n");
+        }
+    }
+}

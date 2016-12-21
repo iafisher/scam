@@ -12,7 +12,7 @@ void evaltest_zero_div(scamval*);
 void evaltest_known_fails(scamval*);
 
 void eval_tests() {
-    scamval* env = scamenv_default();
+    scamval* env = scamdict_builtins();
     evaltest_val_def(env);
     evaltest_fun_def(env);
     evaltest_rec_fun(env);
