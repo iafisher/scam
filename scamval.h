@@ -50,6 +50,7 @@ struct scamval {
     } vals;
     // accounting info for the garbage collector
     int refs;
+    int seen;
 };
 
 
@@ -185,6 +186,7 @@ struct scamenv {
     scamval* vals;
     // accounting info for the garbage collector
     int refs;
+    int is_collecting;
 };
 
 // Initialize and free environments
@@ -200,6 +202,8 @@ void scamenv_bind(scamenv*, scamval* sym, scamval* val);
 // Lookup the symbol in the environment, returning a copy of the value if it
 // exists and an error if it doesn't
 scamval* scamenv_lookup(scamenv*, scamval* sym);
+
+void scamenv_print(const scamenv*, int);
 
 
 /*** TYPECHECKING ***/

@@ -13,6 +13,7 @@ scamval* scamval_new(int type) {
     scamval* ret = my_malloc(sizeof *ret);
     ret->type = type;
     ret->refs = 1;
+    ret->seen = 0;
     return ret;
 }
 
@@ -567,25 +568,21 @@ void scamport_set_status(scamval* v, int new_status) {
 scamenv* scamenv_init(scamenv* enclosing) {
     scamenv* ret = my_malloc(sizeof *ret);
     ret->enclosing = enclosing;
+    if (ret->enclosing)
+        ret->enclosing->refs++;
     ret->refs = 1;
+    ret->is_collecting = 0;
     ret->syms = scamlist();
     ret->vals = scamlist();
     return ret;
 }
 
 void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
-    if (val->type == SCAM_LAMBDA && scamlambda_env_ref(val) == env) {
-        env->refs--;
-    }
     for (int i = 0; i < scamseq_len(env->syms); i++) {
         if (scamval_eq(scamseq_get(env->syms, i), sym)) {
             // free the symbol and the old value
             scamval_free(sym);
-            scamval* old_val = scamseq_get(env->vals, i);
-            if (old_val->type == SCAM_LAMBDA && 
-                scamlambda_env_ref(old_val) == env)
-                env->refs++;
-            scamval_free(old_val);
+            scamval_free(scamseq_get(env->vals, i));
             scamseq_set(env->vals, i, val);
             return;
         }
@@ -594,13 +591,58 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
     scamseq_append(env->vals, val);
 }
 
+int scamenv_mark(const scamenv* current_env, const scamenv* collecting_env) {
+    int internal_refs = 0;
+    if (current_env->enclosing == collecting_env)
+        internal_refs++;
+    for (size_t i = 0; i < scamseq_len(current_env->vals); i++) {
+        scamval* v = scamseq_get(current_env->vals, i);
+        if (!v->seen) {
+            if (v->type == SCAM_LAMBDA) {
+                const scamenv* v_env = scamlambda_env_ref(v);
+                if (v_env == collecting_env) {
+                    internal_refs++;
+                } else {
+                    internal_refs += scamenv_mark(v_env, collecting_env);
+                }
+            }
+            v->seen = 1;
+        }
+    }
+    return internal_refs;
+}
+
+
+void scamenv_reset_marks(scamenv* env) {
+    for (size_t i = 0; i < scamseq_len(env->vals); i++) {
+        scamval* v = scamseq_get(env->vals, i);
+        if (v->seen) {
+            if (v->type == SCAM_LAMBDA) {
+                scamenv* v_env = v->vals.fun->env;
+                if (v_env != env) {
+                    scamenv_reset_marks(v_env);
+                }
+            }
+            v->seen = 0;
+        }
+    }
+}
+
 void scamenv_free(scamenv* env) {
-    if (!env) return;
+    if (!env || env->is_collecting) 
+        return;
+    env->is_collecting = 1;
     env->refs--;
-    if (env->refs == 0) {
+    int internal_refs = scamenv_mark(env, env);
+    if ((env->refs - internal_refs) == 0) {
+        if (env->enclosing)
+            scamenv_free(env->enclosing);
         scamval_free(env->syms);
         scamval_free(env->vals);
         free(env);
+    } else {
+        scamenv_reset_marks(env);
+        env->is_collecting = 0;
     }
 }
 
@@ -615,6 +657,27 @@ scamval* scamenv_lookup(scamenv* env, scamval* name) {
         return scamenv_lookup(env->enclosing, name);
     } else {
         return scamerr("unbound variable '%s'", name->vals.s);
+    }
+}
+
+void scamenv_print(const scamenv* env, int indent) {
+    for (int i = 0; i < indent; i++)
+        printf("  ");
+    printf("env with %d ref(s)\n", env->refs);
+    for (size_t i = 0; i < scamseq_len(env->vals); i++) {
+        for (int j = 0; j < indent + 1; j++)
+            printf("  ");
+        scamval_print(scamseq_get(env->syms, i));
+        printf(": ");
+        scamval* v = scamseq_get(env->vals, i);
+        scamval_print(v);
+        printf("\n");
+        if (v->type == SCAM_LAMBDA) {
+            const scamenv* v_env = scamlambda_env_ref(v);
+            if (v_env != env) {
+                scamenv_print(v_env, indent + 1);
+            }
+        }
     }
 }
 
@@ -660,9 +723,14 @@ void scamval_print_ast(const scamval* ast, int indent) {
     for (int i = 0; i < indent; i++)
         printf("  ");
     if (ast->type == SCAM_SEXPR) {
-        printf("EXPR\n");
-        for (int i = 0; i < scamseq_len(ast); i++) {
-            scamval_print_ast(scamseq_get(ast, i), indent + 1);
+        size_t n = scamseq_len(ast);
+        if (n == 0) {
+            printf("EMPTY EXPR\n");
+        } else {
+            printf("EXPR\n");
+            for (int i = 0; i < scamseq_len(ast); i++) {
+                scamval_print_ast(scamseq_get(ast, i), indent + 1);
+            }
         }
     } else {
         scamval_println(ast);

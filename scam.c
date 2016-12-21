@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
     if (load_flag || argc == 1) {
         run_repl(env);
     }
+    scamenv_print(env, 0);
     scamenv_free(env);
     return 0;
 }

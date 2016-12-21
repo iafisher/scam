@@ -195,7 +195,7 @@ scamval* eval_apply(scamval* fun_val, scamval* arglist) {
         size_t expected = scamlambda_nparams(fun_val);
         size_t got = scamseq_len(arglist);
         if (got != expected) {
-            return scamerr("user function got %d argument(s), expected %d", 
+            return scamerr("lambda function got %d argument(s), expected %d", 
                            got, expected);
         }
         scamenv* inner_env = scamlambda_env(fun_val);
