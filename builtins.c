@@ -5,7 +5,6 @@
 #include <string.h>
 #include "builtins.h"
 #include "eval.h"
-#include "scamtypes.h"
 
 #define TYPECHECK_ARGS(name, args, n, ...) { \
     scamval* check_result = typecheck_args(name, args, n, ##__VA_ARGS__); \
@@ -685,7 +684,6 @@ void add_const_builtin(scamenv* env, char* sym, scambuiltin_fun bltin) {
 void register_builtins(scamenv* env) {
     add_builtin(env, "begin", builtin_begin);
     add_const_builtin(env, "+", builtin_add);
-    /*
     add_const_builtin(env, "-", builtin_sub);
     add_const_builtin(env, "*", builtin_mult);
     add_const_builtin(env, "/", builtin_real_div);
@@ -736,5 +734,4 @@ void register_builtins(scamenv* env) {
     scamenv_bind(env, scamsym("stdin"), scamport(stdin));
     scamenv_bind(env, scamsym("stdout"), scamport(stdout));
     scamenv_bind(env, scamsym("stderr"), scamport(stderr));
-    */
 }

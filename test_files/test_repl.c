@@ -1,12 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "builtins.h"
-#include "eval.h"
-#include "parse.h"
-#include "stream.h"
-#include "tokenize.h"
-#include "tests.h"
+#include "../builtins.h"
+#include "../eval.h"
+#include "../parse.h"
+#include "../stream.h"
+#include "../tokenize.h"
 
 void stream_repl(char*, size_t, Stream*);
 void tokenize_repl(char*);
@@ -15,14 +14,6 @@ void eval_repl(char*, scamenv*);
 
 enum { REPL_EVAL, REPL_PARSE, REPL_TOKENIZE, REPL_STREAM };
 int main(int argc, char** argv) {
-    // Run tests
-    if (argc == 1 || strcmp(argv[1], "-r") != 0) {
-        stream_tests();
-        tokenize_tests();
-        parse_tests();
-        eval_tests();
-        return 0;
-    }
     // Run the REPL
     int mode = REPL_EVAL;
     char* buffer = NULL;

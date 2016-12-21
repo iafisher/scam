@@ -4,8 +4,6 @@
 #include <string.h>
 #include "progutils.h"
 #include "scamval.h"
-#include "scamtypes.h"
-
 
 /*** SCAMVAL CONSTRUCTORS ***/
 // Construct a new scamval of the given type
@@ -640,8 +638,10 @@ void scamenv_free(scamenv* env) {
     env->is_collecting = 1;
     env->refs--;
     int internal_refs = scamenv_mark(env, env);
+    /*
     printf("Trying to delete... ");
     scamenv_print(env, 0);
+    */
     if ((env->refs - internal_refs) == 0) {
         if (env->enclosing)
             scamenv_free(env->enclosing);

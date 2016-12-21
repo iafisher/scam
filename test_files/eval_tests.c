@@ -1,11 +1,8 @@
 #include <stdarg.h>
-#include "builtins.h"
-#include "eval.h"
+#include "../builtins.h"
+#include "../eval.h"
 #include "tests.h"
 
-void evaltest_arith(scamenv*);
-void evaltest_cmp(scamenv*);
-void evaltest_lists(scamenv*);
 void evaltest_val_def(scamenv*);
 void evaltest_fun_def(scamenv*);
 void evaltest_closure(scamenv*);
@@ -17,9 +14,6 @@ void evaltest_known_fails(scamenv*);
 void eval_tests() {
     scamenv* env = scamenv_init(NULL);
     register_builtins(env);
-    evaltest_arith(env);
-    evaltest_cmp(env);
-    evaltest_lists(env);
     evaltest_val_def(env);
     evaltest_fun_def(env);
     evaltest_rec_fun(env);
@@ -37,94 +31,6 @@ void evaltest_err(char*, scamenv*);
 void evaldef(char*, scamenv*);
 void evaltrue(char*, scamenv*);
 void evalfalse(char*, scamenv*);
-
-void evaltest_arith(scamenv* env) {
-    // test addition
-    evaltest("(+ 1 1)", env, scamint(2));
-    evaltest("(+ 1 2 3 4 5)", env, scamint(15));
-    evaltest("(+ 1 2 3.0 4 5)", env, scamint(15.0));
-    evaltest_err("(+)", env);
-    evaltest_err("(+ 1)", env);
-    evaltest_err("(+ 1 [])", env);
-    // test negation and subtraction
-    evaltest("(- 10)", env, scamint(-10));
-    evaltest("(- 10 3)", env, scamint(7));
-    evaltest("(- 10 3.0)", env, scamdec(7.0));
-    evaltest("(- 10 8 2 3)", env, scamint(-3));
-    evaltest_err("(-)", env);
-    evaltest_err("(- [])", env);
-    evaltest_err("(- 1 [])", env);
-    // test multiplication
-    evaltest("(* 21 2)", env, scamint(42));
-    evaltest("(* 3.2 7.4)", env, scamdec(3.2 * 7.4));
-    evaltest("(* 1 2 3 4 5 6)", env, scamint(720));
-    evaltest_err("(*)", env);
-    evaltest_err("(* 1)", env);
-    evaltest_err("(* 1 [])", env);
-    // test real division
-    evaltest("(/ 10 2)", env, scamdec(5.0));
-    evaltest("(/ -72 2.2)", env, scamdec(-72 / 2.2));
-    evaltest("(/ 0 42)", env, scamdec(0.0));
-    evaltest_err("(/)", env);
-    evaltest_err("(/ 10)", env);
-    evaltest_err("(/ 10 \"abc\")", env);
-    // test floor division
-    evaltest("(// 10 3)", env, scamint(3));
-    evaltest("(// 50 11 2)", env, scamint(2));
-    evaltest("(// 0 42)", env, scamint(0.0));
-    evaltest_err("(// 10 3.0)", env);
-    evaltest_err("(//)", env);
-    evaltest_err("(// 10)", env);
-    evaltest_err("(// 10 \"abc\")", env);
-    // test remainder
-    evaltest("(% 73 2)", env, scamint(1));
-    evaltest("(% 67 7)", env, scamint(67 % 7));
-    evaltest("(% 0 10)", env, scamint(0));
-    evaltest_err("(% 42 4.7)", env);
-    evaltest_err("(%)", env);
-    evaltest_err("(% 10)", env);
-    evaltest_err("(% 10 \"abc\")", env);
-}
-
-void evaltest_cmp(scamenv* env) {
-    // test numeric =
-    evaltrue("(= 1 1)", env);
-    evaltrue("(= 1 1.0)", env);
-    evaltrue("(= 1.0 1)", env);
-    evalfalse("(= 1  0.999)", env);
-    evalfalse("(= 10 \"10\")", env);
-    // test string =
-    evaltrue("(= \"abc\" \"abc\")", env);
-    evaltrue("(= \"\" \"\")", env);
-    evalfalse("(= \"hello\" \"hallo\")", env);
-    evalfalse("(= \"short\" \"a longer string\")", env);
-    // test list =
-    evaltrue("(= [1 2 3] [1 2 3])", env);
-    evaltrue("(= [1 2 3] [1.0 2.0 3.0])", env);
-    evaltrue("(= [] [])", env);
-    evaltrue("(= [\"a string\" 10 true] [\"a string\" 10 true])", env);
-    evalfalse("(= [1 2 3] [1 2 3 4])", env);
-}
-
-void evaltest_lists(scamenv* env) {
-    evaltest("(empty? [])", env, scambool(1));
-    evaltest_err("(empty?)", env);
-    evaltest_err("(empty? 10)", env);
-    // extended example
-    evaldef("(define items [1 2 3 4 5 6])", env);
-    evaltest("(len items)", env, scamint(6));
-    evaltest("(empty? items)", env, scambool(0));
-    evaltest("(head items)", env, scamint(1));
-    evaltest_list("(tail items)", env, 5, scamint(2), scamint(3), scamint(4),
-                                          scamint(5), scamint(6));
-    evaltest("(last items)", env, scamint(6));
-    evaltest_list("(init items)", env, 5, scamint(1), scamint(2), scamint(3), 
-                                          scamint(4), scamint(5));
-    evaltest_list("(prepend 0 items)", env, 7, scamint(0), scamint(1), 
-                  scamint(2), scamint(3), scamint(4), scamint(5), scamint(6));
-    evaltest_list("(append items 7)", env, 7, scamint(1), scamint(2), 
-                  scamint(3), scamint(4), scamint(5), scamint(6), scamint(7));
-}
 
 void evaltest_val_def(scamenv* env) {
     evaldef("(define x 10)", env);

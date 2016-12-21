@@ -1,6 +1,5 @@
 *.swp
 *.txt
 *.scm
-makefile
 tests
 scam
