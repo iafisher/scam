@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include "collector.h"
@@ -7,7 +8,7 @@ static scamval** scamval_objs = NULL;
 static size_t count = 0;
 static size_t first_avail = 0;
 
-enum { HEAP_INIT = 512, HEAP_GROW = 2 };
+enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 
 static void gc_mark(scamval* v) {
     if (v != NULL && !v->seen) {
@@ -15,8 +16,11 @@ static void gc_mark(scamval* v) {
         switch (v->type) {
             case SCAM_LIST:
             case SCAM_SEXPR:
-                for (size_t i = 0; i < scamseq_len(v); i++)
-                    gc_mark(scamseq_get(v, i));
+                for (size_t i = 0; i < scamseq_len(v); i++) {
+                    scamval* subv = scamseq_get(v, i);
+                    //assert(subv != NULL);
+                    gc_mark(subv);
+                }
                 break;
             case SCAM_LAMBDA:
                 gc_mark(v->vals.fun->parameters);
@@ -51,7 +55,7 @@ static void gc_sweep() {
 void gc_collect() {
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
-        if (!v->seen && v->is_root)
+        if (v != NULL && !v->seen && v->is_root)
             gc_mark(v);
     }
     gc_sweep();
@@ -73,12 +77,13 @@ scamval* gc_new_scamval() {
         gc_collect();
         if (first_avail == count) {
             // grow internal heap
-            count *= HEAP_GROW;
+            size_t new_count = count * HEAP_GROW;
             scamval_objs = my_realloc(scamval_objs, 
-                                      count * sizeof *scamval_objs);
-            for (size_t i = first_avail; i < count; i++) {
+                                      new_count * sizeof *scamval_objs);
+            for (size_t i = count; i < new_count; i++) {
                 scamval_objs[i] = NULL;
             }
+            count = new_count;
         }
     }
     scamval* ret = my_malloc(sizeof *ret);
