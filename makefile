@@ -1,6 +1,6 @@
 CC=gcc
 FLAGS=-std=gnu99 -Wall
-FILES=eval.c parse.c scamval.c stream.c tokenize.c builtins.c progutils.c
+FILES=eval.c parse.c scamval.c stream.c tokenize.c builtins.c progutils.c collector.c
 TEST_FILES=test_files/stream_tests.c test_files/tokenize_tests.c test_files/parse_tests.c test_files/eval_tests.c
 
 all: *.c *.h

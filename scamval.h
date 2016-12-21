@@ -40,8 +40,6 @@ struct scamdict {
     // symbols and values are stored as scamval lists
     scamval* syms;
     scamval* vals;
-    // accounting info for the garbage collector
-    int is_collecting;
 };
 
 struct scamval {
@@ -61,9 +59,8 @@ struct scamval {
         scamdict* dct; // SCAM_DICT
     } vals;
     // accounting info for the garbage collector
-    int refs;
     int seen;
-    int garbage;
+    int is_root;
 };
 
 
@@ -95,8 +92,6 @@ scamval* scamseq_pop(scamval*, size_t i);
 // Set the i'th element of the sequence, obliterating the old element without
 // freeing it (DO NOT USE unless you know the i'th element is already free)
 void scamseq_set(scamval* seq, size_t i, scamval* v);
-// Same as scamval_set, except the previous element is free'd before
-void scamseq_replace(scamval*, size_t, scamval*);
 // Return the actual number of elements in the sequence or string
 size_t scamseq_len(const scamval*);
 // Append/prepend a value to a sequence
@@ -166,7 +161,6 @@ void scamport_set_status(scamval*, int);
 // Initialize and free environments
 scamval* scamenv_init(scamval* enclosing);
 scamval* scamenv_default();
-void scamenv_free(scamval*);
 // Create a new binding in the environment, or update an existing one
 // sym should be of type SCAM_STR
 // Both sym and val are appropriated by the environment, so don't use them
@@ -181,16 +175,6 @@ scamval* scamenv_lookup(scamval* env, scamval* sym);
 scamval* scamenv_keys(scamval*);
 scamval* scamenv_vals(scamval*);
 scamval* scamenv_enclosing(scamval*);
-
-
-/*** SCAMVAL MEMORY MANAGEMENT ***/
-// Return a copy of the given value
-scamval* scamval_copy(scamval*);
-// Return a new reference to the same value
-scamval* scamval_new_ref(scamval*);
-// Free all resources used by a scamval, including the pointer itself
-void scamval_free(scamval*);
-
 
 /*** SCAMVAL PRINTING ***/
 void scamval_print(const scamval*);

@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include "../collector.h"
 #include "../eval.h"
 #include "tests.h"
 
@@ -18,8 +19,8 @@ void eval_tests() {
     evaltest_lambda(env);
     evaltest_zero_div(env);
     evaltest_closure(env);
-    //evaltest_known_fails(env);
-    scamenv_free(env);
+    evaltest_known_fails(env);
+    gc_close();
 }
 
 // Forward declarations of testing utilities
@@ -44,11 +45,13 @@ void evaltest_val_def(scamval* env) {
 void evaltest_fun_def(scamval* env) {
     // basic square function
     evaldef("(define (square x) (* x x))", env);
+    /*
     evaltest("(square 9)", env, scamint(81));
     evaltest("(square (square 3))", env, scamint(81));
     evaltest_err("(square)", env);
     evaltest_err("(square 2 3)", env);
     evaltest_err("(square [])", env);
+    */
     // more complicated power function
     evaldef("(define (power b n) (define (even? x) (= (% x 2) 0)) (if (= n 0) 1 (if (even? n) (square (power b (// n 2))) (* b (power b (- n 1))))))", env);
     evaltest("(power 287 0)", env, scamint(1));
@@ -110,8 +113,6 @@ void evaltest(char* line, scamval* env, scamval* what_we_expect) {
         scamval_print_debug(what_we_got);
         printf("\n");
     }
-    scamval_free(what_we_got);
-    scamval_free(what_we_expect);
 }
 
 void evaltest_list(char* line, scamval* env, int n, ...) {
@@ -132,7 +133,6 @@ void evaltest_err(char* line, scamval* env) {
         printf("Failure at %s:%d ", __FILE__, __LINE__);
         printf("(test \"%s\"), expected error\n", line);
     }
-    scamval_free(v);
 }
 
 void evaldef(char* line, scamval* env) {
@@ -142,7 +142,6 @@ void evaldef(char* line, scamval* env) {
         printf("(test \"%s\")\n", line);
         scamval_println(v);
     }
-    scamval_free(v);
 }
 
 void evaltrue(char* line, scamval* env) {

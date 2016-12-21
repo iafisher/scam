@@ -20,7 +20,6 @@ void parsetest(char* line, int n, ...) {
     scamval* ast = parse_str(line);
     if (ast->type != SCAM_SEXPR) {
         printf("Failed parse test \"%s\": expected SCAM_SEXPR object\n", line);
-        scamval_free(ast);
         exit(EXIT_FAILURE);
     }
     va_list args;
@@ -36,7 +35,6 @@ void parsetest(char* line, int n, ...) {
         }
     }
     va_end(args);
-    scamval_free(ast);
 }
 
 void parsetest_lit(char* line, int type_we_want) {
@@ -47,5 +45,4 @@ void parsetest_lit(char* line, int type_we_want) {
                                         scamtype_debug_name(type_we_want));
         exit(EXIT_FAILURE);
     }
-    scamval_free(v);
 }

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include "collector.h"
 #include "parse.h"
 #include "tokenize.h"
 
@@ -38,7 +39,7 @@ scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
             tokenizer_close(&tz);
             return ret;
         } else {
-            scamval_free(ret);
+            gc_unset_root(ret);
             tokenizer_close(&tz);
             return scamerr("trailing input");
         }
@@ -74,7 +75,7 @@ scamval* match_sequence(Tokenizer* tz, int type, int start, int end) {
             tokenizer_advance(tz);
             return ret;
         } else {
-            scamval_free(ret);
+            gc_unset_root(ret);
             return scamerr("expected end of expression started at line %d, "
                            "col %d", line, col);
         }
@@ -97,7 +98,7 @@ scamval* match_sexpr_plus(Tokenizer* tz) {
     if (first_expr->type != SCAM_ERR) {
         scamseq_append(ast, first_expr);
     } else {
-        scamval_free(ast);
+        gc_unset_root(ast);
         return first_expr;
     }
     while (starts_expr(tz->tkn.type))
@@ -212,7 +213,7 @@ int transform_and_pred(scamval* ast) {
 // (and cond1 cond2 cond3) (if cond1 (and cond2 cond3) false)
 void transform_and(scamval* ast) {
     // ast == (and cond1 cond2)
-    scamval_free(scamseq_pop(ast, 0));
+    gc_unset_root(scamseq_pop(ast, 0));
     // ast == (cond1 cond2)
     scamseq_prepend(ast, scamsym("if"));
     // ast == (if cond1 cond2)

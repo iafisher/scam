@@ -11,9 +11,6 @@ int main(int argc, char* argv[]) {
     } else {
         scamval* env = scamenv_default();
         scamval* v = eval_str(argv[1], env);
-        int result = (v->type != SCAM_ERR);
-        scamval_free(v);
-        scamenv_free(env);
-        return result;
+        return (v->type != SCAM_ERR);
     }
 }

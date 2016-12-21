@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "collector.h"
 #include "eval.h"
 
 #define TYPECHECK_ARGS(name, args, n, ...) { \
@@ -175,7 +176,7 @@ scamval* builtin_list_get(scamval* args) {
     scamval* list_arg = scamseq_get(args, 0);
     size_t i = scam_as_int(scamseq_get(args, 1));
     if (i >= 0 && i < scamseq_len(list_arg)) {
-        return scamval_copy(scamseq_get(list_arg, i));
+        return gc_copy_scamval(scamseq_get(list_arg, i));
     } else {
         return scamerr("attempted sequence access out of range");
     }
@@ -208,14 +209,14 @@ scamval* builtin_slice(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
     size_t n = scamseq_len(list_arg);
     if (start < 0 || start >= n || end < 0 || end >= n || start > end) {
-        scamval_free(list_arg);
+        gc_unset_root(list_arg);
         return scamerr("attempted sequence access out of range");
     }
     for (int i = 0; i < n; i++) {
         if (i < start) {
-            scamval_free(scamseq_pop(list_arg, 0));
+            gc_unset_root(scamseq_pop(list_arg, 0));
         } else if (i >= end) {
-            scamval_free(scamseq_pop(list_arg, scamseq_len(list_arg) - 1));
+            gc_unset_root(scamseq_pop(list_arg, scamseq_len(list_arg) - 1));
         }
     }
     return list_arg;
@@ -227,7 +228,7 @@ scamval* builtin_take(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
     size_t n = scamseq_len(list_arg);
     for (int i = start; i < n; i++) {
-        scamval_free(scamseq_pop(list_arg, start));
+        gc_unset_root(scamseq_pop(list_arg, start));
     }
     return list_arg;
 }
@@ -239,7 +240,7 @@ scamval* builtin_drop(scamval* args) {
     size_t n = scamseq_len(list_arg);
     for (int i = 0; i < n; i++) {
         if (i < end) {
-            scamval_free(scamseq_pop(list_arg, 0));
+            gc_unset_root(scamseq_pop(list_arg, 0));
         } else {
             break;
         }
@@ -250,7 +251,7 @@ scamval* builtin_drop(scamval* args) {
 scamval* builtin_list_head(scamval* args) {
     scamval* list_arg = scamseq_get(args, 0);
     if (scamseq_len(list_arg) > 0) {
-        return scamval_copy(scamseq_get(list_arg, 0));
+        return gc_copy_scamval(scamseq_get(list_arg, 0));
     } else {
         return scamerr("cannot take head of empty list");
     }
@@ -277,7 +278,7 @@ scamval* builtin_head(scamval* args) {
 
 scamval* builtin_list_tail(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
-    scamval_free(scamseq_pop(list_arg, 0));
+    gc_unset_root(scamseq_pop(list_arg, 0));
     return list_arg;
 }
 
@@ -300,7 +301,7 @@ scamval* builtin_tail(scamval* args) {
 scamval* builtin_list_last(scamval* args) {
     scamval* list_arg = scamseq_get(args, 0);
     if (scamseq_len(list_arg) > 0) {
-        return scamval_copy(scamseq_get(list_arg, scamseq_len(list_arg) - 1));
+        return gc_copy_scamval(scamseq_get(list_arg, scamseq_len(list_arg)-1));
     } else {
         return scamerr("cannot take last of empty list");
     }
@@ -328,7 +329,7 @@ scamval* builtin_last(scamval* args) {
 
 scamval* builtin_list_init(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
-    scamval_free(scamseq_pop(list_arg, scamseq_len(list_arg) - 1));
+    gc_unset_root(scamseq_pop(list_arg, scamseq_len(list_arg) - 1));
     return list_arg;
 }
 
@@ -548,17 +549,6 @@ scamval* builtin_readline(scamval* args) {
     scamval* port_arg = scamseq_get(args, 0);
     if (scamport_status(port_arg) == SCAMPORT_OPEN) {
         return scamstr_read(scam_as_file(port_arg));
-        /*
-        scamval* ret = scamstr_empty();
-        int err = getline(&ret->vals.s, &ret->count, port_arg->vals.port->fp);
-        if (err != -1) {
-            ret->mem_size = ret->count;
-            return ret;
-        } else {
-            scamval_free(ret);
-            return scamerr_eof();
-        }
-        */
     } else {
         return scamerr("cannot read from closed port");
     }
@@ -616,9 +606,9 @@ scamval* builtin_map(scamval* args) {
         scamval* v = scamseq_get(list_arg, i);
         scamval* arglist = scamsexpr_from_vals(1, v);
         scamseq_set(list_arg, i, eval_apply(fun, arglist));
-        scamval_free(arglist);
+        gc_unset_root(arglist);
     }
-    scamval_free(fun);
+    gc_unset_root(fun);
     return list_arg;
 }
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "collector.h"
 #include "eval.h"
 
 void run_repl(scamval*);
@@ -16,13 +17,13 @@ int main(int argc, char** argv) {
             if (v->type == SCAM_ERR) {
                 scamval_println(v);
             }
-            scamval_free(v);
+            gc_unset_root(v);
         }
     }
     if (load_flag || argc == 1) {
         run_repl(env);
     }
-    scamenv_free(env);
+    gc_close();
     return 0;
 }
 
@@ -35,7 +36,7 @@ void run_repl(scamval* env) {
         if (strcmp(buffer, "quit\n") == 0) break;
         scamval* v = eval_str(buffer, env);
         scamval_println(v);
-        scamval_free(v);
+        gc_unset_root(v);
     }
     free(buffer);
 }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../collector.h"
 #include "../eval.h"
 #include "../parse.h"
 #include "../stream.h"
@@ -61,7 +62,7 @@ int main(int argc, char** argv) {
     }
     if (buffer) free(buffer);
     stream_close(&strm);
-    scamenv_free(env);
+    gc_close();
     return 0;
 }
 
@@ -116,18 +117,15 @@ void parse_repl(char* command) {
     if (strstr(command, "open") == command && strlen(command) >= 6) {
         scamval* ast = parse_file(command + 5);
         scamval_print_ast(ast, 0);
-        scamval_free(ast);
     } else {
         scamval* ast = parse_str(command);
         scamval_print_ast(ast, 0);
-        scamval_free(ast);
     }
 }
 
 void eval_repl(char* command, scamval* env) {
     scamval* v = eval_str(command, env);
     scamval_println(v);
-    scamval_free(v);
 }
 
 void print_stream(Stream* strm) {

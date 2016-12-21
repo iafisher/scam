@@ -1,10 +1,11 @@
 #include <string.h>
+#include "collector.h"
 #include "eval.h"
 #include "parse.h"
 
 #define SCAM_ASSERT(cond, ast, err, ...) { \
     if (!(cond)) { \
-        scamval_free(ast); \
+        gc_unset_root(ast); \
         return scamerr(err, ##__VA_ARGS__); \
     } \
 }
@@ -12,7 +13,7 @@
 #define SCAM_ASSERT_ARITY(name, ast, expected) { \
     size_t got = scamseq_len(ast); \
     if (got != expected) { \
-        scamval_free(ast); \
+        gc_unset_root(ast); \
         return scamerr_arity(name, got, expected); \
     } \
 }
@@ -20,7 +21,7 @@
 #define SCAM_ASSERT_MIN_ARITY(name, ast, expected) { \
     size_t got = scamseq_len(ast); \
     if (got < expected) { \
-        scamval_free(ast); \
+        gc_unset_root(ast); \
         return scamerr_arity(name, got, expected); \
     } \
 }
@@ -36,7 +37,7 @@ scamval* eval_list(scamval*, scamval*);
 scamval* eval(scamval* ast, scamval* env) {
     if (ast->type == SCAM_SYM) {
         scamval* ret = scamenv_lookup(env, ast);
-        scamval_free(ast);
+        gc_unset_root(ast);
         return ret;
     } else if (ast->type == SCAM_SEXPR) {
         SCAM_ASSERT(scamseq_len(ast) > 0, ast, "empty expression");
@@ -66,8 +67,8 @@ scamval* eval(scamval* ast, scamval* env) {
         } else {
             ret = scamerr("first element of S-expression must be function");
         }
-        scamval_free(arglist);
-        scamval_free(fun_val);
+        gc_unset_root(arglist);
+        gc_unset_root(fun_val);
         return ret;
     } else if (ast->type == SCAM_LIST) {
         return eval_list(ast, env);
@@ -94,11 +95,11 @@ scamval* eval_lambda(scamval* ast, scamval* env) {
         SCAM_ASSERT(scamseq_get(parameters_copy, i)->type == SCAM_SYM, ast,
                     "lambda parameter must be symbol");
     }
-    // remove and free the 'lambda' symbol
-    scamval_free(scamseq_pop(ast, 0));
+    // remove the 'lambda' symbol
+    gc_unset_root(scamseq_pop(ast, 0));
     scamval* parameters = scamseq_pop(ast, 0);
     scamval* body = scamseq_pop(ast, 0);
-    scamval_free(ast);
+    gc_unset_root(ast);
     return scamlambda(env, parameters, body);
 }
 
@@ -109,12 +110,12 @@ scamval* eval_define(scamval* ast, scamval* env) {
                 "cannot define non-symbol");
     scamval* k = scamseq_pop(ast, 1);
     scamval* v = eval(scamseq_pop(ast, 1), env);
-    scamval_free(ast);
+    gc_unset_root(ast);
     if (v->type != SCAM_ERR) {
         scamenv_bind(env, k, v);
         return scamnull();
     } else {
-        scamval_free(k);
+        gc_unset_root(k);
         return v;
     }
 }
@@ -126,19 +127,19 @@ scamval* eval_if(scamval* ast, scamval* env) {
     if (cond->type == SCAM_BOOL) {
         scamval* true_clause = scamseq_pop(ast, 1);
         scamval* false_clause = scamseq_pop(ast, 1);
-        scamval_free(ast);
-        if (cond->vals.n) {
-            scamval_free(cond);
-            scamval_free(false_clause);
+        gc_unset_root(ast);
+        if (scam_as_bool(cond)) {
+            gc_unset_root(cond);
+            gc_unset_root(false_clause);
             return eval(true_clause, env);
         } else {
-            scamval_free(cond);
-            scamval_free(true_clause);
+            gc_unset_root(cond);
+            gc_unset_root(true_clause);
             return eval(false_clause, env);
         }
     } else {
-        scamval_free(cond);
-        scamval_free(ast);
+        gc_unset_root(cond);
+        gc_unset_root(ast);
         return scamerr("condition of an if expression must be a bool");
     }
 }
@@ -150,18 +151,18 @@ scamval* eval_and(scamval* ast, scamval* env) {
         scamval* v = eval(scamseq_pop(ast, 1), env);
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
-            scamval_free(v);
-            scamval_free(ast);
+            gc_unset_root(v);
+            gc_unset_root(ast);
             return scamerr_type("and", i, v_type, SCAM_BOOL);
-        } else if (!v->vals.n) {
-            scamval_free(v);
-            scamval_free(ast);
+        } else if (!scam_as_bool(v)) {
+            gc_unset_root(v);
+            gc_unset_root(ast);
             return scambool(0);
         } else {
-            scamval_free(v);
+            gc_unset_root(v);
         }
     }
-    scamval_free(ast);
+    gc_unset_root(ast);
     return scambool(1);
 }
 
@@ -172,18 +173,18 @@ scamval* eval_or(scamval* ast, scamval* env) {
         scamval* v = eval(scamseq_pop(ast, 1), env);
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
-            scamval_free(v);
-            scamval_free(ast);
+            gc_unset_root(v);
+            gc_unset_root(ast);
             return scamerr_type("or", i, v_type, SCAM_BOOL);
-        } else if (v->vals.n) {
-            scamval_free(v);
-            scamval_free(ast);
+        } else if (scam_as_bool(v)) {
+            gc_unset_root(v);
+            gc_unset_root(ast);
             return scambool(1);
         } else {
-            scamval_free(v);
+            gc_unset_root(v);
         }
     }
-    scamval_free(ast);
+    gc_unset_root(ast);
     return scambool(0);
 }
 
@@ -203,16 +204,15 @@ scamval* eval_apply(scamval* fun_val, scamval* arglist) {
                          scamseq_pop(arglist, 0));
         }
         scamval* ret = eval(scamlambda_body(fun_val), inner_env);
-        scamenv_free(inner_env);
+        gc_unset_root(inner_env);
         return ret;
     } else {
         if (scambuiltin_is_const(fun_val)) {
-            scamval* ret = scambuiltin_function(fun_val)(arglist);
-            return ret;
+            return scambuiltin_function(fun_val)(arglist);
         } else {
-            scamval* arglist_copy = scamval_copy(arglist);
+            scamval* arglist_copy = gc_copy_scamval(arglist);
             scamval* ret = scambuiltin_function(fun_val)(arglist_copy);
-            scamval_free(arglist_copy);
+            gc_unset_root(arglist_copy);
             return ret;
         }
     }
@@ -227,7 +227,7 @@ scamval* eval_list(scamval* ast, scamval* env) {
             // the i'th node was freed by eval, so it must be replaced by an
             // allocated value
             scamseq_set(ast, i, scamnull());
-            scamval_free(ast);
+            gc_unset_root(ast);
             return v;
         }
     }
