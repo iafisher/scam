@@ -186,6 +186,7 @@ struct scamenv {
     scamval* vals;
     // accounting info for the garbage collector
     int refs;
+    int seen;
     int is_collecting;
 };
 

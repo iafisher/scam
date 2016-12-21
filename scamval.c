@@ -572,6 +572,7 @@ scamenv* scamenv_init(scamenv* enclosing) {
         ret->enclosing->refs++;
     ret->refs = 1;
     ret->is_collecting = 0;
+    ret->seen = 0;
     ret->syms = scamlist();
     ret->vals = scamlist();
     return ret;
@@ -591,7 +592,10 @@ void scamenv_bind(scamenv* env, scamval* sym, scamval* val) {
     scamseq_append(env->vals, val);
 }
 
-int scamenv_mark(const scamenv* current_env, const scamenv* collecting_env) {
+int scamenv_mark(scamenv* current_env, scamenv* collecting_env) {
+    if (current_env->seen)
+        return 0;
+    current_env->seen = 1;
     int internal_refs = 0;
     if (current_env->enclosing == collecting_env)
         internal_refs++;
@@ -599,9 +603,10 @@ int scamenv_mark(const scamenv* current_env, const scamenv* collecting_env) {
         scamval* v = scamseq_get(current_env->vals, i);
         if (!v->seen) {
             if (v->type == SCAM_LAMBDA) {
-                const scamenv* v_env = scamlambda_env_ref(v);
+                scamenv* v_env = v->vals.fun->env;
                 if (v_env == collecting_env) {
-                    internal_refs++;
+                    if (v->refs == 1)
+                        internal_refs++;
                 } else {
                     internal_refs += scamenv_mark(v_env, collecting_env);
                 }
@@ -614,6 +619,7 @@ int scamenv_mark(const scamenv* current_env, const scamenv* collecting_env) {
 
 
 void scamenv_reset_marks(scamenv* env) {
+    env->seen = 0;
     for (size_t i = 0; i < scamseq_len(env->vals); i++) {
         scamval* v = scamseq_get(env->vals, i);
         if (v->seen) {
@@ -634,6 +640,8 @@ void scamenv_free(scamenv* env) {
     env->is_collecting = 1;
     env->refs--;
     int internal_refs = scamenv_mark(env, env);
+    printf("Trying to delete... ");
+    scamenv_print(env, 0);
     if ((env->refs - internal_refs) == 0) {
         if (env->enclosing)
             scamenv_free(env->enclosing);
@@ -663,7 +671,7 @@ scamval* scamenv_lookup(scamenv* env, scamval* name) {
 void scamenv_print(const scamenv* env, int indent) {
     for (int i = 0; i < indent; i++)
         printf("  ");
-    printf("env with %d ref(s)\n", env->refs);
+    printf("env with %d ref(s), seen is %d\n", env->refs, env->seen);
     for (size_t i = 0; i < scamseq_len(env->vals); i++) {
         for (int j = 0; j < indent + 1; j++)
             printf("  ");
@@ -671,7 +679,7 @@ void scamenv_print(const scamenv* env, int indent) {
         printf(": ");
         scamval* v = scamseq_get(env->vals, i);
         scamval_print(v);
-        printf("\n");
+        printf(" (seen is %d, refs is %d)\n", v->seen, v->refs);
         if (v->type == SCAM_LAMBDA) {
             const scamenv* v_env = scamlambda_env_ref(v);
             if (v_env != env) {

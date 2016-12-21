@@ -12,6 +12,7 @@ void evaltest_closure(scamenv*);
 void evaltest_rec_fun(scamenv*);
 void evaltest_lambda(scamenv*);
 void evaltest_zero_div(scamenv*);
+void evaltest_known_fails(scamenv*);
 
 void eval_tests() {
     scamenv* env = scamenv_init(NULL);
@@ -25,6 +26,7 @@ void eval_tests() {
     evaltest_lambda(env);
     evaltest_zero_div(env);
     evaltest_closure(env);
+    //evaltest_known_fails(env);
     scamenv_free(env);
 }
 
@@ -162,6 +164,12 @@ void evaltest_closure(scamenv* env) {
     evaldef("(define foo (make-fun1 5))", env);
     evaldef("(define bar (foo 32))", env);
     evaltest("(bar 5)", env, scamint(42));
+}
+
+void evaltest_known_fails(scamenv* env) {
+    evaldef("(define (make-fun2) (define (double x) (* x 2)) double)", env);
+    evaldef("(define foo (make-fun2))", env);
+    evaltest("(foo 9)", env, scamint(18));
 }
 
 void evaltest_rec_fun(scamenv* env) {

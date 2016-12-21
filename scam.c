@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
         run_repl(env);
     }
     scamenv_print(env, 0);
-    scamenv_free(env);
+    //scamenv_free(env);
     return 0;
 }
 
