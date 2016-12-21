@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "builtins.h"
 #include "eval.h"
 
 #define TYPECHECK_ARGS(name, args, n, ...) { \
@@ -673,15 +672,16 @@ scamval* builtin_not(scamval* args) {
     return scambool(!scam_as_bool(scamseq_get(args, 0)));
 }
 
-void add_builtin(scamenv* env, char* sym, scambuiltin_fun bltin) {
+void add_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
     scamenv_bind(env, scamsym(sym), scambuiltin(bltin));
 }
 
-void add_const_builtin(scamenv* env, char* sym, scambuiltin_fun bltin) {
+void add_const_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
     scamenv_bind(env, scamsym(sym), scambuiltin_const(bltin));
 }
 
-void register_builtins(scamenv* env) {
+scamval* scamenv_default() {
+    scamval* env = scamenv_init(NULL);
     add_builtin(env, "begin", builtin_begin);
     add_const_builtin(env, "+", builtin_add);
     add_const_builtin(env, "-", builtin_sub);
@@ -734,4 +734,5 @@ void register_builtins(scamenv* env) {
     scamenv_bind(env, scamsym("stdin"), scamport(stdin));
     scamenv_bind(env, scamsym("stdout"), scamport(stdout));
     scamenv_bind(env, scamsym("stderr"), scamport(stderr));
+    return env;
 }

@@ -1,19 +1,17 @@
 #include <stdarg.h>
-#include "../builtins.h"
 #include "../eval.h"
 #include "tests.h"
 
-void evaltest_val_def(scamenv*);
-void evaltest_fun_def(scamenv*);
-void evaltest_closure(scamenv*);
-void evaltest_rec_fun(scamenv*);
-void evaltest_lambda(scamenv*);
-void evaltest_zero_div(scamenv*);
-void evaltest_known_fails(scamenv*);
+void evaltest_val_def(scamval*);
+void evaltest_fun_def(scamval*);
+void evaltest_closure(scamval*);
+void evaltest_rec_fun(scamval*);
+void evaltest_lambda(scamval*);
+void evaltest_zero_div(scamval*);
+void evaltest_known_fails(scamval*);
 
 void eval_tests() {
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
+    scamval* env = scamenv_default();
     evaltest_val_def(env);
     evaltest_fun_def(env);
     evaltest_rec_fun(env);
@@ -25,14 +23,14 @@ void eval_tests() {
 }
 
 // Forward declarations of testing utilities
-void evaltest(char*, scamenv*, scamval* what_we_expect);
-void evaltest_list(char*, scamenv*, int n, ...);
-void evaltest_err(char*, scamenv*);
-void evaldef(char*, scamenv*);
-void evaltrue(char*, scamenv*);
-void evalfalse(char*, scamenv*);
+void evaltest(char*, scamval*, scamval* what_we_expect);
+void evaltest_list(char*, scamval*, int n, ...);
+void evaltest_err(char*, scamval*);
+void evaldef(char*, scamval*);
+void evaltrue(char*, scamval*);
+void evalfalse(char*, scamval*);
 
-void evaltest_val_def(scamenv* env) {
+void evaltest_val_def(scamval* env) {
     evaldef("(define x 10)", env);
     evaltest("x", env, scamint(10));
     evaltest("(* x 2)", env, scamint(20));
@@ -43,7 +41,7 @@ void evaltest_val_def(scamenv* env) {
     evaltest_err("(define 1 23)", env);
 }
 
-void evaltest_fun_def(scamenv* env) {
+void evaltest_fun_def(scamval* env) {
     // basic square function
     evaldef("(define (square x) (* x x))", env);
     evaltest("(square 9)", env, scamint(81));
@@ -60,7 +58,7 @@ void evaltest_fun_def(scamenv* env) {
     evaltest_err("even?", env);
 }
 
-void evaltest_closure(scamenv* env) {
+void evaltest_closure(scamval* env) {
     // single nested closure
     evaldef("(define (make-fun x) (lambda (y) (+ x y)))", env);
     evaldef("(define foo (make-fun 5))", env);
@@ -72,20 +70,20 @@ void evaltest_closure(scamenv* env) {
     evaltest("(bar 5)", env, scamint(42));
 }
 
-void evaltest_known_fails(scamenv* env) {
+void evaltest_known_fails(scamval* env) {
     evaldef("(define (make-fun2) (define (double x) (* x 2)) double)", env);
     evaldef("(define foo (make-fun2))", env);
     evaltest("(foo 9)", env, scamint(18));
 }
 
-void evaltest_rec_fun(scamenv* env) {
+void evaltest_rec_fun(scamval* env) {
     evaldef("(define (range1 i) (if (= i 0) [] (append (range1 (- i 1)) i)))", 
             env);
     evaltest_list("(range1 5)", env, 5, scamint(1), scamint(2), scamint(3), 
                                        scamint(4), scamint(5));
 }
 
-void evaltest_lambda(scamenv* env) {
+void evaltest_lambda(scamval* env) {
     evaltest("((lambda (x y) (+ x y)) 20 22)", env, scamint(42));
     evaltest_err("((lambda (x y) (+ x y)) 20)", env);
     evaltest_err("((lambda (x y) (+ x y)) 20 21 22)", env);
@@ -94,7 +92,7 @@ void evaltest_lambda(scamenv* env) {
     evaltest_err("(lambda (x 10 y) (* x y))", env);
 }
 
-void evaltest_zero_div(scamenv* env) {
+void evaltest_zero_div(scamval* env) {
     evaltest_err("(/ 10 0)", env);
     evaltest_err("(/ 10 23 0)", env);
     evaltest_err("(+ 10 (/ 10 0))", env);
@@ -102,7 +100,7 @@ void evaltest_zero_div(scamenv* env) {
     evaltest_err("(% 10 0)", env);
 }
 
-void evaltest(char* line, scamenv* env, scamval* what_we_expect) {
+void evaltest(char* line, scamval* env, scamval* what_we_expect) {
     scamval* what_we_got = eval_str(line, env);
     if (!scamval_eq(what_we_got, what_we_expect)) {
         printf("Failure at %s:%d ", __FILE__, __LINE__);
@@ -116,7 +114,7 @@ void evaltest(char* line, scamenv* env, scamval* what_we_expect) {
     scamval_free(what_we_expect);
 }
 
-void evaltest_list(char* line, scamenv* env, int n, ...) {
+void evaltest_list(char* line, scamval* env, int n, ...) {
     va_list vlist;
     va_start(vlist, n);
     scamval* items = scamlist();
@@ -128,7 +126,7 @@ void evaltest_list(char* line, scamenv* env, int n, ...) {
     evaltest(line, env, items);
 }
 
-void evaltest_err(char* line, scamenv* env) {
+void evaltest_err(char* line, scamval* env) {
     scamval* v = eval_str(line, env);
     if (v->type != SCAM_ERR) {
         printf("Failure at %s:%d ", __FILE__, __LINE__);
@@ -137,7 +135,7 @@ void evaltest_err(char* line, scamenv* env) {
     scamval_free(v);
 }
 
-void evaldef(char* line, scamenv* env) {
+void evaldef(char* line, scamval* env) {
     scamval* v = eval_str(line, env);
     if (v->type == SCAM_ERR) {
         printf("Failure at %s:%d ", __FILE__, __LINE__);
@@ -147,10 +145,10 @@ void evaldef(char* line, scamenv* env) {
     scamval_free(v);
 }
 
-void evaltrue(char* line, scamenv* env) {
+void evaltrue(char* line, scamval* env) {
     evaltest(line, env, scambool(1));
 }
 
-void evalfalse(char* line, scamenv* env) {
+void evalfalse(char* line, scamval* env) {
     evaltest(line, env, scambool(0));
 }

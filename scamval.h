@@ -3,17 +3,18 @@
 
 // Possible values for the type field of the scamval struct
 // Note that some of these types are never exposed to the user
-enum {SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA, 
-      SCAM_PORT, SCAM_BUILTIN, SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL};
+enum { SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA, 
+       SCAM_PORT, SCAM_BUILTIN, SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL,
+       SCAM_DICT };
 
 // Type values that are only used for typechecking
-enum {SCAM_SEQ=1000, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY};
+enum { SCAM_SEQ=1000, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY };
 
-// Forward declaration of scamval and scamenv
+// Forward declaration of scamval and scamdict
 struct scamval;
 typedef struct scamval scamval;
-struct scamenv;
-typedef struct scamenv scamenv;
+struct scamdict;
+typedef struct scamdict scamdict;
 
 typedef scamval* (*scambuiltin_fun)(scamval*);
 typedef struct {
@@ -22,7 +23,7 @@ typedef struct {
 } scambuiltin_t;
 
 typedef struct {
-    scamenv* env; // the environment the function was created in
+    scamval* env; // the environment the function was created in
     scamval* parameters;
     scamval* body;
 } scamfun_t;
@@ -32,6 +33,16 @@ typedef struct {
     int status;
     FILE* fp;
 } scamport_t;
+
+struct scamdict {
+    // pointer to enclosing dict (if dict is an environment)
+    scamval* enclosing;
+    // symbols and values are stored as scamval lists
+    scamval* syms;
+    scamval* vals;
+    // accounting info for the garbage collector
+    int is_collecting;
+};
 
 struct scamval {
     int type;
@@ -47,10 +58,12 @@ struct scamval {
         scamfun_t* fun; // SCAM_LAMBDA
         scamport_t* port; // SCAM_PORT
         scambuiltin_t* bltin; // SCAM_BUILTIN
+        scamdict* dct; // SCAM_DICT
     } vals;
     // accounting info for the garbage collector
     int refs;
     int seen;
+    int garbage;
 };
 
 
@@ -73,34 +86,26 @@ double scam_as_dec(const scamval*);
 scamval* scamlist();
 scamval* scamsexpr();
 scamval* scamsexpr_from_vals(size_t, ...);
-
 // Return a reference to the i'th element of the sequence
 // Make sure not to free this reference!
 scamval* scamseq_get(const scamval*, size_t i);
-
 // Remove and return the i'th element of the sequence
 // The caller assumes responsibility for freeing the value
 scamval* scamseq_pop(scamval*, size_t i);
-
 // Set the i'th element of the sequence, obliterating the old element without
 // freeing it (DO NOT USE unless you know the i'th element is already free)
 void scamseq_set(scamval* seq, size_t i, scamval* v);
-
 // Same as scamval_set, except the previous element is free'd before
 void scamseq_replace(scamval*, size_t, scamval*);
-
 // Return the actual number of elements in the sequence or string
 size_t scamseq_len(const scamval*);
-
 // Append/prepend a value to a sequence
 // The sequence takes responsibility for freeing the value, so it's best not
 // to use a value once you've appended or prepended it somewhere
 void scamseq_append(scamval* seq, scamval* v);
 void scamseq_prepend(scamval* seq, scamval* v);
-
 // Concatenate the second argument to the first, freeing the second arg
 void scamseq_concat(scamval* seq1, scamval* seq2);
-
 // Free the internal sequence of a scamval, without freeing the actual value
 void scamseq_free(scamval*);
 
@@ -130,15 +135,15 @@ size_t scamstr_len(const scamval*);
 
 
 /*** FUNCTION API ***/
-scamval* scamlambda(scamenv* env, scamval* parameters, scamval* body);
+scamval* scamlambda(scamval* env, scamval* parameters, scamval* body);
 scamval* scambuiltin(scambuiltin_fun);
 // Construct a scambuiltin that doesn't change its arguments
 scamval* scambuiltin_const(scambuiltin_fun);
 size_t scamlambda_nparams(const scamval*);
 scamval* scamlambda_param(const scamval*, size_t);
 scamval* scamlambda_body(const scamval*);
-scamenv* scamlambda_env(const scamval*);
-const scamenv* scamlambda_env_ref(const scamval*);
+scamval* scamlambda_env(const scamval*);
+const scamval* scamlambda_env_ref(const scamval*);
 scambuiltin_fun scambuiltin_function(const scamval*);
 int scambuiltin_is_const(const scamval*);
 
@@ -155,6 +160,27 @@ scamval* scamport(FILE*);
 FILE* scam_as_file(scamval*);
 int scamport_status(const scamval*);
 void scamport_set_status(scamval*, int);
+
+
+/*** DICTIONARY/ENVIRONMENT API ***/
+// Initialize and free environments
+scamval* scamenv_init(scamval* enclosing);
+scamval* scamenv_default();
+void scamenv_free(scamval*);
+// Create a new binding in the environment, or update an existing one
+// sym should be of type SCAM_STR
+// Both sym and val are appropriated by the environment, so don't use them
+// after calling this function
+void scamenv_bind(scamval* env, scamval* sym, scamval* val);
+// Lookup the symbol in the environment, returning a copy of the value if it
+// exists and an error if it doesn't
+size_t scamenv_len(const scamval* env);
+scamval* scamenv_key(scamval* env, size_t);
+scamval* scamenv_val(scamval* env, size_t);
+scamval* scamenv_lookup(scamval* env, scamval* sym);
+scamval* scamenv_keys(scamval*);
+scamval* scamenv_vals(scamval*);
+scamval* scamenv_enclosing(scamval*);
 
 
 /*** SCAMVAL MEMORY MANAGEMENT ***/
@@ -178,48 +204,15 @@ int scamval_eq(const scamval*, const scamval*);
 int scamval_gt(const scamval*, const scamval*);
 
 
-/*** SCAMENV ***/
-struct scamenv {
-    scamenv* enclosing;
-    // symbols and values are stored as scamval lists
-    scamval* syms;
-    scamval* vals;
-    // accounting info for the garbage collector
-    int refs;
-    int seen;
-    int is_collecting;
-};
-
-// Initialize and free environments
-scamenv* scamenv_init(scamenv* enclosing);
-void scamenv_free(scamenv*);
-
-// Create a new binding in the environment, or update an existing one
-// sym should be of type SCAM_STR
-// Both sym and val are appropriated by the environment, so don't use them
-// after calling this function
-void scamenv_bind(scamenv*, scamval* sym, scamval* val);
-
-// Lookup the symbol in the environment, returning a copy of the value if it
-// exists and an error if it doesn't
-scamval* scamenv_lookup(scamenv*, scamval* sym);
-
-void scamenv_print(const scamenv*, int);
-
-
 /*** TYPECHECKING ***/
 // Return the names of types as strings
 const char* scamtype_name(int type);
 const char* scamtype_debug_name(int type);
-
 // Check if the value belongs to the given type
 int scamval_typecheck(const scamval*, int type);
-
 // Return the narrowest type applicable to both types
 int narrowest_type(int, int);
-
 // Return the narrowest type applicable to all elements of the sequence
 int scamseq_narrowest_type(scamval*);
-
 // Construct a type error message
 scamval* scamerr_type(const char* name, size_t pos, int got, int expected);

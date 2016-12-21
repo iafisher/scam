@@ -81,9 +81,17 @@ equ('(empty? [1 2 3 4 5 6])', 'false')
 err('(empty?)')
 err('(empty? 10)')
 # len
+equ('(len [])', '0')
 equ('(len [1 2 3 4 5 6])', '6')
+equ('(len "abc")', '3')
+equ('(len "")', '0')
+err('(len)')
+err('(len 10)')
+err('(len [1 2] [3 4])')
 # head
 equ('(head [1 2 3 4 5 6])', '1')
+err('(head [])')
+err('(head)')
 # tail
 equ('(tail [1 2 3 4 5 6])', '[2 3 4 5 6]')
 # last

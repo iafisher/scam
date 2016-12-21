@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../builtins.h"
 #include "../eval.h"
 #include "../parse.h"
 #include "../stream.h"
@@ -10,7 +9,7 @@
 void stream_repl(char*, size_t, Stream*);
 void tokenize_repl(char*);
 void parse_repl(char*);
-void eval_repl(char*, scamenv*);
+void eval_repl(char*, scamval*);
 
 enum { REPL_EVAL, REPL_PARSE, REPL_TOKENIZE, REPL_STREAM };
 int main(int argc, char** argv) {
@@ -20,8 +19,7 @@ int main(int argc, char** argv) {
     size_t s_len = 0;
     Stream strm;
     stream_from_str(&strm, "");
-    scamenv* env = scamenv_init(NULL);
-    register_builtins(env);
+    scamval* env = scamenv_default();
     for (;;) {
         switch (mode) {
             case REPL_STREAM: printf("stream"); break;
@@ -126,7 +124,7 @@ void parse_repl(char* command) {
     }
 }
 
-void eval_repl(char* command, scamenv* env) {
+void eval_repl(char* command, scamval* env) {
     scamval* v = eval_str(command, env);
     scamval_println(v);
     scamval_free(v);

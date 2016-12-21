@@ -3,7 +3,6 @@
  *     1 otherwise
  */
 #include <stdio.h>
-#include "../builtins.h"
 #include "../eval.h"
 #include "../scamval.h"
 
@@ -12,8 +11,7 @@ int main(int argc, char* argv[]) {
         printf("Usage: ./%s <code> <expected result>\n", argv[0]);
         return 2;
     } else {
-        scamenv* env = scamenv_init(NULL);
-        register_builtins(env);
+        scamval* env = scamenv_default();
         scamval* v1 = eval_str(argv[1], env);
         scamval* v2 = eval_str(argv[2], env);
         int result = !scamval_eq(v1, v2);
