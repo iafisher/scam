@@ -84,10 +84,10 @@ scamval* scamlist();
 scamval* scamsexpr();
 scamval* scamsexpr_from_vals(size_t, ...);
 // Return a reference to the i'th element of the sequence
-// Make sure not to free this reference!
 scamval* scamseq_get(const scamval*, size_t i);
+// Remove the i'th element of the sequence
+void scamseq_delete(scamval*, size_t i);
 // Remove and return the i'th element of the sequence
-// The caller assumes responsibility for freeing the value
 scamval* scamseq_pop(scamval*, size_t i);
 // Set the i'th element of the sequence, obliterating the old element without
 // freeing it (DO NOT USE unless you know the i'th element is already free)

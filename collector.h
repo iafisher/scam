@@ -10,3 +10,4 @@ void gc_collect();
 void gc_close();
 
 void gc_print();
+void gc_print_size();

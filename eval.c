@@ -97,7 +97,7 @@ scamval* eval_lambda(scamval* ast, scamval* env) {
                     "lambda parameter must be symbol");
     }
     // remove the 'lambda' symbol
-    gc_unset_root(scamseq_pop(ast, 0));
+    scamseq_delete(ast, 0);
     scamval* parameters = scamseq_pop(ast, 0);
     scamval* body = scamseq_pop(ast, 0);
     return scamlambda(env, parameters, body);

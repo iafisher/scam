@@ -214,9 +214,9 @@ scamval* builtin_slice(scamval* args) {
     }
     for (int i = 0; i < n; i++) {
         if (i < start) {
-            gc_unset_root(scamseq_pop(list_arg, 0));
+            scamseq_delete(list_arg, 0);
         } else if (i >= end) {
-            gc_unset_root(scamseq_pop(list_arg, scamseq_len(list_arg) - 1));
+            scamseq_delete(list_arg, scamseq_len(list_arg) - 1);
         }
     }
     return list_arg;
@@ -228,7 +228,7 @@ scamval* builtin_take(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
     size_t n = scamseq_len(list_arg);
     for (int i = start; i < n; i++) {
-        gc_unset_root(scamseq_pop(list_arg, start));
+        scamseq_delete(list_arg, start);
     }
     return list_arg;
 }
@@ -240,7 +240,7 @@ scamval* builtin_drop(scamval* args) {
     size_t n = scamseq_len(list_arg);
     for (int i = 0; i < n; i++) {
         if (i < end) {
-            gc_unset_root(scamseq_pop(list_arg, 0));
+            scamseq_delete(list_arg, 0);
         } else {
             break;
         }
@@ -278,7 +278,7 @@ scamval* builtin_head(scamval* args) {
 
 scamval* builtin_list_tail(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
-    gc_unset_root(scamseq_pop(list_arg, 0));
+    scamseq_delete(list_arg, 0);
     return list_arg;
 }
 
@@ -329,7 +329,7 @@ scamval* builtin_last(scamval* args) {
 
 scamval* builtin_list_init(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
-    gc_unset_root(scamseq_pop(list_arg, scamseq_len(list_arg) - 1));
+    scamseq_delete(list_arg, scamseq_len(list_arg) - 1);
     return list_arg;
 }
 
@@ -500,19 +500,6 @@ scamval* builtin_println(scamval* args) {
     return scamnull();
 }
 
-scamval* builtin_input(scamval* args) {
-    TYPECHECK_ARGS("input", args, 0);
-    char* s = NULL;
-    size_t s_len = 0;
-    size_t last = getline(&s, &s_len, stdin);
-    // remove the trailing newline
-    if (last > 0 && s[last - 1] == '\n') {
-        s[last - 1] = '\0';
-    }
-    scamval* ret = scamstr_no_copy(s);
-    return ret;
-}
-
 scamval* builtin_open(scamval* args) {
     TYPECHECK_ARGS("open", args, 2, SCAM_STR, SCAM_STR);
     const char* fname = scam_as_str(scamseq_get(args, 0));
@@ -545,12 +532,16 @@ scamval* builtin_port_good(scamval* args) {
 }
 
 scamval* builtin_readline(scamval* args) {
-    TYPECHECK_ARGS("readline", args, 1, SCAM_PORT);
-    scamval* port_arg = scamseq_get(args, 0);
-    if (scamport_status(port_arg) == SCAMPORT_OPEN) {
-        return scamstr_read(scam_as_file(port_arg));
+    if (scamseq_len(args) == 0) {
+        return scamstr_read(stdin);
     } else {
-        return scamerr("cannot read from closed port");
+        TYPECHECK_ARGS("readline", args, 1, SCAM_PORT);
+        scamval* port_arg = scamseq_get(args, 0);
+        if (scamport_status(port_arg) == SCAMPORT_OPEN) {
+            return scamstr_read(scam_as_file(port_arg));
+        } else {
+            return scamerr("cannot read from closed port");
+        }
     }
 }
 
@@ -598,6 +589,26 @@ scamval* builtin_range(scamval* args) {
     }
 }
 
+int scamval_cmp(const void* a, const void* b) {
+    const scamval* v1 = *(const scamval**)a;
+    const scamval* v2 = *(const scamval**)b;
+    if (scamval_gt(v1, v2) == 1) {
+        return 1;
+    } else if (scamval_eq(v1, v2) == 1) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+scamval* builtin_sort(scamval* args) {
+    TYPECHECK_ARGS("sort", args, 1, SCAM_LIST);
+    scamval* list_arg = scamseq_pop(args, 0);
+    qsort(list_arg->vals.arr, scamseq_len(list_arg), 
+          sizeof *list_arg->vals.arr, scamval_cmp);
+    return list_arg;
+}
+
 scamval* builtin_map(scamval* args) {
     TYPECHECK_ARGS("map", args, 2, SCAM_FUNCTION, SCAM_LIST);
     scamval* fun = scamseq_pop(args, 0);
@@ -607,6 +618,29 @@ scamval* builtin_map(scamval* args) {
         scamval* arglist = scamsexpr_from_vals(1, v);
         scamseq_set(list_arg, i, eval_apply(fun, arglist));
         gc_unset_root(arglist);
+    }
+    gc_unset_root(fun);
+    return list_arg;
+}
+
+scamval* builtin_filter(scamval* args) {
+    TYPECHECK_ARGS("filter", args, 2, SCAM_FUNCTION, SCAM_LIST);
+    scamval* fun = scamseq_pop(args, 0);
+    scamval* list_arg = scamseq_pop(args, 0);
+    for (size_t i = 0; i < scamseq_len(list_arg); i++) {
+        scamval* v = scamseq_get(list_arg, i);
+        scamval* arglist = scamsexpr_from_vals(1, v);
+        scamval* cond = eval_apply(fun, arglist);
+        gc_unset_root(arglist);
+        if (cond->type == SCAM_BOOL) {
+            if (!scam_as_bool(cond)) {
+                scamseq_delete(list_arg, i);
+            }
+            gc_unset_root(cond);
+        } else {
+            gc_unset_root(cond);
+            return scamerr("'filter' predicate should return boolean");
+        }
     }
     gc_unset_root(fun);
     return list_arg;
@@ -666,6 +700,8 @@ void add_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
     scamdict_bind(env, scamsym(sym), scambuiltin(bltin));
 }
 
+// If a builtin doesn't change its arguments, then it should be registered
+// as constant so that the evaluator doesn't bother copying the argument list
 void add_const_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
     scamdict_bind(env, scamsym(sym), scambuiltin_const(bltin));
 }
@@ -709,7 +745,6 @@ scamval* scamdict_builtins() {
     // IO functions
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);
-    add_const_builtin(env, "input", builtin_input);
     add_builtin(env, "open", builtin_open);
     add_builtin(env, "close", builtin_close);
     add_const_builtin(env, "port-good?", builtin_port_good);
@@ -718,7 +753,9 @@ scamval* scamdict_builtins() {
     // miscellaneous functions
     add_const_builtin(env, "assert", builtin_assert);
     add_const_builtin(env, "range", builtin_range);
+    add_builtin(env, "sort", builtin_sort);
     add_builtin(env, "map", builtin_map);
+    add_builtin(env, "filter", builtin_filter);
     add_const_builtin(env, "id", builtin_id);
     // stdin, stdout and stderr
     scamdict_bind(env, scamsym("stdin"), scamport(stdin));

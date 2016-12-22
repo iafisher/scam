@@ -8,8 +8,6 @@ void evaltest_fun_def(scamval*);
 void evaltest_closure(scamval*);
 void evaltest_rec_fun(scamval*);
 void evaltest_lambda(scamval*);
-void evaltest_zero_div(scamval*);
-void evaltest_known_fails(scamval*);
 
 void eval_tests() {
     scamval* env = scamdict_builtins();
@@ -17,9 +15,7 @@ void eval_tests() {
     evaltest_fun_def(env);
     evaltest_rec_fun(env);
     evaltest_lambda(env);
-    evaltest_zero_div(env);
     evaltest_closure(env);
-    evaltest_known_fails(env);
     gc_close();
 }
 
@@ -57,7 +53,9 @@ void evaltest_fun_def(scamval* env) {
     evaltest("(power 287 0)", env, scamint(1));
     evaltest("(power 2 2)", env, scamint(4));
     evaltest("(power 2 8)", env, scamint(256));
+    //gc_print_size();
     evaltest("(power 17 8)", env, scamint(6975757441));
+    //gc_print_size();
     evaltest_err("even?", env);
 }
 
@@ -71,9 +69,7 @@ void evaltest_closure(scamval* env) {
     evaldef("(define foo (make-fun1 5))", env);
     evaldef("(define bar (foo 32))", env);
     evaltest("(bar 5)", env, scamint(42));
-}
-
-void evaltest_known_fails(scamval* env) {
+    // a different kind of closure
     evaldef("(define (make-fun2) (define (double x) (* x 2)) double)", env);
     evaldef("(define foo (make-fun2))", env);
     evaltest("(foo 9)", env, scamint(18));
@@ -93,14 +89,6 @@ void evaltest_lambda(scamval* env) {
     // make sure parameters must be valid symbols
     evaltest_err("(lambda (10) (* 10 2))", env);
     evaltest_err("(lambda (x 10 y) (* x y))", env);
-}
-
-void evaltest_zero_div(scamval* env) {
-    evaltest_err("(/ 10 0)", env);
-    evaltest_err("(/ 10 23 0)", env);
-    evaltest_err("(+ 10 (/ 10 0))", env);
-    evaltest_err("(// 10 0)", env);
-    evaltest_err("(% 10 0)", env);
 }
 
 void evaltest(char* line, scamval* env, scamval* what_we_expect) {

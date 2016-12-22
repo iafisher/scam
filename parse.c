@@ -220,7 +220,7 @@ int transform_and_pred(scamval* ast) {
 // (and cond1 cond2 cond3) (if cond1 (and cond2 cond3) false)
 void transform_and(scamval* ast) {
     // ast == (and cond1 cond2)
-    gc_unset_root(scamseq_pop(ast, 0));
+    scamseq_delete(ast, 0);
     // ast == (cond1 cond2)
     scamseq_prepend(ast, scamsym("if"));
     // ast == (if cond1 cond2)

@@ -10,6 +10,7 @@ static size_t first_avail = 0;
 
 enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 
+// Mark all objects which can be reached from the given object
 static void gc_mark(scamval* v) {
     if (v != NULL && !v->seen) {
         v->seen = 1;
@@ -35,6 +36,8 @@ static void gc_mark(scamval* v) {
     }
 }
 
+// Sweep the entire heap, freeing items that have not been marked and resetting
+// the marks on those that have
 static void gc_sweep() {
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
@@ -76,6 +79,7 @@ scamval* gc_new_scamval() {
     } else if (first_avail == count) {
         gc_collect();
         if (first_avail == count) {
+            //printf("Reallocating heap\n");
             // grow internal heap
             size_t new_count = count * HEAP_GROW;
             scamval_objs = my_realloc(scamval_objs, 
@@ -171,4 +175,8 @@ void gc_print() {
             printf("\n");
         }
     }
+}
+
+void gc_print_size() {
+    printf("Heap can currently hold %ld references\n", count);
 }

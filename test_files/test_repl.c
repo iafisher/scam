@@ -117,9 +117,11 @@ void parse_repl(char* command) {
     if (strstr(command, "open") == command && strlen(command) >= 6) {
         scamval* ast = parse_file(command + 5);
         scamval_print_ast(ast, 0);
+        gc_unset_root(ast);
     } else {
         scamval* ast = parse_str(command);
         scamval_print_ast(ast, 0);
+        gc_unset_root(ast);
     }
 }
 
@@ -131,6 +133,7 @@ void eval_repl(char* command, scamval* env) {
     } else {
         scamval* v = eval_str(command, env);
         scamval_println(v);
+        gc_unset_root(v);
     }
 }
 
