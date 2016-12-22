@@ -578,16 +578,16 @@ void scamval_print_ast(const scamval* ast, int indent) {
     if (ast->type == SCAM_SEXPR) {
         size_t n = scamseq_len(ast);
         if (n == 0) {
-            printf("EMPTY EXPR (is_root is set to %d)\n", ast->is_root);
+            printf("EMPTY EXPR%s\n", ast->is_root ? " (root)" : "");
         } else {
-            printf("EXPR (is_root is set to %d)\n", ast->is_root);
+            printf("EXPR%s\n", ast->is_root ? " (root)" : "");
             for (int i = 0; i < scamseq_len(ast); i++) {
                 scamval_print_ast(scamseq_get(ast, i), indent + 1);
             }
         }
     } else {
         scamval_print(ast);
-        printf(" (is_root is set to %d)\n", ast->is_root);
+        printf("%s\n", ast->is_root ? " (root)" : "");
     }
 }
 

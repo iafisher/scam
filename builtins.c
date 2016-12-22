@@ -745,7 +745,7 @@ scamval* scamdict_builtins() {
     // IO functions
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);
-    add_builtin(env, "open", builtin_open);
+    add_const_builtin(env, "open", builtin_open);
     add_builtin(env, "close", builtin_close);
     add_const_builtin(env, "port-good?", builtin_port_good);
     add_builtin(env, "readline", builtin_readline);

@@ -12,6 +12,8 @@ void tokenize_repl(char*);
 void parse_repl(char*);
 void eval_repl(char*, scamval*);
 
+void print_generic_help();
+
 enum { REPL_EVAL, REPL_PARSE, REPL_TOKENIZE, REPL_STREAM };
 int main(int argc, char** argv) {
     // Run the REPL
@@ -21,6 +23,7 @@ int main(int argc, char** argv) {
     Stream strm;
     stream_from_str(&strm, "");
     scamval* env = scamdict_builtins();
+    print_generic_help();
     for (;;) {
         switch (mode) {
             case REPL_STREAM: printf("stream"); break;
@@ -77,6 +80,16 @@ void stream_repl(char* command, size_t s_len, Stream* strm) {
         char* line = command + 5;
         stream_close(strm);
         stream_from_str(strm, line);
+    } else if (strcmp(command, "help") == 0) {
+        print_generic_help();
+        puts("Stream commands:");
+        puts("\topen <file path>: initialize a stream with the file");
+        puts("\tfeed <string>: initialize a stream with the string");
+        puts("\tgetc: get a character from the stream");
+        puts("\tmark: begin remembering characters from stream");
+        puts("\trecall: print all remembered characters and clear memory");
+        puts("\tungetc <char>: unget a character from the stream");
+        puts("\tstatus: print information about the stream");
     } else {
         if (!strm) {
             printf("Error: stream not yet opened\n");
@@ -106,6 +119,12 @@ void tokenize_repl(char* command) {
     Tokenizer tz;
     if (strstr(command, "open") == command && strlen(command) >= 6) {
         tokenizer_from_file(&tz, command + 5);
+    } else if (strcmp(command, "help") == 0) {
+        print_generic_help();
+        puts("Tokenizer commands:");
+        puts("\topen <file path>: open a file for tokenization");
+        puts("\nAny other input is tokenized and printed");
+        return;
     } else {
         tokenizer_from_str(&tz, command);
     }
@@ -118,6 +137,11 @@ void parse_repl(char* command) {
         scamval* ast = parse_file(command + 5);
         scamval_print_ast(ast, 0);
         gc_unset_root(ast);
+    } else if (strcmp(command, "help") == 0) {
+        print_generic_help();
+        puts("Parser commands:");
+        puts("\topen <file path>: open a file for parsing");
+        puts("\nAny other input is parsed and printed");
     } else {
         scamval* ast = parse_str(command);
         scamval_print_ast(ast, 0);
@@ -126,10 +150,19 @@ void parse_repl(char* command) {
 }
 
 void eval_repl(char* command, scamval* env) {
-    if (strcmp(command, "gc") == 0) {
+    if (strcmp(command, "heap") == 0) {
+        gc_smart_print();
+    } else if (strcmp(command, "heapall") == 0) {
         gc_print();
     } else if (strcmp(command, "collect") == 0) {
         gc_collect();
+    } else if (strcmp(command, "help") == 0) {
+        print_generic_help();
+        puts("Evaluator commands:");
+        puts("\theap: print some objects in the heap (the interesting ones)");
+        puts("\theapall: print all objects in the heap");
+        puts("\tcollect: invoke the garbage collector");
+        puts("\nAny other input is evaluated normally and printed");
     } else {
         scamval* v = eval_str(command, env);
         scamval_println(v);
@@ -142,4 +175,14 @@ void print_stream(Stream* strm) {
     printf("mem_flag=%d, mem_line=%d, ", strm->mem_flag, strm->mem_line);
     printf("mem_col=%d, last_pos=%d, ", strm->mem_col, strm->last_pos);
     printf("mem_len=%d\n", strm->mem_len);
+}
+
+void print_generic_help() {
+    puts("Universal commands:");
+    puts("\thelp: print a help message");
+    puts("\t!stream: switch to stream mode");
+    puts("\t!tokenize: switch to tokenize mode");
+    puts("\t!parse: switch to parse mode");
+    puts("\t!eval: switch to evaluate mode");
+    puts("\tquit: exit the program");
 }

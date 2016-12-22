@@ -141,6 +141,7 @@ scamval* gc_copy_scamval(scamval* v) {
             ret->mem_size = v->count;
             for (int i = 0; i < v->count; i++) {
                 ret->vals.arr[i] = gc_copy_scamval(v->vals.arr[i]);
+                gc_unset_root(ret->vals.arr[i]);
                 // count must always contain an accurate count of the allocated
                 // elements of the list, in case the garbage collector is
                 // invoked in the middle of copying and needs to mark the
@@ -175,8 +176,54 @@ void gc_print() {
     printf("Allocated space for %ld references\n", count);
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
-        if (v != NULL && v->type != SCAM_BUILTIN) {
-            scamval_print(v);
+        if (v != NULL) {
+            printf("%.4ld: ", i);
+            scamval_print_debug(v);
+            if (v->is_root)
+                printf(" (root)");
+            printf("\n");
+        }
+    }
+}
+
+static size_t first_interesting_index() {
+    // first 3 refs are for the global environment
+    int reached_the_builtin_ports = 0;
+    for (size_t i = 3; i < count; i++) {
+        scamval* v = scamval_objs[i];
+        if (v == NULL) {
+            return i;
+        } 
+        // even indices should be builtins
+        if (i % 2 == 0) {
+            if (v->type != SCAM_SYM) {
+                return i;
+            } else if (reached_the_builtin_ports) {
+                if (strcmp(scam_as_str(v), "stdout") != 0 &&
+                    strcmp(scam_as_str(v), "stdin")  != 0 &&
+                    strcmp(scam_as_str(v), "stderr") != 0) {
+                    return i - 1;
+                }
+            }
+        // odd indices should be symbols
+        } else {
+            if (v->type == SCAM_PORT) {
+                reached_the_builtin_ports = 1;
+            } else if (v->type != SCAM_BUILTIN) {
+                return i;
+            }
+        }
+    }
+    return count;
+}
+
+void gc_smart_print() {
+    printf("Allocated space for %ld references\n", count);
+    for (size_t i = first_interesting_index(); i < count; i++) {
+        scamval* v = scamval_objs[i];
+        if (v != NULL) {
+            printf("%.4ld: ", i);
+            scamval_print_debug(v);
             if (v->is_root)
                 printf(" (root)");
             printf("\n");
