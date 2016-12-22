@@ -39,23 +39,21 @@ void evaltest_val_def(scamval* env) {
 }
 
 void evaltest_fun_def(scamval* env) {
+    evaldef("(define (countdown x) (if (= x 0) x (countdown (- x 1))))", env);
+    evaltest("(countdown 10)", env, scamint(0));
     // basic square function
     evaldef("(define (square x) (* x x))", env);
-    /*
     evaltest("(square 9)", env, scamint(81));
     evaltest("(square (square 3))", env, scamint(81));
     evaltest_err("(square)", env);
     evaltest_err("(square 2 3)", env);
     evaltest_err("(square [])", env);
-    */
     // more complicated power function
     evaldef("(define (power b n) (define (even? x) (= (% x 2) 0)) (if (= n 0) 1 (if (even? n) (square (power b (// n 2))) (* b (power b (- n 1))))))", env);
     evaltest("(power 287 0)", env, scamint(1));
     evaltest("(power 2 2)", env, scamint(4));
     evaltest("(power 2 8)", env, scamint(256));
-    //gc_print_size();
     evaltest("(power 17 8)", env, scamint(6975757441));
-    //gc_print_size();
     evaltest_err("even?", env);
 }
 
@@ -73,13 +71,22 @@ void evaltest_closure(scamval* env) {
     evaldef("(define (make-fun2) (define (double x) (* x 2)) double)", env);
     evaldef("(define foo (make-fun2))", env);
     evaltest("(foo 9)", env, scamint(18));
+    evaltest_err("double", env);
 }
 
 void evaltest_rec_fun(scamval* env) {
+    // recursive range function (range1 because range is a builtin name)
     evaldef("(define (range1 i) (if (= i 0) [] (append (range1 (- i 1)) i)))", 
             env);
     evaltest_list("(range1 5)", env, 5, scamint(1), scamint(2), scamint(3), 
-                                       scamint(4), scamint(5));
+                                        scamint(4), scamint(5));
+    // naive recursive Fibonacci function
+    evaldef("(define (fib i) (if (< i 3) 1 (+ (fib (- i 1)) (fib (- i 2)))))",
+            env);
+    evaltest("(fib 1)", env, scamint(1));
+    evaltest("(fib 2)", env, scamint(1));
+    evaltest("(fib 3)", env, scamint(2));
+    evaltest("(fib 12)", env, scamint(144));
 }
 
 void evaltest_lambda(scamval* env) {
@@ -101,6 +108,8 @@ void evaltest(char* line, scamval* env, scamval* what_we_expect) {
         scamval_print_debug(what_we_got);
         printf("\n");
     }
+    gc_unset_root(what_we_got);
+    gc_unset_root(what_we_expect);
 }
 
 void evaltest_list(char* line, scamval* env, int n, ...) {
@@ -121,6 +130,7 @@ void evaltest_err(char* line, scamval* env) {
         printf("Failure at %s:%d ", __FILE__, __LINE__);
         printf("(test \"%s\"), expected error\n", line);
     }
+    gc_unset_root(v);
 }
 
 void evaldef(char* line, scamval* env) {
@@ -130,6 +140,7 @@ void evaldef(char* line, scamval* env) {
         printf("(test \"%s\")\n", line);
         scamval_println(v);
     }
+    gc_unset_root(v);
 }
 
 void evaltrue(char* line, scamval* env) {

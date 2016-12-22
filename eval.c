@@ -3,6 +3,8 @@
 #include "eval.h"
 #include "parse.h"
 
+#include <assert.h>
+
 #define SCAM_ASSERT(cond, ast, err, ...) { \
     if (!(cond)) { \
         return scamerr(err, ##__VA_ARGS__); \
@@ -60,6 +62,7 @@ scamval* eval(scamval* ast, scamval* env) {
         if (scamval_typecheck(fun_val, SCAM_FUNCTION)) {
             ret = eval_apply(fun_val, arglist);
         } else {
+            gc_unset_root(arglist);
             ret = scamerr("first element of S-expression must be function");
         }
         gc_unset_root(arglist);
@@ -126,7 +129,6 @@ scamval* eval_if(scamval* ast, scamval* env) {
     if (cond->type == SCAM_BOOL) {
         scamval* true_clause = scamseq_pop(ast, 1);
         scamval* false_clause = scamseq_pop(ast, 1);
-        gc_unset_root(ast);
         if (scam_as_bool(cond)) {
             gc_unset_root(cond);
             gc_unset_root(false_clause);
@@ -138,7 +140,6 @@ scamval* eval_if(scamval* ast, scamval* env) {
         }
     } else {
         gc_unset_root(cond);
-        gc_unset_root(ast);
         return scamerr("condition of an if expression must be a bool");
     }
 }
@@ -217,10 +218,6 @@ scamval* eval_list(scamval* ast, scamval* env) {
         if (v->type != SCAM_ERR) {
             scamseq_set(ast, i, v);
         } else {
-            // the i'th node was freed by eval, so it must be replaced by an
-            // allocated value
-            scamseq_set(ast, i, scamnull());
-            gc_unset_root(ast);
             return v;
         }
     }

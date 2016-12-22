@@ -65,7 +65,6 @@ struct scamval {
 
 
 /*** SCAMVAL CONSTRUCTORS ***/
-scamval* scamval_new(int type);
 scamval* scamsym(const char*);
 scamval* scamnull();
 

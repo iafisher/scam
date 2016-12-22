@@ -7,33 +7,27 @@
 #include "scamval.h"
 
 /*** SCAMVAL CONSTRUCTORS ***/
-scamval* scamval_new(int type) {
-    scamval* ret = gc_new_scamval();
-    ret->type = type;
-    return ret;
-}
-
 scamval* scamint(long long n) {
-    scamval* ret = scamval_new(SCAM_INT);
+    scamval* ret = gc_new_scamval(SCAM_INT);
     ret->vals.n = n;
     return ret;
 }
 
 scamval* scamdec(double d) {
-    scamval* ret = scamval_new(SCAM_DEC);
+    scamval* ret = gc_new_scamval(SCAM_DEC);
     ret->vals.d = d;
     return ret;
 }
 
 scamval* scambool(int b) {
-    scamval* ret = scamval_new(SCAM_BOOL);
+    scamval* ret = gc_new_scamval(SCAM_BOOL);
     ret->vals.n = b;
     return ret;
 }
 
 // Construct a value that is internally a sequence (lists and S-expressions)
 static scamval* scam_internal_seq(int type) {
-    scamval* ret = scamval_new(type);
+    scamval* ret = gc_new_scamval(type);
     ret->count = 0;
     ret->mem_size = 0;
     ret->vals.arr = NULL;
@@ -51,20 +45,20 @@ scamval* scamsexpr() {
 scamval* scamsexpr_from_vals(size_t n, ...) {
     va_list vlist;
     va_start(vlist, n);
-    scamval* ret = scamval_new(SCAM_SEXPR);
-    ret->count = n;
-    ret->mem_size = n;
+    scamval* ret = gc_new_scamval(SCAM_SEXPR);
     ret->vals.arr = my_malloc(n * sizeof *ret->vals.arr);
     for (int i = 0; i < n; i++) {
         ret->vals.arr[i] = va_arg(vlist, scamval*);
     }
+    ret->count = n;
+    ret->mem_size = n;
     va_end(vlist);
     return ret;
 }
 
 // Construct a value that is internally a string (strings, symbols and errors)
 static scamval* scam_internal_str(int type, const char* s) {
-    scamval* ret = scamval_new(type);
+    scamval* ret = gc_new_scamval(type);
     ret->count = strlen(s);
     ret->mem_size = ret->count + 1;
     ret->vals.s = strdup(s);
@@ -76,7 +70,7 @@ scamval* scamstr(const char* s) {
 }
 
 scamval* scamstr_read(FILE* fp) {
-    scamval* ret = scamval_new(SCAM_STR);
+    scamval* ret = gc_new_scamval(SCAM_STR);
     ret->vals.s = NULL;
     ret->count = getline(&ret->vals.s, &ret->mem_size, fp);
     if (ret->count != -1) {
@@ -88,7 +82,7 @@ scamval* scamstr_read(FILE* fp) {
 }
 
 scamval* scamstr_empty() {
-    scamval* ret = scamval_new(SCAM_STR);
+    scamval* ret = gc_new_scamval(SCAM_STR);
     ret->count = 0;
     ret->mem_size = 0;
     ret->vals.s = NULL;
@@ -96,14 +90,14 @@ scamval* scamstr_empty() {
 }
 
 scamval* scamstr_no_copy(char* s) {
-    scamval* ret = scamval_new(SCAM_STR);
+    scamval* ret = gc_new_scamval(SCAM_STR);
     ret->vals.s = s;
     ret->count = ret->mem_size = strlen(s);
     return ret;
 }
 
 scamval* scamstr_from_char(char c) {
-    scamval* ret = scamval_new(SCAM_STR);
+    scamval* ret = gc_new_scamval(SCAM_STR);
     ret->vals.s = my_malloc(2);
     ret->vals.s[0] = c;
     ret->vals.s[1] = '\0';
@@ -118,7 +112,7 @@ scamval* scamsym(const char* s) {
 
 enum { MAX_ERROR_SIZE = 100 };
 scamval* scamerr(const char* format, ...) {
-    scamval* ret = scamval_new(SCAM_ERR);
+    scamval* ret = gc_new_scamval(SCAM_ERR);
     va_list vlist;
     va_start(vlist, format);
     ret->vals.s = my_malloc(MAX_ERROR_SIZE);
@@ -141,7 +135,7 @@ scamval* scamerr_eof() {
 }
 
 scamval* scamlambda(scamval* env, scamval* parameters, scamval* body) {
-    scamval* ret = scamval_new(SCAM_LAMBDA);
+    scamval* ret = gc_new_scamval(SCAM_LAMBDA);
     ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
     ret->vals.fun->env = env;
     ret->vals.fun->parameters = parameters;
@@ -150,7 +144,7 @@ scamval* scamlambda(scamval* env, scamval* parameters, scamval* body) {
 }
 
 scamval* scambuiltin(scambuiltin_fun bltin) {
-    scamval* ret = scamval_new(SCAM_BUILTIN);
+    scamval* ret = gc_new_scamval(SCAM_BUILTIN);
     ret->vals.bltin = my_malloc(sizeof *ret->vals.bltin);
     ret->vals.bltin->fun = bltin;
     ret->vals.bltin->constant = 0;
@@ -158,7 +152,7 @@ scamval* scambuiltin(scambuiltin_fun bltin) {
 }
 
 scamval* scambuiltin_const(scambuiltin_fun bltin) {
-    scamval* ret = scamval_new(SCAM_BUILTIN);
+    scamval* ret = gc_new_scamval(SCAM_BUILTIN);
     ret->vals.bltin = my_malloc(sizeof *ret->vals.bltin);
     ret->vals.bltin->fun = bltin;
     ret->vals.bltin->constant = 1;
@@ -166,7 +160,7 @@ scamval* scambuiltin_const(scambuiltin_fun bltin) {
 }
 
 scamval* scamport(FILE* fp) {
-    scamval* ret = scamval_new(SCAM_PORT);
+    scamval* ret = gc_new_scamval(SCAM_PORT);
     ret->vals.port = my_malloc(sizeof *ret->vals.port);
     ret->vals.port->status = (fp == NULL ? SCAMPORT_CLOSED : SCAMPORT_OPEN);
     ret->vals.port->fp = fp;
@@ -174,7 +168,7 @@ scamval* scamport(FILE* fp) {
 }
 
 scamval* scamnull() {
-    return scamval_new(SCAM_NULL);
+    return gc_new_scamval(SCAM_NULL);
 }
 
 
@@ -479,11 +473,19 @@ void scamport_set_status(scamval* v, int new_status) {
 
 /*** DICTIONARY API ***/
 scamval* scamdict(scamval* enclosing) {
-    scamval* ret = scamval_new(SCAM_DICT);
+    scamval* ret = gc_new_scamval(SCAM_ANY);
     ret->vals.dct = my_malloc(sizeof *ret->vals.dct);
     ret->vals.dct->enclosing = enclosing;
+    // The order is very important here: if ret was constructed as a SCAM_DICT
+    // right away, then the garbage collector might try to access syms or vals
+    // before they were allocated. The two calls to scamlist are safe because
+    // if the first call invokes the collector, the second call cannot as the
+    // collector will allocate space for at least one additional object.
     ret->vals.dct->syms = scamlist();
     ret->vals.dct->vals = scamlist();
+    ret->type = SCAM_DICT;
+    gc_unset_root(ret->vals.dct->syms);
+    gc_unset_root(ret->vals.dct->vals);
     return ret;
 }
 
@@ -555,6 +557,7 @@ void scamval_print(const scamval* v) {
         case SCAM_STR: printf("\"%s\"", scam_as_str(v)); break;
         case SCAM_SYM: printf("%s", scam_as_str(v)); break;
         case SCAM_ERR: printf("Error: %s", scam_as_str(v)); break;
+        case SCAM_DICT: printf("<Scam dictionary>"); break;
     }
 }
 
@@ -646,6 +649,7 @@ const char* scamtype_name(int type) {
         case SCAM_SYM: return "symbol";
         case SCAM_ERR: return "error";
         case SCAM_NULL: return "null";
+        case SCAM_DICT: return "dictionary";
         // abstract types
         case SCAM_SEQ: return "list or string";
         case SCAM_NUM: return "integer or decimal";
@@ -669,6 +673,7 @@ const char* scamtype_debug_name(int type) {
         case SCAM_SYM: return "SCAM_SYM";
         case SCAM_ERR: return "SCAM_ERR";
         case SCAM_NULL: return "SCAM_NULL";
+        case SCAM_DICT: return "SCAM_DICT";
         // abstract types
         case SCAM_SEQ: return "SCAM_SEQ";
         case SCAM_NUM: return "SCAM_NUM";
