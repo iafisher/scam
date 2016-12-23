@@ -297,10 +297,10 @@ static void scamseq_resize(scamval* seq, size_t new_sz) {
 scamval* scamseq_pop(scamval* seq, size_t i) {
     if (i >= 0 && i < seq->count) {
         scamval* ret = seq->vals.arr[i];
-        ret->is_root = 1;
         memmove(seq->vals.arr + i, seq->vals.arr + i + 1,
                 (seq->count - i - 1) * sizeof *seq->vals.arr);
         seq->count--;
+        gc_set_root(ret);
         return ret;
     } else {
         return scamerr("attempted sequence access out of range");
@@ -326,19 +326,21 @@ void scamseq_set(scamval* seq, size_t i, scamval* v) {
 }
 
 void scamseq_prepend(scamval* seq, scamval* v) {
-    if (++seq->count > seq->mem_size) {
-        scamseq_grow(seq, seq->count);
-    }
-    memmove(seq->vals.arr + 1, seq->vals.arr, 
-            (seq->count - 1) * sizeof *seq->vals.arr);
-    seq->vals.arr[0] = v;
+    scamseq_insert(seq, 0, v);
 }
 
 void scamseq_append(scamval* seq, scamval* v) {
+    scamseq_insert(seq, scamseq_len(seq), v);
+}
+
+void scamseq_insert(scamval* seq, size_t i, scamval* v) {
+    gc_unset_root(v);
     if (++seq->count > seq->mem_size) {
         scamseq_grow(seq, seq->count);
     }
-    seq->vals.arr[seq->count - 1] = v;
+    memmove(seq->vals.arr + i + 1, seq->vals.arr + i,
+            (seq->count - i - 1) * sizeof *seq->vals.arr);
+    seq->vals.arr[i] = v;
 }
 
 void scamseq_concat(scamval* seq1, scamval* seq2) {

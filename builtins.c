@@ -350,6 +350,19 @@ scamval* builtin_init(scamval* args) {
     }
 }
 
+scamval* builtin_insert(scamval* args) {
+    TYPECHECK_ARGS("insert", args, 3, SCAM_LIST, SCAM_INT, SCAM_ANY);
+    scamval* list_arg = scamseq_pop(args, 0);
+    size_t i = scam_as_int(scamseq_get(args, 0));
+    scamval* to_insert = scamseq_pop(args, 1);
+    if (i >= 0 && i <= scamseq_len(list_arg)) {
+        scamseq_insert(list_arg, i, to_insert);
+        return list_arg;
+    } else {
+        return scamerr("attempted sequence access out of range");
+    }
+}
+
 scamval* builtin_append(scamval* args) {
     TYPECHECK_ARGS("append", args, 2, SCAM_LIST, SCAM_ANY);
     scamval* list_arg = scamseq_pop(args, 0);
@@ -732,6 +745,7 @@ scamval* scamdict_builtins() {
     add_builtin(env, "slice", builtin_slice);
     add_builtin(env, "take", builtin_take);
     add_builtin(env, "drop", builtin_drop);
+    add_builtin(env, "insert", builtin_insert);
     add_builtin(env, "append", builtin_append);
     add_builtin(env, "prepend", builtin_prepend);
     add_builtin(env, "concat", builtin_concat);

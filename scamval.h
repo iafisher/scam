@@ -93,9 +93,10 @@ scamval* scamseq_pop(scamval*, size_t i);
 void scamseq_set(scamval* seq, size_t i, scamval* v);
 // Return the actual number of elements in the sequence or string
 size_t scamseq_len(const scamval*);
-// Append/prepend a value to a sequence
+// Append/prepend/insert a value into a sequence
 // The sequence takes responsibility for freeing the value, so it's best not
 // to use a value once you've appended or prepended it somewhere
+void scamseq_insert(scamval* seq, size_t i, scamval* v);
 void scamseq_append(scamval* seq, scamval* v);
 void scamseq_prepend(scamval* seq, scamval* v);
 // Concatenate the second argument to the first, freeing the second arg

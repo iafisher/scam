@@ -98,6 +98,10 @@ void gc_unset_root(scamval* v) {
     v->is_root = 0;
 }
 
+void gc_set_root(scamval* v) {
+    v->is_root = 1;
+}
+
 scamval* gc_new_scamval(int type) {
     if (scamval_objs == NULL) {
         // initialize internal heap for the first time

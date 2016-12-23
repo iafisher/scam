@@ -10,6 +10,8 @@ scamval* gc_copy_scamval(scamval*);
 // Relinquish control of a pointer (i.e., call this when you're done with a
 // pointer, and don't try to use that pointer afterwards)
 void gc_unset_root(scamval*);
+// Opposite of gc_unset_root, used internally by some of the sequence APIs
+void gc_set_root(scamval*);
 
 // Invoke the garbage collector manually (generally unnecessary)
 void gc_collect();
