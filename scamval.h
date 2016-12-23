@@ -44,7 +44,6 @@ struct scamdict_t {
 
 struct scamval {
     int type;
-    int line, col;
     size_t count, mem_size; // used by SCAM_LIST, SCAM_SEXPR and SCAM_STR
     union {
         // DO NOT ACCESS THESE VALUES DIRECTLY! 
@@ -101,8 +100,8 @@ void scamseq_append(scamval* seq, scamval* v);
 void scamseq_prepend(scamval* seq, scamval* v);
 // Concatenate the second argument to the first, freeing the second arg
 void scamseq_concat(scamval* seq1, scamval* seq2);
-// Free the internal sequence of a scamval, without freeing the actual value
-void scamseq_free(scamval*);
+// Return a newly allocated subsequence
+scamval* scamseq_subseq(scamval* seq, size_t start, size_t end);
 
 
 /*** STRING API ***/

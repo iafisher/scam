@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "collector.h"
-#include "progutils.h"
 
 static scamval** scamval_objs = NULL;
 static size_t count = 0;
@@ -106,7 +105,7 @@ scamval* gc_new_scamval(int type) {
     if (scamval_objs == NULL) {
         // initialize internal heap for the first time
         count = HEAP_INIT;
-        scamval_objs = my_malloc(count * sizeof *scamval_objs);
+        scamval_objs = gc_malloc(count * sizeof *scamval_objs);
         for (size_t i = 0; i < count; i++) {
             scamval_objs[i] = NULL;
         }
@@ -115,7 +114,7 @@ scamval* gc_new_scamval(int type) {
         if (first_avail == count) {
             // grow internal heap
             size_t new_count = count * HEAP_GROW;
-            scamval_objs = my_realloc(scamval_objs, 
+            scamval_objs = gc_realloc(scamval_objs, 
                                       new_count * sizeof *scamval_objs);
             for (size_t i = count; i < new_count; i++) {
                 scamval_objs[i] = NULL;
@@ -123,7 +122,7 @@ scamval* gc_new_scamval(int type) {
             count = new_count;
         }
     }
-    scamval* ret = my_malloc(sizeof *ret);
+    scamval* ret = gc_malloc(sizeof *ret);
     ret->type = type;
     ret->seen = 0;
     ret->is_root = 1;
@@ -140,7 +139,7 @@ scamval* gc_copy_scamval(scamval* v) {
         case SCAM_SEXPR:
         {
             scamval* ret = gc_new_scamval(v->type);
-            ret->vals.arr = my_malloc(v->count * sizeof *v->vals.arr);
+            ret->vals.arr = gc_malloc(v->count * sizeof *v->vals.arr);
             ret->count = 0;
             ret->mem_size = v->count;
             for (int i = 0; i < v->count; i++) {
@@ -233,4 +232,43 @@ void gc_smart_print() {
             printf("\n");
         }
     }
+}
+
+void* gc_malloc(size_t size) {
+    void* ret = malloc(size);
+    if (ret == NULL) {
+        gc_collect();
+        ret = malloc(size);
+        if (ret == NULL) {
+            fputs("out of memory... exiting program\n", stderr);
+            exit(EXIT_FAILURE);
+        }
+    }
+    return ret;
+}
+
+void* gc_realloc(void* ptr, size_t size) {
+    void* ret = realloc(ptr, size);
+    if (ret == NULL) {
+        gc_collect();
+        ret = realloc(ptr, size);
+        if (ret == NULL) {
+            fputs("out of memory... exiting program\n", stderr);
+            exit(EXIT_FAILURE);
+        }
+    }
+    return ret;
+}
+
+void* gc_calloc(size_t num, size_t size) {
+    void* ret = calloc(num, size);
+    if (ret == NULL) {
+        gc_collect();
+        ret = calloc(num, size);
+        if (ret == NULL) {
+            fputs("out of memory... exiting program\n", stderr);
+            exit(EXIT_FAILURE);
+        }
+    }
+    return ret;
 }

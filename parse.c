@@ -6,7 +6,7 @@
 
 #define TOKENIZER_MUST_ADVANCE(tz) { \
     tokenizer_advance(tz); \
-    if (tz->tkn.type == TKN_EOF) { \
+    if ((tz)->tkn.type == TKN_EOF) { \
         return scamerr("premature end of input"); \
     } \
 }
@@ -15,8 +15,7 @@
 typedef scamval* (match_t)(Tokenizer*);
 scamval* match_program(Tokenizer*);
 scamval* match_sexpr(Tokenizer*);
-scamval* match_sexpr_star(Tokenizer*);
-scamval* match_sexpr_plus(Tokenizer*);
+scamval* match_sexpr_at_least(Tokenizer*, int);
 scamval* match_value(Tokenizer*);
 int starts_expr(int tkn_type);
 int starts_value(int tkn_type);
@@ -55,7 +54,7 @@ scamval* parse_file(char* fp) {
 }
 
 scamval* match_program(Tokenizer* tz) {
-    scamval* ast = match_sexpr_plus(tz);
+    scamval* ast = match_sexpr_at_least(tz, 1);
     if (ast->type != SCAM_ERR) {
         scamseq_prepend(ast, scamsym("begin"));
         return ast;
@@ -69,7 +68,7 @@ scamval* match_sequence(Tokenizer* tz, int type, int start, int end) {
         int line = tokenizer_line(tz);
         int col = tokenizer_col(tz);
         TOKENIZER_MUST_ADVANCE(tz);
-        scamval* ret = match_sexpr_star(tz);
+        scamval* ret = match_sexpr_at_least(tz, 0);
         ret->type = type;
         if (tz->tkn.type == end) {
             tokenizer_advance(tz);
@@ -92,30 +91,19 @@ scamval* match_sexpr(Tokenizer* tz) {
     }
 }
 
-scamval* match_sexpr_plus(Tokenizer* tz) {
+scamval* match_sexpr_at_least(Tokenizer* tz, int n) {
     scamval* ast = scamsexpr();
-    scamval* first_expr = match_sexpr(tz);
-    if (first_expr->type != SCAM_ERR) {
-        scamseq_append(ast, first_expr);
-        gc_unset_root(first_expr);
-    } else {
-        gc_unset_root(ast);
-        return first_expr;
+    if (n == 1) {
+        scamval* first_expr = match_sexpr(tz);
+        if (first_expr->type != SCAM_ERR) {
+            scamseq_append(ast, first_expr);
+        } else {
+            gc_unset_root(ast);
+            return first_expr;
+        }
     }
     while (starts_expr(tz->tkn.type)) {
-        scamval* next_expr = match_sexpr(tz);
-        scamseq_append(ast, next_expr);
-        gc_unset_root(next_expr);
-    }
-    return ast;
-}
-
-scamval* match_sexpr_star(Tokenizer* tz) {
-    scamval* ast = scamsexpr();
-    while (starts_expr(tz->tkn.type)) {
-        scamval* next_expr = match_sexpr(tz);
-        scamseq_append(ast, next_expr);
-        gc_unset_root(next_expr);
+        scamseq_append(ast, match_sexpr(tz));
     }
     return ast;
 }
@@ -128,8 +116,6 @@ scamval* match_value(Tokenizer* tz) {
             return match_sequence(tz, SCAM_LIST, TKN_LBRACKET, TKN_RBRACKET);
         } else {
             scamval* ret = scamval_from_token(&tz->tkn);
-            ret->line = tokenizer_line(tz);
-            ret->col = tokenizer_col(tz);
             tokenizer_advance(tz);
             return ret;
         }
@@ -154,8 +140,7 @@ scamval* scamval_from_token(Token* tkn) {
             {
                 // remove the quotes from string literals
                 scamval* ret = scamstr(tkn->val + 1);
-                ret->vals.s[ret->count - 1] = '\0';
-                ret->count--;
+                scamstr_pop(ret, scamstr_len(ret) - 1);
                 return ret;
             }
         default: return scamerr("unknown token type");

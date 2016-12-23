@@ -9,6 +9,12 @@ def err(code):
     if subprocess.call(['./test_files/test_err', code]):
         print('Failed test "%s" (expected error)' % code)
 
+def test_seq_f(f_name):
+    """Test a unary function expecting a string or list as its argument."""
+    err('(%s)' % f_name)
+    err('(%s 10)' % f_name)
+    err('(%s [] [])' % f_name)
+
 # addition
 equ('(+ 1 1)', '2')
 equ('(+ 1 2 3 4 5)', '15')
@@ -90,15 +96,69 @@ err('(len 10)')
 err('(len [1 2] [3 4])')
 # head
 equ('(head [1 2 3 4 5 6])', '1')
+equ('(head "abcdef")', '"a"')
 err('(head [])')
-err('(head)')
+err('(head "")')
+test_seq_f('head')
 # tail
 equ('(tail [1 2 3 4 5 6])', '[2 3 4 5 6]')
+equ('(tail "abcdef")', '"bcdef"')
+equ('(tail [])', '[]')
+equ('(tail "")', '""')
+test_seq_f('tail')
 # last
 equ('(last [1 2 3 4 5 6])', '6')
+equ('(last "abcdef")', '"f"')
+err('(last [])')
+err('(last "")')
+test_seq_f('last')
 # init
 equ('(init [1 2 3 4 5 6])', '[1 2 3 4 5]')
+equ('(init "abcdef")', '"abcde"')
+equ('(init [])', '[]')
+equ('(init "")', '""')
+test_seq_f('init')
 # prepend
 equ('(prepend 0 [1 2 3 4 5 6])', '[0 1 2 3 4 5 6]')
+equ('(prepend 0 [])', '[0]')
 # append
 equ('(append [1 2 3 4 5 6] 7)', '[1 2 3 4 5 6 7]')
+equ('(append [] 0)', '[0]')
+err('(append "abcde" "f")')
+# concat
+equ('(concat [1 2 3] [4 5 6] [7 8 9])', '[1 2 3 4 5 6 7 8 9]')
+equ('(concat ["a" true [-17.5 []]] [[42]])', '["a" true [-17.5 []] [42]]')
+equ('(concat "ya pomnyu" " chudnoye mgnovenye")', '"ya pomnyu chudnoye mgnovenye"')
+equ('(concat [] [])', '[]')
+equ('(concat "" "")', '""')
+equ('(concat [] [1 2 3])', '[1 2 3]')
+# get
+equ('(get ["I" "met" "a" "traveller" "from" "an" "antique" "land"] 2)', '"a"')
+equ('(get "I met a traveller from an antique land" 6)', '"a"')
+equ('(get "abc" 0)', '"a"')
+equ('(get "abc" 2)', '"c"')
+err('(get "abc" 3)')
+err('(get "abc" -1)')
+# slice
+equ('(slice "no second Troy" 3 9)', '"second"')
+equ('(slice [1 2 3 4 5 6 7 8 9] 3 6)', '[4 5 6]')
+equ('(slice "abcdefg" 0 4)', '"abcd"')
+equ('(slice "abcdefg" 3 7)', '"defg"')
+equ('(slice [] 0 0)', '[]')
+equ('(slice "" 0 0)', '""')
+err('(slice [1 2 3] 2 7)')
+err('(slice "abc" -1 2)')
+err('(slice "abc" 2 7)')
+err('(slice [1 2 3] -1 2)')
+err('(slice [] 0 1)')
+err('(slice "" 0 1)')
+# take
+equ('(take [3 1 4 1 5 9] 3)', '[3 1 4]')
+equ('(take [1 2 3 4 5] 0)', '[]')
+equ('(take "Gazing up into the darkness" 6)', '"Gazing"')
+equ('(take "I saw myself as a creature" 0)', '""')
+# drop
+equ('(drop [3 1 4 1 5 9] 3)', '[1 5 9]')
+equ('(drop [1 2 3 4 5] 0)', '[1 2 3 4 5]')
+equ('(drop "Death be not proud" 13)', '"proud"')
+equ('(drop "though some have called thee" 0)', '"though some have called thee"')

@@ -23,3 +23,9 @@ void gc_close();
 void gc_print();
 // Print the contents of the heap without builtin functions or names
 void gc_smart_print();
+
+// Allocate and reallocate from the actual program heap, handling out of memory
+// errors gracefully
+void* gc_malloc(size_t);
+void* gc_realloc(void*, size_t);
+void* gc_calloc(size_t, size_t);

@@ -50,6 +50,14 @@ Concatenate two sequences.
 
 Return the `i`th element of the sequence, or raise an error if `i` is out of bounds.
 
+    (take seq end)
+
+Return the subsequence ending at index `end`.
+
+    (drop seq start)
+
+Return the subsequence starting at index `start`.
+
     (slice seq start end)
 
 Return the subsequence whose first element is at index `start` and whose last element is at index `end - 1`. An error is raised if `start` or `end` are out of bounds.
@@ -86,13 +94,17 @@ Read a line from the given port. The resulting string will include a newline at 
 
 Write the string representation of the object to the given port.
 
-    (input)
+    (readline port)
 
-Read a line from stdin. The resulting string will include a newline at the end.
+Read a line from the given port. The resulting string will include a newline at the end. If `readline` is called with no arguments, then a line is read from `stdin`.
 
     (print obj)
 
 Write the string representation of the object to stdout.
+
+    (println obj)
+
+Same as `print`, except a terminating newline is also printed.
 
     (open name mode)
 

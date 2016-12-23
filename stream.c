@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "progutils.h"
+#include "collector.h"
 #include "stream.h"
 
 // Initialize a generic Stream object
@@ -60,7 +60,7 @@ void stream_mark(Stream* strm) {
 
 char* stream_recall(Stream* strm) {
     if (strm->mem_flag > -1) {
-        char* ret = my_malloc(strm->mem_len + 1);
+        char* ret = gc_malloc(strm->mem_len + 1);
         fseek(strm->fp, strm->mem_flag, SEEK_SET);
         fgets(ret, strm->mem_len + 1, strm->fp);
         // read and discard the current character

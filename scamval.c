@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "collector.h"
-#include "progutils.h"
 #include "scamval.h"
 
 /*** SCAMVAL CONSTRUCTORS ***/
@@ -46,9 +45,10 @@ scamval* scamsexpr_from_vals(size_t n, ...) {
     va_list vlist;
     va_start(vlist, n);
     scamval* ret = gc_new_scamval(SCAM_SEXPR);
-    ret->vals.arr = my_malloc(n * sizeof *ret->vals.arr);
+    ret->vals.arr = gc_malloc(n * sizeof *ret->vals.arr);
     for (int i = 0; i < n; i++) {
         ret->vals.arr[i] = va_arg(vlist, scamval*);
+        gc_unset_root(ret->vals.arr[i]);
     }
     ret->count = n;
     ret->mem_size = n;
@@ -98,7 +98,7 @@ scamval* scamstr_no_copy(char* s) {
 
 scamval* scamstr_from_char(char c) {
     scamval* ret = gc_new_scamval(SCAM_STR);
-    ret->vals.s = my_malloc(2);
+    ret->vals.s = gc_malloc(2);
     ret->vals.s[0] = c;
     ret->vals.s[1] = '\0';
     ret->count = 1;
@@ -115,7 +115,7 @@ scamval* scamerr(const char* format, ...) {
     scamval* ret = gc_new_scamval(SCAM_ERR);
     va_list vlist;
     va_start(vlist, format);
-    ret->vals.s = my_malloc(MAX_ERROR_SIZE);
+    ret->vals.s = gc_malloc(MAX_ERROR_SIZE);
     vsnprintf(ret->vals.s, MAX_ERROR_SIZE, format, vlist);
     va_end(vlist);
     return ret;
@@ -136,7 +136,7 @@ scamval* scamerr_eof() {
 
 scamval* scamlambda(scamval* env, scamval* parameters, scamval* body) {
     scamval* ret = gc_new_scamval(SCAM_LAMBDA);
-    ret->vals.fun = my_malloc(sizeof *ret->vals.fun);
+    ret->vals.fun = gc_malloc(sizeof *ret->vals.fun);
     ret->vals.fun->env = env;
     ret->vals.fun->parameters = parameters;
     ret->vals.fun->body = body;
@@ -145,7 +145,7 @@ scamval* scamlambda(scamval* env, scamval* parameters, scamval* body) {
 
 scamval* scambuiltin(scambuiltin_fun bltin) {
     scamval* ret = gc_new_scamval(SCAM_BUILTIN);
-    ret->vals.bltin = my_malloc(sizeof *ret->vals.bltin);
+    ret->vals.bltin = gc_malloc(sizeof *ret->vals.bltin);
     ret->vals.bltin->fun = bltin;
     ret->vals.bltin->constant = 0;
     return ret;
@@ -153,7 +153,7 @@ scamval* scambuiltin(scambuiltin_fun bltin) {
 
 scamval* scambuiltin_const(scambuiltin_fun bltin) {
     scamval* ret = gc_new_scamval(SCAM_BUILTIN);
-    ret->vals.bltin = my_malloc(sizeof *ret->vals.bltin);
+    ret->vals.bltin = gc_malloc(sizeof *ret->vals.bltin);
     ret->vals.bltin->fun = bltin;
     ret->vals.bltin->constant = 1;
     return ret;
@@ -161,7 +161,7 @@ scamval* scambuiltin_const(scambuiltin_fun bltin) {
 
 scamval* scamport(FILE* fp) {
     scamval* ret = gc_new_scamval(SCAM_PORT);
-    ret->vals.port = my_malloc(sizeof *ret->vals.port);
+    ret->vals.port = gc_malloc(sizeof *ret->vals.port);
     ret->vals.port->status = (fp == NULL ? SCAMPORT_CLOSED : SCAMPORT_OPEN);
     ret->vals.port->fp = fp;
     return ret;
@@ -272,12 +272,12 @@ static void scamseq_grow(scamval* seq, size_t min_new_sz) {
         seq->mem_size = SEQ_SIZE_INITIAL;
         if (seq->mem_size < min_new_sz)
             seq->mem_size = min_new_sz;
-        seq->vals.arr = my_malloc(seq->mem_size * sizeof *seq->vals.arr);
+        seq->vals.arr = gc_malloc(seq->mem_size * sizeof *seq->vals.arr);
     } else {
         seq->mem_size *= SEQ_SIZE_GROW;
         if (seq->mem_size < min_new_sz)
             seq->mem_size = min_new_sz;
-        seq->vals.arr = my_realloc(seq->vals.arr, 
+        seq->vals.arr = gc_realloc(seq->vals.arr, 
                                    seq->mem_size * sizeof *seq->vals.arr);
     }
 }
@@ -287,9 +287,9 @@ static void scamseq_grow(scamval* seq, size_t min_new_sz) {
 static void scamseq_resize(scamval* seq, size_t new_sz) {
     seq->mem_size = new_sz;
     if (seq->vals.arr == NULL) {
-        seq->vals.arr = my_malloc(seq->mem_size * sizeof *seq->vals.arr);
+        seq->vals.arr = gc_malloc(seq->mem_size * sizeof *seq->vals.arr);
     } else {
-        seq->vals.arr = my_realloc(seq->vals.arr,
+        seq->vals.arr = gc_realloc(seq->vals.arr,
                                    seq->mem_size * sizeof *seq->vals.arr);
     }
 }
@@ -344,9 +344,24 @@ void scamseq_insert(scamval* seq, size_t i, scamval* v) {
 }
 
 void scamseq_concat(scamval* seq1, scamval* seq2) {
-    scamseq_resize(seq1, scamseq_len(seq1) + scamseq_len(seq2));
-    while (scamseq_len(seq2) > 0) {
-        scamseq_append(seq1, scamseq_pop(seq2, 0));
+    if (scamseq_len(seq2) > 0) {
+        scamseq_resize(seq1, scamseq_len(seq1) + scamseq_len(seq2));
+        while (scamseq_len(seq2) > 0) {
+            scamseq_append(seq1, scamseq_pop(seq2, 0));
+        }
+    }
+}
+
+scamval* scamseq_subseq(scamval* seq, size_t start, size_t end) {
+    size_t n = scamseq_len(seq);
+    if (start >= 0 && end <= n && start <= end) {
+        scamval* ret = scam_internal_seq(seq->type);
+        for (size_t i = start; i < end; i++) {
+            scamseq_append(ret, gc_copy_scamval(scamseq_get(seq, i)));
+        }
+        return ret;
+    } else {
+        return scamerr("attempted sequence access out of bounds");
     }
 }
 
@@ -385,9 +400,9 @@ int scambuiltin_is_const(const scamval* v) {
 static void scamstr_resize(scamval* s, size_t new_sz) {
     s->mem_size = new_sz;
     if (s->vals.s == NULL) {
-        s->vals.s = my_malloc(new_sz);
+        s->vals.s = gc_malloc(new_sz);
     } else {
-        s->vals.s = my_realloc(s->vals.s, new_sz);
+        s->vals.s = gc_realloc(s->vals.s, new_sz);
     }
 }
 
@@ -424,8 +439,8 @@ char scamstr_pop(scamval* v, size_t i) {
 }
 
 void scamstr_remove(scamval* v, size_t start, size_t end) {
-    if (start >= 0 && end < scamstr_len(v) && start < end) {
-        memmove(v->vals.s + start, v->vals.s + end, v->count - start - end);
+    if (start >= 0 && end <= scamstr_len(v) && start < end) {
+        memmove(v->vals.s + start, v->vals.s + end, v->count - end);
         v->count -= (end - start);
         v->vals.s[v->count] = '\0';
     }
@@ -438,8 +453,8 @@ void scamstr_truncate(scamval* v, size_t i) {
 }
 
 scamval* scamstr_substr(scamval* v, size_t start, size_t end) {
-    if (start >= 0 && end <= scamstr_len(v) && start < end) {
-        char* s = my_malloc(end - start + 1);
+    if (start >= 0 && end <= scamstr_len(v) && start <= end) {
+        char* s = gc_malloc(end - start + 1);
         strncpy(s, v->vals.s + start, end - start);
         s[end - start] = '\0';
         return scamstr_no_copy(s);
@@ -476,7 +491,7 @@ void scamport_set_status(scamval* v, int new_status) {
 /*** DICTIONARY API ***/
 scamval* scamdict(scamval* enclosing) {
     scamval* ret = gc_new_scamval(SCAM_ANY);
-    ret->vals.dct = my_malloc(sizeof *ret->vals.dct);
+    ret->vals.dct = gc_malloc(sizeof *ret->vals.dct);
     ret->vals.dct->enclosing = enclosing;
     // The order is very important here: if ret was constructed as a SCAM_DICT
     // right away, then the garbage collector might try to access syms or vals

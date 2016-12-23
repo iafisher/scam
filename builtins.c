@@ -202,50 +202,72 @@ scamval* builtin_get(scamval* args) {
     }
 }
 
-scamval* builtin_slice(scamval* args) {
-    TYPECHECK_ARGS("slice", args, 3, SCAM_LIST, SCAM_INT, SCAM_INT);
+scamval* builtin_str_slice(scamval* args) {
     size_t start = scam_as_int(scamseq_get(args, 1));
     size_t end = scam_as_int(scamseq_get(args, 2));
-    scamval* list_arg = scamseq_pop(args, 0);
-    size_t n = scamseq_len(list_arg);
-    if (start < 0 || start >= n || end < 0 || end >= n || start > end) {
-        gc_unset_root(list_arg);
-        return scamerr("attempted sequence access out of range");
+    scamval* str_arg = scamseq_get(args, 0);
+    return scamstr_substr(str_arg, start, end);
+}
+
+scamval* builtin_list_slice(scamval* args) {
+    size_t start = scam_as_int(scamseq_get(args, 1));
+    size_t end = scam_as_int(scamseq_get(args, 2));
+    scamval* list_arg = scamseq_get(args, 0);
+    return scamseq_subseq(list_arg, start, end);
+}
+
+scamval* builtin_slice(scamval* args) {
+    TYPECHECK_ARGS("slice", args, 3, SCAM_SEQ, SCAM_INT, SCAM_INT);
+    int type = scamseq_get(args, 0)->type;
+    if (type == SCAM_STR) {
+        return builtin_str_slice(args);
+    } else {
+        return builtin_list_slice(args);
     }
-    for (int i = 0; i < n; i++) {
-        if (i < start) {
-            scamseq_delete(list_arg, 0);
-        } else if (i >= end) {
-            scamseq_delete(list_arg, scamseq_len(list_arg) - 1);
-        }
-    }
-    return list_arg;
+}
+
+scamval* builtin_str_take(scamval* args) {
+    size_t end = scam_as_int(scamseq_get(args, 1));
+    scamval* str_arg = scamseq_get(args, 0);
+    return scamstr_substr(str_arg, 0, end);
+}
+
+scamval* builtin_list_take(scamval* args) {
+    size_t end = scam_as_int(scamseq_get(args, 1));
+    scamval* list_arg = scamseq_get(args, 0);
+    return scamseq_subseq(list_arg, 0, end);
 }
 
 scamval* builtin_take(scamval* args) {
-    TYPECHECK_ARGS("take", args, 2, SCAM_LIST, SCAM_INT);
-    size_t start = scam_as_int(scamseq_get(args, 1));
-    scamval* list_arg = scamseq_pop(args, 0);
-    size_t n = scamseq_len(list_arg);
-    for (int i = start; i < n; i++) {
-        scamseq_delete(list_arg, start);
+    TYPECHECK_ARGS("take", args, 2, SCAM_SEQ, SCAM_INT);
+    int type = scamseq_get(args, 0)->type;
+    if (type == SCAM_STR) {
+        return builtin_str_take(args);
+    } else {
+        return builtin_list_take(args);
     }
-    return list_arg;
+}
+
+scamval* builtin_str_drop(scamval* args) {
+    size_t start = scam_as_int(scamseq_get(args, 1));
+    scamval* str_arg = scamseq_get(args, 0);
+    return scamstr_substr(str_arg, start, scamstr_len(str_arg));
+}
+
+scamval* builtin_list_drop(scamval* args) {
+    size_t start = scam_as_int(scamseq_get(args, 1));
+    scamval* list_arg = scamseq_get(args, 0);
+    return scamseq_subseq(list_arg, start, scamseq_len(list_arg));
 }
 
 scamval* builtin_drop(scamval* args) {
-    TYPECHECK_ARGS("drop", args, 2, SCAM_LIST, SCAM_INT);
-    size_t end = scam_as_int(scamseq_get(args, 1));
-    scamval* list_arg = scamseq_pop(args, 0);
-    size_t n = scamseq_len(list_arg);
-    for (int i = 0; i < n; i++) {
-        if (i < end) {
-            scamseq_delete(list_arg, 0);
-        } else {
-            break;
-        }
+    TYPECHECK_ARGS("drop", args, 2, SCAM_SEQ, SCAM_INT);
+    int type = scamseq_get(args, 0)->type;
+    if (type == SCAM_STR) {
+        return builtin_str_drop(args);
+    } else {
+        return builtin_list_drop(args);
     }
-    return list_arg;
 }
 
 scamval* builtin_list_head(scamval* args) {
@@ -562,7 +584,7 @@ scamval* builtin_readchar(scamval* args) {
     TYPECHECK_ARGS("readchar", args, 1, SCAM_PORT);
     scamval* port_arg = scamseq_get(args, 0);
     if (scamport_status(port_arg) == SCAMPORT_OPEN) {
-        char c = fgetc(port_arg->vals.port->fp);
+        char c = fgetc(scam_as_file(port_arg));
         if (c != EOF) {
             return scamstr_from_char(c);
         } else {
@@ -579,8 +601,7 @@ scamval* builtin_assert(scamval* args) {
     if (scam_as_bool(cond)) {
         return scambool(1);
     } else {
-        return scamerr("failed assert at line %d, col %d", cond->line, 
-                                                           cond->col);
+        return scamerr("failed assert");
     }
 }
 

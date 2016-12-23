@@ -24,6 +24,7 @@
 }
 
 // Forward declaration of various eval utilities
+scamval* eval_begin(scamval*, scamval*);
 scamval* eval_define(scamval*, scamval*);
 scamval* eval_lambda(scamval*, scamval*);
 scamval* eval_if(scamval*, scamval*);
