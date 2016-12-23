@@ -3,8 +3,6 @@
 #include "eval.h"
 #include "parse.h"
 
-#include <assert.h>
-
 #define SCAM_ASSERT(cond, ast, err, ...) { \
     if (!(cond)) { \
         return scamerr(err, ##__VA_ARGS__); \
@@ -99,11 +97,7 @@ scamval* eval_lambda(scamval* ast, scamval* env) {
         SCAM_ASSERT(scamseq_get(parameters_copy, i)->type == SCAM_SYM, ast,
                     "lambda parameter must be symbol");
     }
-    // remove the 'lambda' symbol
-    scamseq_delete(ast, 0);
-    scamval* parameters = scamseq_pop(ast, 0);
-    scamval* body = scamseq_pop(ast, 0);
-    return scamlambda(env, parameters, body);
+    return scamlambda(env, scamseq_get(ast, 1), scamseq_get(ast, 2));
 }
 
 // Evaluate a define statement
@@ -111,13 +105,12 @@ scamval* eval_define(scamval* ast, scamval* env) {
     SCAM_ASSERT_ARITY("define", ast, 3);
     SCAM_ASSERT(scamseq_get(ast, 1)->type == SCAM_SYM, ast,
                 "cannot define non-symbol");
-    scamval* k = scamseq_pop(ast, 1);
-    scamval* v = eval(scamseq_pop(ast, 1), env);
+    scamval* k = scamseq_get(ast, 1);
+    scamval* v = eval(scamseq_get(ast, 2), env);
     if (v->type != SCAM_ERR) {
         scamdict_bind(env, k, v);
         return scamnull();
     } else {
-        gc_unset_root(k);
         return v;
     }
 }
@@ -125,19 +118,13 @@ scamval* eval_define(scamval* ast, scamval* env) {
 // Evaluate an if expression
 scamval* eval_if(scamval* ast, scamval* env) {
     SCAM_ASSERT_ARITY("if", ast, 4);
-    scamval* cond = eval(scamseq_pop(ast, 1), env);
+    scamval* cond = eval(scamseq_get(ast, 1), env);
     if (cond->type == SCAM_BOOL) {
-        scamval* true_clause = scamseq_pop(ast, 1);
-        scamval* false_clause = scamseq_pop(ast, 1);
-        if (scam_as_bool(cond)) {
-            gc_unset_root(cond);
-            gc_unset_root(false_clause);
-            return eval(true_clause, env);
-        } else {
-            gc_unset_root(cond);
-            gc_unset_root(true_clause);
-            return eval(false_clause, env);
-        }
+        long long cond_val = scam_as_bool(cond);
+        gc_unset_root(cond);
+        scamval* true_clause = scamseq_get(ast, 2);
+        scamval* false_clause = scamseq_get(ast, 3);
+        return cond_val ? eval(true_clause, env) : eval(false_clause, env);
     } else {
         gc_unset_root(cond);
         return scamerr("condition of an if expression must be a bool");
@@ -216,6 +203,7 @@ scamval* eval_list(scamval* ast, scamval* env) {
     for (int i = 0; i < scamseq_len(ast); i++) {
         scamval* v = eval(scamseq_get(ast, i), env);
         if (v->type != SCAM_ERR) {
+            gc_unset_root(v);
             scamseq_set(ast, i, v);
         } else {
             return v;

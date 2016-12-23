@@ -438,7 +438,7 @@ void scamstr_truncate(scamval* v, size_t i) {
 }
 
 scamval* scamstr_substr(scamval* v, size_t start, size_t end) {
-    if (start >= 0 && end < scamstr_len(v) && start < end) {
+    if (start >= 0 && end <= scamstr_len(v) && start < end) {
         char* s = my_malloc(end - start + 1);
         strncpy(s, v->vals.s + start, end - start);
         s[end - start] = '\0';
