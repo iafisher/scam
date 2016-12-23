@@ -1,7 +1,7 @@
 CC=gcc
 FLAGS=-std=gnu99 -Wall
 FILES=eval.c parse.c scamval.c stream.c tokenize.c builtins.c collector.c
-TEST_FILES=test_files/stream_tests.c test_files/tokenize_tests.c test_files/parse_tests.c test_files/eval_tests.c
+TEST_FILES=tests/stream_tests.c tests/tokenize_tests.c tests/parse_tests.c
 VALGRIND_FLAGS=-q --leak-check=full --num-callers=500
 
 all: *.c *.h
@@ -10,10 +10,10 @@ all: *.c *.h
 debug: *.c *.h
 	$(CC) scam.c $(FILES) -o scam $(FLAGS) -g
 
-tests: *.c *.h test_files/*.c test_files/*.h
-	$(CC) test_files/tests.c $(FILES) $(TEST_FILES) -o test_files/tests $(FLAGS) -g
-	$(CC) test_files/test_repl.c $(FILES) -o test_files/test_repl $(FLAGS) -g
-	$(CC) $(FILES) test_files/test_eq.c -o test_files/test_eq $(FLAGS)
-	$(CC) $(FILES) test_files/test_err.c -o test_files/test_err $(FLAGS)
-	valgrind $(VALGRIND_FLAGS) ./test_files/tests
-	./test_files/run_tests.py
+test: *.c *.h tests/*.c tests/*.h
+	$(CC) tests/tests.c $(FILES) $(TEST_FILES) -o tests/tests $(FLAGS) -g
+	$(CC) tests/test_repl.c $(FILES) -o tests/test_repl $(FLAGS) -g
+	$(CC) $(FILES) tests/run_test_script.c -o tests/run_test_script $(FLAGS)
+	valgrind $(VALGRIND_FLAGS) ./tests/tests
+	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_stdlib.scm
+	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_core.scm

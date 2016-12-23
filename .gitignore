@@ -1,8 +1,5 @@
 *.swp
 *.txt
 *.scm
-tests
 scam
-test_files/test_eq
-test_files/test_err
-test_files/test_repl
+tests/test_repl

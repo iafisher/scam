@@ -9,4 +9,3 @@
 void stream_tests();
 void tokenize_tests();
 void parse_tests();
-void eval_tests();

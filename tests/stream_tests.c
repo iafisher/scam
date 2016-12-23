@@ -31,7 +31,7 @@ void stream_test_103_27(Stream* strm);
 
 void stream_tests() {
     run_stream_test(stream_test_103_27, "(+ 103 27)", 
-                                        "test_files/stream_test_file.txt");
+                                        "tests/stream_test_file.txt");
 }
 
 void run_stream_test(streamtest_f func, char* line, char* fp) {
