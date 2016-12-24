@@ -124,6 +124,44 @@ scamval* match_value(Tokenizer* tz) {
     }
 }
 
+scamval* scamstr_from_token(Token* tkn) {
+    // remove the quotes from string literals
+    scamval* ret = scamstr(tkn->val + 1);
+    scamstr_pop(ret, scamstr_len(ret) - 1);
+    // convert escaped characters
+    for (size_t i = 0; i < scamstr_len(ret); i++) {
+        char c = scamstr_get(ret, i);
+        if (c == '\\') {
+            if (i == scamstr_len(ret) - 1) {
+                gc_unset_root(ret);
+                return scamerr("trailing backslash in string literal");
+            } else {
+                c = scamstr_get(ret, i + 1);
+                char new_c;
+                switch (c) {
+                    case 'a': new_c = '\a'; break;
+                    case 'b': new_c = '\b'; break;
+                    case 'f': new_c = '\f'; break;
+                    case 'n': new_c = '\n'; break;
+                    case 'r': new_c = '\r'; break;
+                    case 't': new_c = '\t'; break;
+                    case 'v': new_c = '\v'; break;
+                    case '\\': new_c = '\\'; break;
+                    case '\'': new_c = '\''; break;
+                    case '"': new_c = '\"'; break;
+                    case '?': new_c = '\?'; break;
+                    default:
+                        gc_unset_root(ret);
+                        return scamerr("unrecognized escape char '%c'", c);
+                }
+                scamstr_set(ret, i, new_c);
+                scamstr_pop(ret, i + 1);
+            }
+        }
+    }
+    return ret;
+}
+
 scamval* scamval_from_token(Token* tkn) {
     switch (tkn->type) {
         case TKN_INT: return scamint(strtoll(tkn->val, NULL, 10));
@@ -136,13 +174,7 @@ scamval* scamval_from_token(Token* tkn) {
             } else {
                 return scamsym(tkn->val);
             }
-        case TKN_STR:
-            {
-                // remove the quotes from string literals
-                scamval* ret = scamstr(tkn->val + 1);
-                scamstr_pop(ret, scamstr_len(ret) - 1);
-                return ret;
-            }
+        case TKN_STR: return scamstr_from_token(tkn);
         default: return scamerr("unknown token type");
     }
 }

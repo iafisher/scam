@@ -158,10 +158,15 @@ void tokenizer_advance(Tokenizer* tz) {
     } else if (c == '"') {
         stream_mark(&tz->strm);
         // find the end of the string literal
-        // this should eventually be adjusted to account for backslash escapes
         c = stream_getc(&tz->strm);
-        while (c != '"')
+        int escapes = 0;
+        while (c != EOF && (c != '"' || escapes % 2 == 1)) {
+            if (c == '\\')
+                escapes++;
+            else
+                escapes = 0;
             c = stream_getc(&tz->strm);
+        }
         // advance one past the end quote so that stream_recall returns it
         c = stream_getc(&tz->strm);
         set_token_from_stream_memory(tz);
