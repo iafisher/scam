@@ -18,3 +18,4 @@ test: *.c *.h tests/*.c tests/*.h
 	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_stdlib.scm
 	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_core.scm
 	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_escapes.scm
+	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_dict.scm

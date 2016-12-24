@@ -86,7 +86,7 @@ int is_decimal(char* s) {
 
 // Return 1 if the character is a token
 int is_token(char c) {
-    return strchr("(){}[]", c) != NULL;
+    return strchr("(){}[]:;", c) != NULL;
 }
 
 // Return 1 if the character is a token boundary
@@ -117,6 +117,8 @@ int token_type_from_str(char* s) {
         return TKN_LBRACE;
     } else if (strcmp(s, "}") == 0) {
         return TKN_RBRACE;
+    } else if (strcmp(s, ":") == 0) {
+        return TKN_COLON;
     } else {
         return TKN_UNKNOWN;
     }
@@ -200,6 +202,7 @@ const char* token_type_name(int type) {
         case TKN_DEC: return "TKN_DEC";
         case TKN_SYM: return "TKN_SYM";
         case TKN_STR: return "TKN_STR";
+        case TKN_COLON: return "TKN_COLON";
         case TKN_EOF: return "TKN_EOF";
         case TKN_UNKNOWN: return "TKN_UNKNOWN";
         default: return "bad token type";

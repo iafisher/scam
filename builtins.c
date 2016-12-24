@@ -192,13 +192,24 @@ scamval* builtin_str_get(scamval* args) {
     }
 }
 
+scamval* builtin_dict_get(scamval* args) {
+    scamval* dict_arg = scamseq_get(args, 0);
+    scamval* key_arg = scamseq_get(args, 1);
+    return scamdict_lookup(dict_arg, key_arg);
+}
+
 scamval* builtin_get(scamval* args) {
-    TYPECHECK_ARGS("get", args, 2, SCAM_SEQ, SCAM_INT);
+    TYPECHECK_ARGS("get", args, 2, SCAM_CONTAINER, SCAM_ANY);
     int type = scamseq_get(args, 0)->type;
-    if (type == SCAM_STR) {
-        return builtin_str_get(args);
+    if (type == SCAM_DICT) {
+        return builtin_dict_get(args);
     } else {
-        return builtin_list_get(args);
+        TYPECHECK_ARGS("get", args, 2, SCAM_CONTAINER, SCAM_INT);
+        if (type == SCAM_STR) {
+            return builtin_str_get(args);
+        } else {
+            return builtin_list_get(args);
+        }
     }
 }
 
@@ -513,6 +524,15 @@ scamval* builtin_split(scamval* args) {
     return ret;
 }
 
+scamval* builtin_bind(scamval* args) {
+    TYPECHECK_ARGS("bind", args, 3, SCAM_DICT, SCAM_ANY, SCAM_ANY);
+    scamval* dict_arg = scamseq_get(args, 0);
+    scamval* key_arg = scamseq_get(args, 1);
+    scamval* val_arg = scamseq_get(args, 2);
+    scamdict_bind(dict_arg, key_arg, val_arg);
+    return dict_arg;
+}
+
 scamval* builtin_print(scamval* args) {
     TYPECHECK_ARGS("print", args, 1, SCAM_ANY);
     scamval* arg = scamseq_get(args, 0);
@@ -777,6 +797,8 @@ scamval* scamdict_builtins() {
     add_builtin(env, "lower", builtin_lower);
     add_builtin(env, "trim", builtin_trim);
     add_builtin(env, "split", builtin_split);
+    // dictionary functions
+    add_builtin(env, "bind", builtin_bind);
     // IO functions
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);

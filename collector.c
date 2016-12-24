@@ -159,6 +159,13 @@ scamval* gc_copy_scamval(scamval* v) {
             return scamsym(scam_as_str(v));
         case SCAM_ERR:
             return scamerr(scam_as_str(v));
+        case SCAM_DICT:
+        {
+            scamval* ret = scamdict(scamdict_enclosing(v));
+            scamdict_set_keys(ret, gc_copy_scamval(scamdict_keys(v)));
+            scamdict_set_vals(ret, gc_copy_scamval(scamdict_vals(v)));
+            return ret;
+        }
         default:
             v->is_root = 1;
             return v;

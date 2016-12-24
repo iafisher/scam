@@ -31,6 +31,7 @@ scamval* eval_if(scamval*, scamval*);
 scamval* eval_and(scamval*, scamval*);
 scamval* eval_or(scamval*, scamval*);
 scamval* eval_list(scamval*, scamval*);
+scamval* eval_dict(scamval*, scamval*);
 
 scamval* eval(scamval* ast, scamval* env) {
     if (ast->type == SCAM_SYM) {
@@ -69,6 +70,8 @@ scamval* eval(scamval* ast, scamval* env) {
         return ret;
     } else if (ast->type == SCAM_LIST) {
         return eval_list(ast, env);
+    } else if (ast->type == SCAM_DICT) {
+        return eval_dict(ast, env);
     } else {
         return ast;
     }
@@ -211,4 +214,16 @@ scamval* eval_list(scamval* ast, scamval* env) {
         }
     }
     return ast;
+}
+
+scamval* eval_dict(scamval* ast, scamval* env) {
+    scamval* key_list = eval_list(scamdict_keys(ast), env);
+    scamval* val_list = eval_list(scamdict_vals(ast), env);
+    if (key_list->type == SCAM_ERR) {
+        return key_list;
+    } else if (val_list->type == SCAM_ERR) {
+        return val_list;
+    } else {
+        return ast;
+    }
 }

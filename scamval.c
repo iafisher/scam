@@ -204,6 +204,18 @@ static int scamval_list_eq(const scamval* v1, const scamval* v2) {
     }
 }
 
+static int scamval_dict_eq(const scamval* v1, const scamval* v2) {
+    for (size_t i = 0; i < scamdict_len(v1); i++) {
+        scamval* key = scamdict_key(v1, i);
+        scamval* val1 = scamdict_val(v1, i);
+        scamval* val2 = scamdict_lookup(v2, key);
+        if (!scamval_eq(val1, val2)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int scamval_eq(const scamval* v1, const scamval* v2) {
     if (scamval_typecheck(v1, SCAM_NUM) && scamval_typecheck(v2, SCAM_NUM)) {
         return scamval_numeric_eq(v1, v2);
@@ -217,6 +229,8 @@ int scamval_eq(const scamval* v1, const scamval* v2) {
             case SCAM_SYM:
             case SCAM_STR:
                 return (strcmp(scam_as_str(v1), scam_as_str(v2)) == 0);
+            case SCAM_DICT:
+                return scamval_dict_eq(v1, v2);
             case SCAM_NULL:
                 return 1;
             default:
@@ -506,19 +520,33 @@ scamval* scamdict(scamval* enclosing) {
     return ret;
 }
 
-scamval* scamdict_enclosing(scamval* dct) { return dct->vals.dct->enclosing; }
-scamval* scamdict_keys(scamval* dct) { return dct->vals.dct->syms; }
-scamval* scamdict_vals(scamval* dct) { return dct->vals.dct->vals; }
+scamval* scamdict_keys(const scamval* dct) { return dct->vals.dct->syms; }
+scamval* scamdict_vals(const scamval* dct) { return dct->vals.dct->vals; }
+scamval* scamdict_enclosing(const scamval* dct) { 
+    return dct->vals.dct->enclosing; 
+}
+
+void scamdict_set_keys(scamval* dct, scamval* new_keys) {
+    gc_unset_root(scamdict_keys(dct));
+    dct->vals.dct->syms = new_keys;
+    gc_unset_root(new_keys);
+}
+
+void scamdict_set_vals(scamval* dct, scamval* new_vals) {
+    gc_unset_root(scamdict_vals(dct));
+    dct->vals.dct->vals = new_vals;
+    gc_unset_root(new_vals);
+}
 
 size_t scamdict_len(const scamval* dct) {
     return scamseq_len(dct->vals.dct->syms);
 }
 
-scamval* scamdict_key(scamval* dct, size_t i) {
+scamval* scamdict_key(const scamval* dct, size_t i) {
     return scamseq_get(scamdict_keys(dct), i);
 }
 
-scamval* scamdict_val(scamval* dct, size_t i) {
+scamval* scamdict_val(const scamval* dct, size_t i) {
     return scamseq_get(scamdict_vals(dct), i);
 }
 
@@ -536,28 +564,44 @@ void scamdict_bind(scamval* dct, scamval* sym, scamval* val) {
     scamseq_append(scamdict_vals(dct), val);
 }
 
-scamval* scamdict_lookup(scamval* dct, scamval* name) {
+scamval* scamdict_lookup(const scamval* dct, const scamval* key) {
     for (int i = 0; i < scamdict_len(dct); i++) {
-        scamval* this_name = scamdict_key(dct, i);
-        if (strcmp(scam_as_str(this_name), scam_as_str(name)) == 0) {
+        scamval* this_key = scamdict_key(dct, i);
+        if (scamval_eq(key, this_key)) {
             return scamdict_val(dct, i);
         }
     }
     if (scamdict_enclosing(dct) != NULL) {
-        return scamdict_lookup(scamdict_enclosing(dct), name);
+        return scamdict_lookup(scamdict_enclosing(dct), key);
     } else {
-        return scamerr("unbound variable '%s'", scam_as_str(name));
+        if (key->type == SCAM_STR) {
+            return scamerr("unbound variable '%s'", scam_as_str(key));
+        } else {
+            return scamerr("unbound variable");
+        }
     }
 }
 
 static void scamseq_print(const scamval* seq, char* open, char* close) {
     printf("%s", open);
-    for (int i = 0; i < scamseq_len(seq); i++) {
+    for (size_t i = 0; i < scamseq_len(seq); i++) {
         scamval_print(scamseq_get(seq, i));
         if (i != seq->count - 1)
             printf(" ");
     }
     printf("%s", close);
+}
+
+static void scamdict_print(const scamval* dct) {
+    printf("{");
+    for (size_t i = 0; i < scamdict_len(dct); i++) {
+        scamval_print(scamdict_key(dct, i));
+        printf(":");
+        scamval_print(scamdict_val(dct, i));
+        if (i != scamdict_len(dct) - 1)
+            printf(" ");
+    }
+    printf("}");
 }
 
 void scamval_print(const scamval* v) {
@@ -574,7 +618,7 @@ void scamval_print(const scamval* v) {
         case SCAM_STR: printf("\"%s\"", scam_as_str(v)); break;
         case SCAM_SYM: printf("%s", scam_as_str(v)); break;
         case SCAM_ERR: printf("Error: %s", scam_as_str(v)); break;
-        case SCAM_DICT: printf("<Scam dictionary>"); break;
+        case SCAM_DICT: scamdict_print(v); break;
     }
 }
 
@@ -612,26 +656,41 @@ void scamval_print_ast(const scamval* ast, int indent) {
 /*** TYPECHECKING ***/
 int scamval_typecheck(const scamval* v, int type) {
     switch (type) {
-        case SCAM_ANY: return 1;
-        case SCAM_SEQ: return v->type == SCAM_LIST || v->type == SCAM_STR;
-        case SCAM_NUM: return v->type == SCAM_INT || v->type == SCAM_DEC;
-        case SCAM_CMP: return v->type == SCAM_STR || v->type == SCAM_INT ||
-                              v->type == SCAM_DEC;
-        case SCAM_FUNCTION: return v->type == SCAM_LAMBDA ||
-                                   v->type == SCAM_BUILTIN;
-        default: return v->type == type;
+        case SCAM_ANY: 
+            return 1;
+        case SCAM_SEQ: 
+            return v->type == SCAM_LIST || v->type == SCAM_STR;
+        case SCAM_CONTAINER:
+            return v->type == SCAM_LIST || v->type == SCAM_STR ||
+                   v->type == SCAM_DICT;
+        case SCAM_NUM: 
+            return v->type == SCAM_INT || v->type == SCAM_DEC;
+        case SCAM_CMP: 
+            return v->type == SCAM_STR || v->type == SCAM_INT || 
+                   v->type == SCAM_DEC;
+        case SCAM_FUNCTION: 
+            return v->type == SCAM_LAMBDA || v->type == SCAM_BUILTIN;
+        default: 
+            return v->type == type;
     }
 }
+
+int is_numeric_type(int type) { return type == SCAM_INT || type == SCAM_DEC; }
+int is_seq_type(int type) { return type == SCAM_LIST || type == SCAM_STR; }
+int is_container_type(int type) {
+    return type == SCAM_LIST || type == SCAM_STR || type == SCAM_DICT;
+}
+
 
 int narrowest_type(int type1, int type2) {
     if (type1 == type2) {
         return type1;
-    } else if ((type1 == SCAM_DEC && type2 == SCAM_INT) ||
-               (type1 == SCAM_INT && type2 == SCAM_DEC)) {
+    } else if (is_numeric_type(type1) && is_numeric_type(type2)) {
         return SCAM_NUM;
-    } else if ((type1 == SCAM_STR && type2 == SCAM_LIST) ||
-               (type1 == SCAM_LIST && type2 == SCAM_STR)) {
+    } else if (is_seq_type(type1) && is_seq_type(type2)) {
         return SCAM_SEQ;
+    } else if (is_container_type(type1) && is_container_type(type2)) {
+        return SCAM_CONTAINER;
     } else {
         return SCAM_ANY;
     }
@@ -669,6 +728,7 @@ const char* scamtype_name(int type) {
         case SCAM_DICT: return "dictionary";
         // abstract types
         case SCAM_SEQ: return "list or string";
+        case SCAM_CONTAINER: return "list, string or dictionary";
         case SCAM_NUM: return "integer or decimal";
         case SCAM_CMP: return "integer, decimal or string";
         case SCAM_ANY: return "any value";
@@ -693,6 +753,7 @@ const char* scamtype_debug_name(int type) {
         case SCAM_DICT: return "SCAM_DICT";
         // abstract types
         case SCAM_SEQ: return "SCAM_SEQ";
+        case SCAM_CONTAINER: return "SCAM_CONTAINER";
         case SCAM_NUM: return "SCAM_NUM";
         case SCAM_CMP: return "SCAM_CMP";
         case SCAM_ANY: return "SCAM_ANY";

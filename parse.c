@@ -108,10 +108,37 @@ scamval* match_sexpr_at_least(Tokenizer* tz, int n) {
     return ast;
 }
 
+scamval* match_dict(Tokenizer* tz) {
+    TOKENIZER_MUST_ADVANCE(tz);
+    scamval* dct = scamdict(NULL);
+    while (starts_expr(tz->tkn.type)) {
+        scamval* key = match_sexpr(tz);
+        if (tz->tkn.type == TKN_COLON) {
+            TOKENIZER_MUST_ADVANCE(tz);
+            if (starts_expr(tz->tkn.type)) {
+                scamdict_bind(dct, key, match_sexpr(tz));
+            } else {
+                gc_unset_root(dct);
+                return scamerr("expected expression for dictionary value");
+            }
+        } else {
+            gc_unset_root(dct);
+            return scamerr("expected :");
+        }
+    }
+    if (tz->tkn.type == TKN_RBRACE) {
+        tokenizer_advance(tz);
+        return dct;
+    } else {
+        gc_unset_root(dct);
+        return scamerr("expected }");
+    }
+}
+
 scamval* match_value(Tokenizer* tz) {
     if (starts_value(tz->tkn.type)) {
         if (tz->tkn.type == TKN_LBRACE) {
-            return scamerr("brace expressions currently not implemented");
+            return match_dict(tz);
         } else if (tz->tkn.type == TKN_LBRACKET) {
             return match_sequence(tz, SCAM_LIST, TKN_LBRACKET, TKN_RBRACKET);
         } else {

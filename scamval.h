@@ -8,7 +8,8 @@ enum { SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA,
        SCAM_DICT };
 
 // Type values that are only used for typechecking
-enum { SCAM_SEQ=1000, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY };
+enum { SCAM_SEQ=1000, SCAM_CONTAINER, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, 
+       SCAM_ANY };
 
 // Forward declaration of scamval and scamdict
 struct scamval;
@@ -167,13 +168,18 @@ scamval* scamdict_builtins();
 void scamdict_bind(scamval* dct, scamval* sym, scamval* val);
 // Lookup the symbol in the dictionary, returning a copy of the value if it
 // exists and an error if it doesn't
+scamval* scamdict_lookup(const scamval* dct, const scamval* sym);
 size_t scamdict_len(const scamval* dct);
-scamval* scamdict_key(scamval* dct, size_t);
-scamval* scamdict_val(scamval* dct, size_t);
-scamval* scamdict_lookup(scamval* dct, scamval* sym);
-scamval* scamdict_keys(scamval*);
-scamval* scamdict_vals(scamval*);
-scamval* scamdict_enclosing(scamval*);
+scamval* scamdict_enclosing(const scamval*);
+// Get references to the dictionary keys and values
+scamval* scamdict_keys(const scamval*);
+scamval* scamdict_vals(const scamval*);
+// Get references to individual keys and values
+scamval* scamdict_key(const scamval* dct, size_t);
+scamval* scamdict_val(const scamval* dct, size_t);
+// Set dictionary keys and values
+void scamdict_set_keys(scamval* dct, scamval* new_keys);
+void scamdict_set_vals(scamval* dct, scamval* new_vals);
 
 /*** SCAMVAL PRINTING ***/
 void scamval_print(const scamval*);

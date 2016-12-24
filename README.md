@@ -4,14 +4,17 @@ A bad programming language.
 ## Syntax
 The syntax of the language is described by the following EBNF grammar. Whitespace is only significant between symbols and numbers.
 
-    EXPR    := "(" EXPR+ ")" | VALUE
-    VALUE   := NUMBER | SYMBOL | LIST | STRING
-    COMMENT := ";" <any ASCII char except newline> "\n"
+    EXPR    := ( <EXPR>+ ) | <VALUE>
+    VALUE   := <NUMBER> | <SYMBOL> | <LIST> | <STRING> | <DICT>
+    COMMENT := ; <any ASCII char except newline> \n
 
-    SYMBOL := <any SYMBOL_CHAR other than 0-9> SYMBOL_CHAR*
-    LIST   := "[" EXPR* "]"
-    STRING := "\"" <any ASCII char, with normal backslash escapes> "\""
-    NUMBER := INTEGER | FLOAT
+    SYMBOL := <any SYMBOL_CHAR other than 0-9> <SYMBOL_CHAR>*
+    LIST   := [ <EXPR>* ]
+    DICT   := { <DICT-EXPR>* }
+    STRING := " <any ASCII char, with normal backslash escapes> "
+    NUMBER := <INTEGER> | <FLOAT>
+
+    DICT-EXPR := <EXPR> : <EXPR>
 
     SYMBOL_CHAR := /[A-Za-z0-9\-+?!%*/<>=_]/
     INTEGER := /-?[0-9]+/
