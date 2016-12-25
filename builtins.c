@@ -529,8 +529,12 @@ scamval* builtin_bind(scamval* args) {
     scamval* dict_arg = scamseq_get(args, 0);
     scamval* key_arg = scamseq_get(args, 1);
     scamval* val_arg = scamseq_get(args, 2);
-    scamdict_bind(dict_arg, key_arg, val_arg);
-    return dict_arg;
+    scamval* err = scamdict_bind(dict_arg, key_arg, val_arg);
+    if (err->type != SCAM_ERR) {
+        return dict_arg;
+    } else {
+        return err;
+    }
 }
 
 scamval* builtin_print(scamval* args) {

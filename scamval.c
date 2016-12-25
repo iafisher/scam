@@ -168,7 +168,9 @@ scamval* scamport(FILE* fp) {
 }
 
 scamval* scamnull() {
-    return gc_new_scamval(SCAM_NULL);
+    scamval* ret = gc_new_scamval(SCAM_NULL);
+    ret->is_root = 0;
+    return ret;
 }
 
 
@@ -366,7 +368,7 @@ void scamseq_concat(scamval* seq1, scamval* seq2) {
     }
 }
 
-scamval* scamseq_subseq(scamval* seq, size_t start, size_t end) {
+scamval* scamseq_subseq(const scamval* seq, size_t start, size_t end) {
     size_t n = scamseq_len(seq);
     if (start >= 0 && end <= n && start <= end) {
         scamval* ret = scam_internal_seq(seq->type);
@@ -466,7 +468,7 @@ void scamstr_truncate(scamval* v, size_t i) {
     }
 }
 
-scamval* scamstr_substr(scamval* v, size_t start, size_t end) {
+scamval* scamstr_substr(const scamval* v, size_t start, size_t end) {
     if (start >= 0 && end <= scamstr_len(v) && start <= end) {
         char* s = gc_malloc(end - start + 1);
         strncpy(s, v->vals.s + start, end - start);
@@ -550,18 +552,23 @@ scamval* scamdict_val(const scamval* dct, size_t i) {
     return scamseq_get(scamdict_vals(dct), i);
 }
 
-void scamdict_bind(scamval* dct, scamval* sym, scamval* val) {
+scamval* scamdict_bind(scamval* dct, scamval* sym, scamval* val) {
     gc_unset_root(sym);
     gc_unset_root(val);
+    if (sym->type == SCAM_PORT || sym->type == SCAM_LAMBDA ||
+        sym->type == SCAM_BUILTIN || sym->type == SCAM_NULL) {
+        return scamerr("cannot bind type '%s'", scamtype_name(sym->type));
+    }
     for (int i = 0; i < scamdict_len(dct); i++) {
         if (scamval_eq(scamdict_key(dct, i), sym)) {
             gc_unset_root(scamdict_val(dct, i));
             scamseq_set(scamdict_vals(dct), i, val);
-            return;
+            return scamnull();
         }
     }
     scamseq_append(scamdict_keys(dct), sym);
     scamseq_append(scamdict_vals(dct), val);
+    return scamnull();
 }
 
 scamval* scamdict_lookup(const scamval* dct, const scamval* key) {
@@ -622,15 +629,15 @@ void scamval_print(const scamval* v) {
     }
 }
 
-void scamval_print_debug(const scamval* v) {
-    scamval_print(v);
-    printf(" (%s)", scamtype_debug_name(v->type));
-}
-
 void scamval_println(const scamval* v) {
     if (!v || v->type == SCAM_NULL) return;
     scamval_print(v);
     printf("\n");
+}
+
+void scamval_print_debug(const scamval* v) {
+    scamval_print(v);
+    printf(" (%s)", scamtype_debug_name(v->type));
 }
 
 void scamval_print_ast(const scamval* ast, int indent) {

@@ -112,8 +112,7 @@ scamval* eval_define(scamval* ast, scamval* env) {
     scamval* k = scamseq_get(ast, 1);
     scamval* v = eval(scamseq_get(ast, 2), env);
     if (v->type != SCAM_ERR) {
-        scamdict_bind(env, k, v);
-        return scamnull();
+        return scamdict_bind(env, k, v);
     } else {
         return v;
     }

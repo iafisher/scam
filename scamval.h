@@ -102,7 +102,7 @@ void scamseq_prepend(scamval* seq, scamval* v);
 // Concatenate the second argument to the first, freeing the second arg
 void scamseq_concat(scamval* seq1, scamval* seq2);
 // Return a newly allocated subsequence
-scamval* scamseq_subseq(scamval* seq, size_t start, size_t end);
+scamval* scamseq_subseq(const scamval* seq, size_t start, size_t end);
 
 
 /*** STRING API ***/
@@ -124,7 +124,7 @@ char scamstr_pop(scamval*, size_t i);
 void scamstr_remove(scamval*, size_t beg, size_t end);
 void scamstr_truncate(scamval*, size_t);
 // Return a newly-allocated substring
-scamval* scamstr_substr(scamval*, size_t, size_t);
+scamval* scamstr_substr(const scamval*, size_t, size_t);
 void scamstr_concat(scamval* s1, scamval* s2);
 size_t scamstr_len(const scamval*);
 
@@ -137,7 +137,9 @@ scamval* scambuiltin_const(scambuiltin_fun);
 size_t scamlambda_nparams(const scamval*);
 scamval* scamlambda_param(const scamval*, size_t);
 scamval* scamlambda_body(const scamval*);
+// Initialize an environment enclosed by the function's environment
 scamval* scamlambda_env(const scamval*);
+// Return a reference to the function's environment itself
 const scamval* scamlambda_env_ref(const scamval*);
 scambuiltin_fun scambuiltin_function(const scamval*);
 int scambuiltin_is_const(const scamval*);
@@ -162,10 +164,7 @@ void scamport_set_status(scamval*, int);
 scamval* scamdict(scamval* enclosing);
 scamval* scamdict_builtins();
 // Create a new binding in the dictionary, or update an existing one
-// sym should be of type SCAM_STR
-// Both sym and val are appropriated by the dict, so don't use them after 
-// calling this function
-void scamdict_bind(scamval* dct, scamval* sym, scamval* val);
+scamval* scamdict_bind(scamval* dct, scamval* sym, scamval* val);
 // Lookup the symbol in the dictionary, returning a copy of the value if it
 // exists and an error if it doesn't
 scamval* scamdict_lookup(const scamval* dct, const scamval* sym);
@@ -180,6 +179,7 @@ scamval* scamdict_val(const scamval* dct, size_t);
 // Set dictionary keys and values
 void scamdict_set_keys(scamval* dct, scamval* new_keys);
 void scamdict_set_vals(scamval* dct, scamval* new_vals);
+
 
 /*** SCAMVAL PRINTING ***/
 void scamval_print(const scamval*);
