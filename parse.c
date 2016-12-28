@@ -63,13 +63,12 @@ scamval* match_program(Tokenizer* tz) {
     }
 }
 
-scamval* match_sequence(Tokenizer* tz, int type, int start, int end) {
+scamval* match_sequence(Tokenizer* tz, int start, int end) {
     if (tz->tkn.type == start) {
         int line = tokenizer_line(tz);
         int col = tokenizer_col(tz);
         TOKENIZER_MUST_ADVANCE(tz);
         scamval* ret = match_sexpr_at_least(tz, 0);
-        ret->type = type;
         if (tz->tkn.type == end) {
             tokenizer_advance(tz);
             return ret;
@@ -85,7 +84,7 @@ scamval* match_sequence(Tokenizer* tz, int type, int start, int end) {
 
 scamval* match_sexpr(Tokenizer* tz) {
     if (tz->tkn.type == TKN_LPAREN) {
-        return match_sequence(tz, SCAM_SEXPR, TKN_LPAREN, TKN_RPAREN);
+        return match_sequence(tz, TKN_LPAREN, TKN_RPAREN);
     } else {
         return match_value(tz);
     }
@@ -109,28 +108,35 @@ scamval* match_sexpr_at_least(Tokenizer* tz, int n) {
 }
 
 scamval* match_dict(Tokenizer* tz) {
+    // {1:"one"  2:"two"} becomes (dict (list 1 "one") (list 2 "two"))
     TOKENIZER_MUST_ADVANCE(tz);
-    scamval* dct = scamdict(NULL);
+    scamval* ast = scamsexpr_from_vals(1, scamsym("dict"));
     while (starts_expr(tz->tkn.type)) {
-        scamval* key = match_sexpr(tz);
+        scamval* pair = scamsexpr_from_vals(1, scamsym("list"));
+        // match the key
+        scamseq_append(pair, match_sexpr(tz));
         if (tz->tkn.type == TKN_COLON) {
             TOKENIZER_MUST_ADVANCE(tz);
             if (starts_expr(tz->tkn.type)) {
-                scamdict_bind(dct, key, match_sexpr(tz));
+                // match the value
+                scamseq_append(pair, match_sexpr(tz));
             } else {
-                gc_unset_root(dct);
+                gc_unset_root(ast);
+                gc_unset_root(pair);
                 return scamerr("expected expression for dictionary value");
             }
+            scamseq_append(ast, pair);
         } else {
-            gc_unset_root(dct);
+            gc_unset_root(ast);
+            gc_unset_root(pair);
             return scamerr("expected :");
         }
     }
     if (tz->tkn.type == TKN_RBRACE) {
         tokenizer_advance(tz);
-        return dct;
+        return ast;
     } else {
-        gc_unset_root(dct);
+        gc_unset_root(ast);
         return scamerr("expected }");
     }
 }
@@ -140,7 +146,9 @@ scamval* match_value(Tokenizer* tz) {
         if (tz->tkn.type == TKN_LBRACE) {
             return match_dict(tz);
         } else if (tz->tkn.type == TKN_LBRACKET) {
-            return match_sequence(tz, SCAM_LIST, TKN_LBRACKET, TKN_RBRACKET);
+            scamval* ret = match_sequence(tz, TKN_LBRACKET, TKN_RBRACKET);
+            scamseq_prepend(ret, scamsym("list"));
+            return ret;
         } else {
             scamval* ret = scamval_from_token(&tz->tkn);
             tokenizer_advance(tz);

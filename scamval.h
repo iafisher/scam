@@ -164,7 +164,7 @@ void scamport_set_status(scamval*, int);
 scamval* scamdict(scamval* enclosing);
 scamval* scamdict_builtins();
 // Create a new binding in the dictionary, or update an existing one
-scamval* scamdict_bind(scamval* dct, scamval* sym, scamval* val);
+void scamdict_bind(scamval* dct, scamval* sym, scamval* val);
 // Lookup the symbol in the dictionary, returning a copy of the value if it
 // exists and an error if it doesn't
 scamval* scamdict_lookup(const scamval* dct, const scamval* sym);

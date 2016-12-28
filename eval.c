@@ -68,10 +68,6 @@ scamval* eval(scamval* ast, scamval* env) {
         gc_unset_root(arglist);
         gc_unset_root(fun_val);
         return ret;
-    } else if (ast->type == SCAM_LIST) {
-        return eval_list(ast, env);
-    } else if (ast->type == SCAM_DICT) {
-        return eval_dict(ast, env);
     } else {
         return ast;
     }
@@ -112,7 +108,8 @@ scamval* eval_define(scamval* ast, scamval* env) {
     scamval* k = scamseq_get(ast, 1);
     scamval* v = eval(scamseq_get(ast, 2), env);
     if (v->type != SCAM_ERR) {
-        return scamdict_bind(env, k, v);
+        scamdict_bind(env, k, v);
+        return scamnull();
     } else {
         return v;
     }
@@ -213,16 +210,4 @@ scamval* eval_list(scamval* ast, scamval* env) {
         }
     }
     return ast;
-}
-
-scamval* eval_dict(scamval* ast, scamval* env) {
-    scamval* key_list = eval_list(scamdict_keys(ast), env);
-    scamval* val_list = eval_list(scamdict_vals(ast), env);
-    if (key_list->type == SCAM_ERR) {
-        return key_list;
-    } else if (val_list->type == SCAM_ERR) {
-        return val_list;
-    } else {
-        return ast;
-    }
 }

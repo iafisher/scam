@@ -5,3 +5,4 @@ scam
 tests/tests
 tests/test_repl
 tests/run_test_script
+benchmarks

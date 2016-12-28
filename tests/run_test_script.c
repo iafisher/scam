@@ -18,9 +18,9 @@ enum { QUERY, ANSWER };
 #define ASSERT_EQ(this_val, last_val, line) \
     if (!scamval_eq(this_val, last_val)) { \
         printf("Error at line %d: got ", line); \
-        scamval_print_debug(last_val); \
-        printf(", expected "); \
         scamval_print_debug(this_val); \
+        printf(", expected "); \
+        scamval_print_debug(last_val); \
         printf("\n"); \
         gc_close(); \
         return 2; \

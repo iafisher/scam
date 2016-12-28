@@ -552,23 +552,24 @@ scamval* scamdict_val(const scamval* dct, size_t i) {
     return scamseq_get(scamdict_vals(dct), i);
 }
 
-scamval* scamdict_bind(scamval* dct, scamval* sym, scamval* val) {
+void scamdict_bind(scamval* dct, scamval* sym, scamval* val) {
     gc_unset_root(sym);
     gc_unset_root(val);
     if (sym->type == SCAM_PORT || sym->type == SCAM_LAMBDA ||
         sym->type == SCAM_BUILTIN || sym->type == SCAM_NULL) {
-        return scamerr("cannot bind type '%s'", scamtype_name(sym->type));
+        // unbindable types
+        return;
+        //return scamerr("cannot bind type '%s'", scamtype_name(sym->type));
     }
     for (int i = 0; i < scamdict_len(dct); i++) {
         if (scamval_eq(scamdict_key(dct, i), sym)) {
             gc_unset_root(scamdict_val(dct, i));
             scamseq_set(scamdict_vals(dct), i, val);
-            return scamnull();
+            return;
         }
     }
     scamseq_append(scamdict_keys(dct), sym);
     scamseq_append(scamdict_vals(dct), val);
-    return scamnull();
 }
 
 scamval* scamdict_lookup(const scamval* dct, const scamval* key) {

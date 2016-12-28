@@ -529,12 +529,30 @@ scamval* builtin_bind(scamval* args) {
     scamval* dict_arg = scamseq_get(args, 0);
     scamval* key_arg = scamseq_get(args, 1);
     scamval* val_arg = scamseq_get(args, 2);
-    scamval* err = scamdict_bind(dict_arg, key_arg, val_arg);
-    if (err->type != SCAM_ERR) {
-        return dict_arg;
-    } else {
-        return err;
+    scamdict_bind(dict_arg, key_arg, val_arg);
+    return dict_arg;
+}
+
+scamval* builtin_list(scamval* args) {
+    args->type = SCAM_LIST;
+    return args;
+}
+
+scamval* builtin_dict(scamval* args) {
+    TYPECHECK_ALL("dict", args, 0, SCAM_LIST);
+    scamval* ret = scamdict(NULL);
+    for (size_t i = 0; i < scamseq_len(args); i++) {
+        scamval* pair = scamseq_get(args, i);
+        if (scamseq_len(pair) == 2) {
+            scamval* key = scamseq_get(pair, 0);
+            scamval* val = scamseq_get(pair, 1);
+            scamdict_bind(ret, key, val);
+        } else {
+            gc_unset_root(ret);
+            return scamerr("'dict' expects each argument to be a pair");
+        }
     }
+    return ret;
 }
 
 scamval* builtin_print(scamval* args) {
@@ -803,6 +821,9 @@ scamval* scamdict_builtins() {
     add_builtin(env, "split", builtin_split);
     // dictionary functions
     add_builtin(env, "bind", builtin_bind);
+    // constructors
+    add_const_builtin(env, "list", builtin_list);
+    add_const_builtin(env, "dict", builtin_dict);
     // IO functions
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);
