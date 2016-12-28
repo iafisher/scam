@@ -274,7 +274,13 @@ int scamval_gt(const scamval* v1, const scamval* v2) {
 /*** NUMERIC API ***/
 long long scam_as_int(const scamval* v) { return v->vals.n; }
 long long scam_as_bool(const scamval* v) { return v->vals.n; }
-double scam_as_dec(const scamval* v) { return v->vals.d; }
+double scam_as_dec(const scamval* v) { 
+    if (v->type == SCAM_DEC) {
+        return v->vals.d; 
+    } else {
+        return v->vals.n;
+    }
+}
 
 
 /*** SEQUENCE API ***/

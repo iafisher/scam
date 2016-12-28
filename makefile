@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS=-std=gnu99 -Wall
+FLAGS=-std=gnu99 -Wall -lm
 FILES=eval.c parse.c scamval.c stream.c tokenize.c builtins.c collector.c
 TEST_FILES=tests/stream_tests.c tests/tokenize_tests.c tests/parse_tests.c
 VALGRIND_FLAGS=-q --leak-check=full --num-callers=500

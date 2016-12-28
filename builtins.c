@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,8 +87,7 @@ scamval* generic_mixed_arith(char* name, scamval* args, arith_func op,
                              int coerce_to_double) {
     TYPECHECK_ALL(name, args, 2, SCAM_NUM);
     scamval* first = scamseq_get(args, 0);
-    double sum = first->type == SCAM_INT ? scam_as_int(first) : 
-                                           scam_as_dec(first);
+    double sum = scam_as_dec(first);
     int seen_double = 0;
     for (int i = 1; i < scamseq_len(args); i++) {
         scamval* v = scamseq_get(args, i);
@@ -637,6 +637,77 @@ scamval* builtin_readchar(scamval* args) {
     }
 }
 
+scamval* builtin_ceil(scamval* args) {
+    TYPECHECK_ARGS("ceil", args, 1, SCAM_DEC);
+    double d = scam_as_dec(scamseq_get(args, 0));
+    return scamint(ceil(d));
+}
+
+scamval* builtin_floor(scamval* args) {
+    TYPECHECK_ARGS("floor", args, 1, SCAM_DEC);
+    double d = scam_as_dec(scamseq_get(args, 0));
+    return scamint(floor(d));
+}
+
+scamval* builtin_divmod(scamval* args) {
+    TYPECHECK_ARGS("divmod", args, 2, SCAM_INT);
+    long long dividend = scam_as_int(scamseq_get(args, 0));
+    long long divisor = scam_as_int(scamseq_get(args, 1));
+    lldiv_t res = lldiv(dividend, divisor);
+    scamval* ret = scamlist();
+    scamseq_append(ret, scamint(res.quot));
+    scamseq_append(ret, scamint(res.rem));
+    return ret;
+}
+
+scamval* builtin_abs(scamval* args) {
+    TYPECHECK_ARGS("abs", args, 1, SCAM_NUM);
+    scamval* num_arg = scamseq_get(args, 0);
+    if (num_arg->type == SCAM_DEC) {
+        double d = scam_as_dec(num_arg);
+        return scamdec(fabs(d));
+    } else {
+        long long n = scam_as_int(num_arg);
+        return scamint(llabs(n));
+    }
+}
+
+scamval* builtin_sqrt(scamval* args) {
+    TYPECHECK_ARGS("sqrt", args, 1, SCAM_NUM);
+    scamval* num_arg = scamseq_get(args, 0);
+    double d = scam_as_dec(num_arg);
+    return scamdec(sqrt(d));
+}
+
+scamval* builtin_pow(scamval* args) {
+    TYPECHECK_ARGS("pow", args, 2, SCAM_NUM, SCAM_NUM);
+    scamval* base_arg = scamseq_get(args, 0);
+    scamval* exp_arg = scamseq_get(args, 1);
+    double base = scam_as_dec(base_arg);
+    double exp = scam_as_dec(exp_arg);
+    if (base_arg->type == SCAM_INT && exp_arg->type == SCAM_INT) {
+        return scamint(pow(base, exp));
+    } else {
+        return scamdec(pow(base, exp));
+    }
+}
+
+scamval* builtin_ln(scamval* args) {
+    TYPECHECK_ARGS("ln", args, 1, SCAM_NUM);
+    scamval* num_arg = scamseq_get(args, 0);
+    double d = scam_as_dec(num_arg);
+    return scamdec(log(d));
+}
+
+scamval* builtin_log(scamval* args) {
+    TYPECHECK_ARGS("log", args, 2, SCAM_NUM, SCAM_NUM);
+    scamval* num_arg = scamseq_get(args, 0);
+    scamval* base_arg = scamseq_get(args, 1);
+    double d = scam_as_dec(num_arg);
+    double base = scam_as_dec(base_arg);
+    return scamdec(log(d) / log(base));
+}
+
 scamval* builtin_assert(scamval* args) {
     TYPECHECK_ARGS("assert", args, 1, SCAM_BOOL);
     scamval* cond = scamseq_get(args, 0);
@@ -832,6 +903,15 @@ scamval* scamdict_builtins() {
     add_const_builtin(env, "port-good?", builtin_port_good);
     add_builtin(env, "readline", builtin_readline);
     add_builtin(env, "readchar", builtin_readchar);
+    // math functions
+    add_const_builtin(env, "ceil", builtin_ceil);
+    add_const_builtin(env, "floor", builtin_floor);
+    add_const_builtin(env, "divmod", builtin_divmod);
+    add_const_builtin(env, "abs", builtin_abs);
+    add_const_builtin(env, "sqrt", builtin_sqrt);
+    add_const_builtin(env, "pow", builtin_pow);
+    add_const_builtin(env, "ln", builtin_ln);
+    add_const_builtin(env, "log", builtin_log);
     // miscellaneous functions
     add_const_builtin(env, "assert", builtin_assert);
     add_const_builtin(env, "range", builtin_range);
