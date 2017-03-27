@@ -3,13 +3,11 @@
 
 // Possible values for the type field of the scamval struct
 // Note that some of these types are never exposed to the user
-enum { SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA, 
-       SCAM_PORT, SCAM_BUILTIN, SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL,
-       SCAM_DICT };
+enum { SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA, SCAM_PORT, SCAM_BUILTIN, 
+       SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL, SCAM_DICT };
 
 // Type values that are only used for typechecking
-enum { SCAM_SEQ=1000, SCAM_CONTAINER, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, 
-       SCAM_ANY };
+enum { SCAM_SEQ=1000, SCAM_CONTAINER, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY };
 
 // Forward declaration of scamval and scamdict
 struct scamval;
@@ -88,14 +86,14 @@ scamval* scamseq_get(const scamval*, size_t i);
 void scamseq_delete(scamval*, size_t i);
 // Remove and return the i'th element of the sequence
 scamval* scamseq_pop(scamval*, size_t i);
-// Set the i'th element of the sequence, obliterating the old element without
-// freeing it (DO NOT USE unless you know the i'th element is already free)
+// Set the i'th element of the sequence, obliterating the old element without freeing it (DO NOT USE
+// unless you know the i'th element is already free)
 void scamseq_set(scamval* seq, size_t i, scamval* v);
 // Return the actual number of elements in the sequence or string
 size_t scamseq_len(const scamval*);
 // Append/prepend/insert a value into a sequence
-// The sequence takes responsibility for freeing the value, so it's best not
-// to use a value once you've appended or prepended it somewhere
+// The sequence takes responsibility for freeing the value, so it's best not to use a value once 
+// you've appended or prepended it somewhere
 void scamseq_insert(scamval* seq, size_t i, scamval* v);
 void scamseq_append(scamval* seq, scamval* v);
 void scamseq_prepend(scamval* seq, scamval* v);
@@ -165,8 +163,8 @@ scamval* scamdict(scamval* enclosing);
 scamval* scamdict_builtins();
 // Create a new binding in the dictionary, or update an existing one
 void scamdict_bind(scamval* dct, scamval* sym, scamval* val);
-// Lookup the symbol in the dictionary, returning a copy of the value if it
-// exists and an error if it doesn't
+// Lookup the symbol in the dictionary, returning a copy of the value if it exists and an error if 
+// it doesn't
 scamval* scamdict_lookup(const scamval* dct, const scamval* sym);
 size_t scamdict_len(const scamval* dct);
 scamval* scamdict_enclosing(const scamval*);

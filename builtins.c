@@ -21,8 +21,8 @@
     } \
 }
 
-// Assert that no element of the args is equal to zero, unless only the 
-// first element is zero and the args contains only two arguments
+// Assert that no element of the args is equal to zero, unless only the first element is zero and 
+// the args contains only two arguments
 #define ASSERT_NO_ZEROS(args) { \
     if (scamseq_len(args) > 2) { \
         scamval* first = scamseq_get(args, 0); \
@@ -83,8 +83,7 @@ scamval* generic_int_arith(char* name, scamval* args, int_arith_func op) {
 }
 
 typedef double (arith_func)(double, double);
-scamval* generic_mixed_arith(char* name, scamval* args, arith_func op, 
-                             int coerce_to_double) {
+scamval* generic_mixed_arith(char* name, scamval* args, arith_func op, int coerce_to_double) {
     TYPECHECK_ALL(name, args, 2, SCAM_NUM);
     scamval* first = scamseq_get(args, 0);
     double sum = scam_as_dec(first);
@@ -731,8 +730,7 @@ scamval* builtin_range(scamval* args) {
         }
         return ret;
     } else {
-        return scamerr("lower bound must be less than or equal to upper bound "
-                       "in function 'range'");
+        return scamerr("lower bound must be less than or equal to upper bound in function 'range'");
     }
 }
 
@@ -847,8 +845,8 @@ void add_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
     scamdict_bind(env, scamsym(sym), scambuiltin(bltin));
 }
 
-// If a builtin doesn't change its arguments, then it should be registered
-// as constant so that the evaluator doesn't bother copying the argument list
+// If a builtin doesn't change its arguments, then it should be registered as constant so that the 
+// evaluator doesn't bother copying the argument list
 void add_const_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
     scamdict_bind(env, scamsym(sym), scambuiltin_const(bltin));
 }

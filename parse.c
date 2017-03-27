@@ -23,8 +23,8 @@ int starts_value(int tkn_type);
 // Syntactic transformations
 void transform_ast(scamval*);
 
-// Parse the given input by initializing a tokenizer with the given function,
-// and then calling the given matching function
+// Parse the given input by initializing a tokenizer with the given function, and then calling the 
+// given matching function
 scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
     Tokenizer tz; 
     tz_init(&tz, s_or_fp);
@@ -74,8 +74,7 @@ scamval* match_sequence(Tokenizer* tz, int start, int end) {
             return ret;
         } else {
             gc_unset_root(ret);
-            return scamerr("expected end of expression started at line %d, "
-                           "col %d", line, col);
+            return scamerr("expected end of expression started at line %d, col %d", line, col);
         }
     } else {
         return scamerr("expected start of expression");
@@ -219,9 +218,8 @@ int starts_expr(int tkn_type) {
 }
 
 int starts_value(int tkn_type) {
-    return tkn_type == TKN_LBRACKET || tkn_type == TKN_LBRACE ||
-           tkn_type == TKN_INT || tkn_type == TKN_DEC || tkn_type == TKN_STR ||
-           tkn_type == TKN_SYM;
+    return tkn_type == TKN_LBRACKET || tkn_type == TKN_LBRACE || tkn_type == TKN_INT || 
+           tkn_type == TKN_DEC || tkn_type == TKN_STR || tkn_type == TKN_SYM;
 }
 
 typedef int (transform_pred_t)(scamval*);
@@ -251,8 +249,7 @@ void transform_define(scamval* ast) {
     while (scamseq_len(ast) > 1)
         scamseq_append(lambda_body, scamseq_pop(ast, 1));
     // ast == (define)
-    scamval* lambda = scamsexpr_from_vals(3, scamsym("lambda"), parameters,
-                                             lambda_body);
+    scamval* lambda = scamsexpr_from_vals(3, scamsym("lambda"), parameters, lambda_body);
     // lambda == (lambda (...) body)
     scamseq_append(ast, name);
     scamseq_append(ast, lambda);

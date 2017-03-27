@@ -6,8 +6,7 @@ static scamval** scamval_objs = NULL;
 static size_t count = 0;
 static size_t first_avail = 0;
 
-// if you change either of these, make sure that the scamdict function in
-// scamval.c will still work
+// if you change either of these, make sure that the scamdict function in scamval.c will still work
 enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 
 // Mark all objects which can be reached from the given object
@@ -64,8 +63,8 @@ static void gc_del_scamval(scamval* v) {
     free(v);
 }
 
-// Sweep the entire heap, freeing items that have not been marked and resetting
-// the marks on those that have
+// Sweep the entire heap, freeing items that have not been marked and resetting the marks on those 
+// that have
 static void gc_sweep() {
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
@@ -145,10 +144,9 @@ scamval* gc_copy_scamval(scamval* v) {
             for (int i = 0; i < v->count; i++) {
                 ret->vals.arr[i] = gc_copy_scamval(v->vals.arr[i]);
                 gc_unset_root(ret->vals.arr[i]);
-                // count must always contain an accurate count of the allocated
-                // elements of the list, in case the garbage collector is
-                // invoked in the middle of copying and needs to mark the
-                // elements of this list
+                // count must always contain an accurate count of the allocated elements of the 
+                // list, in case the garbage collector is invoked in the middle of copying and needs
+                // to mark the elements of this list
                 ret->count++;
             }
             return ret;

@@ -103,8 +103,7 @@ scamval* eval_lambda(scamval* ast, scamval* env) {
 // Evaluate a define statement
 scamval* eval_define(scamval* ast, scamval* env) {
     SCAM_ASSERT_ARITY("define", ast, 3);
-    SCAM_ASSERT(scamseq_get(ast, 1)->type == SCAM_SYM, ast,
-                "cannot define non-symbol");
+    SCAM_ASSERT(scamseq_get(ast, 1)->type == SCAM_SYM, ast, "cannot define non-symbol");
     scamval* k = scamseq_get(ast, 1);
     scamval* v = eval(scamseq_get(ast, 2), env);
     if (v->type != SCAM_ERR) {
@@ -176,13 +175,11 @@ scamval* eval_apply(scamval* fun_val, scamval* arglist) {
         size_t expected = scamlambda_nparams(fun_val);
         size_t got = scamseq_len(arglist);
         if (got != expected) {
-            return scamerr("lambda function got %d argument(s), expected %d", 
-                           got, expected);
+            return scamerr("lambda function got %d argument(s), expected %d", got, expected);
         }
         scamval* inner_env = scamlambda_env(fun_val);
         for (int i = 0; i < expected; i++) {
-            scamdict_bind(inner_env, scamlambda_param(fun_val, i),
-                          scamseq_pop(arglist, 0));
+            scamdict_bind(inner_env, scamlambda_param(fun_val, i), scamseq_pop(arglist, 0));
         }
         scamval* ret = eval(scamlambda_body(fun_val), inner_env);
         gc_unset_root(inner_env);

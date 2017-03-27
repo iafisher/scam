@@ -3,9 +3,8 @@
 #include "stream.h"
 
 // Possible values for 'type' field of token
-enum { TKN_LPAREN, TKN_RPAREN, TKN_LBRACKET, TKN_RBRACKET, TKN_LBRACE,
-       TKN_RBRACE, TKN_INT, TKN_DEC, TKN_SYM, TKN_STR, TKN_COLON, TKN_EOF, 
-       TKN_UNKNOWN };
+enum { TKN_LPAREN, TKN_RPAREN, TKN_LBRACKET, TKN_RBRACKET, TKN_LBRACE, TKN_RBRACE, TKN_INT, TKN_DEC,
+       TKN_SYM, TKN_STR, TKN_COLON, TKN_EOF, TKN_UNKNOWN };
 
 typedef struct {
     int type;

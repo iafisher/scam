@@ -126,8 +126,7 @@ scamval* scamerr_arity(const char* name, size_t got, size_t expected) {
 }
 
 scamval* scamerr_min_arity(const char* name, size_t got, size_t expected) {
-    return scamerr("'%s' got %d arg(s), expected at least %d", name, got, 
-                   expected);
+    return scamerr("'%s' got %d arg(s), expected at least %d", name, got, expected);
 }
 
 scamval* scamerr_eof() {
@@ -287,8 +286,8 @@ double scam_as_dec(const scamval* v) {
 // constants for the scamseq_grow function
 enum { SEQ_SIZE_INITIAL = 5, SEQ_SIZE_GROW = 2};
 
-// Grow the size of the sequence in memory so that it is at least the given
-// minimum size, and possibly larger
+// Grow the size of the sequence in memory so that it is at least the given minimum size, and 
+// possibly larger
 static void scamseq_grow(scamval* seq, size_t min_new_sz) {
     if (seq->vals.arr == NULL) {
         seq->mem_size = SEQ_SIZE_INITIAL;
@@ -299,20 +298,17 @@ static void scamseq_grow(scamval* seq, size_t min_new_sz) {
         seq->mem_size *= SEQ_SIZE_GROW;
         if (seq->mem_size < min_new_sz)
             seq->mem_size = min_new_sz;
-        seq->vals.arr = gc_realloc(seq->vals.arr, 
-                                   seq->mem_size * sizeof *seq->vals.arr);
+        seq->vals.arr = gc_realloc(seq->vals.arr, seq->mem_size * sizeof *seq->vals.arr);
     }
 }
 
-// Unlike scamseq_grow, the new sequence is guaranteed to be exactly the new
-// size provided
+// Unlike scamseq_grow, the new sequence is guaranteed to be exactly the new size provided
 static void scamseq_resize(scamval* seq, size_t new_sz) {
     seq->mem_size = new_sz;
     if (seq->vals.arr == NULL) {
         seq->vals.arr = gc_malloc(seq->mem_size * sizeof *seq->vals.arr);
     } else {
-        seq->vals.arr = gc_realloc(seq->vals.arr,
-                                   seq->mem_size * sizeof *seq->vals.arr);
+        seq->vals.arr = gc_realloc(seq->vals.arr, seq->mem_size * sizeof *seq->vals.arr);
     }
 }
 
@@ -360,8 +356,7 @@ void scamseq_insert(scamval* seq, size_t i, scamval* v) {
     if (++seq->count > seq->mem_size) {
         scamseq_grow(seq, seq->count);
     }
-    memmove(seq->vals.arr + i + 1, seq->vals.arr + i,
-            (seq->count - i - 1) * sizeof *seq->vals.arr);
+    memmove(seq->vals.arr + i + 1, seq->vals.arr + i, (seq->count - i - 1) * sizeof *seq->vals.arr);
     seq->vals.arr[i] = v;
 }
 
@@ -515,11 +510,10 @@ scamval* scamdict(scamval* enclosing) {
     scamval* ret = gc_new_scamval(SCAM_ANY);
     ret->vals.dct = gc_malloc(sizeof *ret->vals.dct);
     ret->vals.dct->enclosing = enclosing;
-    // The order is very important here: if ret was constructed as a SCAM_DICT
-    // right away, then the garbage collector might try to access syms or vals
-    // before they were allocated. The two calls to scamlist are safe because
-    // if the first call invokes the collector, the second call cannot as the
-    // collector will allocate space for at least one additional object.
+    // The order is very important here: if ret was constructed as a SCAM_DICT right away, then the 
+    // garbage collector might try to access syms or vals before they were allocated. The two calls 
+    // to scamlist are safe because if the first call invokes the collector, the second call cannot 
+    // as the collector will allocate space for at least one additional object.
     ret->vals.dct->syms = scamlist();
     ret->vals.dct->vals = scamlist();
     ret->type = SCAM_DICT;
@@ -561,8 +555,8 @@ scamval* scamdict_val(const scamval* dct, size_t i) {
 void scamdict_bind(scamval* dct, scamval* sym, scamval* val) {
     gc_unset_root(sym);
     gc_unset_root(val);
-    if (sym->type == SCAM_PORT || sym->type == SCAM_LAMBDA ||
-        sym->type == SCAM_BUILTIN || sym->type == SCAM_NULL) {
+    if (sym->type == SCAM_PORT || sym->type == SCAM_LAMBDA || sym->type == SCAM_BUILTIN || 
+        sym->type == SCAM_NULL) {
         // unbindable types
         return;
         //return scamerr("cannot bind type '%s'", scamtype_name(sym->type));
@@ -675,13 +669,11 @@ int scamval_typecheck(const scamval* v, int type) {
         case SCAM_SEQ: 
             return v->type == SCAM_LIST || v->type == SCAM_STR;
         case SCAM_CONTAINER:
-            return v->type == SCAM_LIST || v->type == SCAM_STR ||
-                   v->type == SCAM_DICT;
+            return v->type == SCAM_LIST || v->type == SCAM_STR || v->type == SCAM_DICT;
         case SCAM_NUM: 
             return v->type == SCAM_INT || v->type == SCAM_DEC;
         case SCAM_CMP: 
-            return v->type == SCAM_STR || v->type == SCAM_INT || 
-                   v->type == SCAM_DEC;
+            return v->type == SCAM_STR || v->type == SCAM_INT || v->type == SCAM_DEC;
         case SCAM_FUNCTION: 
             return v->type == SCAM_LAMBDA || v->type == SCAM_BUILTIN;
         default: 
@@ -721,8 +713,8 @@ int scamseq_narrowest_type(scamval* args) {
 }
 
 scamval* scamerr_type(const char* name, size_t pos, int got, int expected) {
-    return scamerr("'%s' got %s as arg %d, expected %s", name, 
-                   scamtype_name(got), pos + 1, scamtype_name(expected));
+    return scamerr("'%s' got %s as arg %d, expected %s", name, scamtype_name(got), pos + 1, 
+                   scamtype_name(expected));
 }
 
 const char* scamtype_name(int type) {

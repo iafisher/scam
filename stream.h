@@ -28,9 +28,8 @@ void stream_ungetc(Stream*, char);
 void stream_mark(Stream*);
 
 // Recall all characters since memory mode was turned on
-// The return value begins with the last character seen before stream_mark was
-// called, and ends with the character before the last call to stream_getchar
-// The next call to stream_getchar will repeat the same character
+// The return value begins with the last character seen before stream_mark was called, and ends wit // the character before the last call to stream_getchar The next call to stream_getchar will repeat 
+// the same character
 char* stream_recall(Stream*);
 
 // Free all stream resources, including the pointer itself
