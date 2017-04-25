@@ -65,7 +65,7 @@ static void gc_del_scamval(scamval* v) {
 
 // Sweep the entire heap, freeing items that have not been marked and resetting the marks on those 
 // that have
-static void gc_sweep() {
+static void gc_sweep(void) {
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
         if (v != NULL) {
@@ -82,7 +82,7 @@ static void gc_sweep() {
     }
 }
 
-void gc_collect() {
+void gc_collect(void) {
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
         if (v != NULL && !v->seen && v->is_root) {
@@ -170,7 +170,7 @@ scamval* gc_copy_scamval(scamval* v) {
     }
 }
 
-void gc_close() {
+void gc_close(void) {
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
         if (v != NULL) {
@@ -180,7 +180,7 @@ void gc_close() {
     free(scamval_objs);
 }
 
-void gc_print() {
+void gc_print(void) {
     printf("Allocated space for %ld references\n", count);
     for (size_t i = 0; i < count; i++) {
         scamval* v = scamval_objs[i];
@@ -194,7 +194,7 @@ void gc_print() {
     }
 }
 
-static size_t first_interesting_index() {
+static size_t first_interesting_index(void) {
     // first 3 refs are for the global environment
     int reached_the_builtin_ports = 0;
     for (size_t i = 3; i < count; i++) {
@@ -225,7 +225,7 @@ static size_t first_interesting_index() {
     return count;
 }
 
-void gc_smart_print() {
+void gc_smart_print(void) {
     printf("Allocated space for %ld references\n", count);
     for (size_t i = first_interesting_index(); i < count; i++) {
         scamval* v = scamval_objs[i];

@@ -29,7 +29,7 @@ typedef void (*streamtest_f)(Stream*);
 void run_stream_test(streamtest_f, char* line, char* fp);
 void stream_test_103_27(Stream* strm);
 
-void stream_tests() {
+void stream_tests(void) {
     run_stream_test(stream_test_103_27, "(+ 103 27)", "resources/stream_test_file.txt");
 }
 

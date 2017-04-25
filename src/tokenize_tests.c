@@ -4,7 +4,7 @@
 
 void tkntest(char* s, int n, ...);
 
-void tokenize_tests() {
+void tokenize_tests(void) {
     tkntest("-2730", 1, TKN_INT);
     tkntest("valid-identifier", 1, TKN_SYM);
     tkntest("[8.9 -92.0]", 4, TKN_LBRACKET, TKN_DEC, TKN_DEC, TKN_RBRACKET);

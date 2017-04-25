@@ -12,7 +12,7 @@ void tokenize_repl(char*);
 void parse_repl(char*);
 void eval_repl(char*, scamval*);
 
-void print_generic_help();
+void print_generic_help(void);
 
 enum { REPL_EVAL, REPL_PARSE, REPL_TOKENIZE, REPL_STREAM };
 int main(int argc, char** argv) {
@@ -177,7 +177,7 @@ void print_stream(Stream* strm) {
     printf("mem_len=%d\n", strm->mem_len);
 }
 
-void print_generic_help() {
+void print_generic_help(void) {
     puts("Universal commands:");
     puts("\thelp: print a help message");
     puts("\t!stream: switch to stream mode");

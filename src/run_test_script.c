@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../collector.h"
-#include "../eval.h"
-#include "../scamval.h"
+#include "collector.h"
+#include "eval.h"
+#include "scamval.h"
 
 // values for the 'expect' variable in the while loop
 enum { QUERY, ANSWER };

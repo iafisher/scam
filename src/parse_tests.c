@@ -6,7 +6,7 @@
 void parsetest(char* line, int n, ...);
 void parsetest_lit(char* line, int type_we_want);
 
-void parse_tests() {
+void parse_tests(void) {
     parsetest_lit("-103", SCAM_INT);
     parsetest_lit("-103.7", SCAM_DEC);
     parsetest_lit("hello", SCAM_SYM);

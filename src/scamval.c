@@ -33,11 +33,11 @@ static scamval* scam_internal_seq(int type) {
     return ret;
 }
 
-scamval* scamlist() {
+scamval* scamlist(void) {
     return scam_internal_seq(SCAM_LIST);
 }
 
-scamval* scamsexpr() {
+scamval* scamsexpr(void) {
     return scam_internal_seq(SCAM_SEXPR);
 }
 
@@ -81,7 +81,7 @@ scamval* scamstr_read(FILE* fp) {
     }
 }
 
-scamval* scamstr_empty() {
+scamval* scamstr_empty(void) {
     scamval* ret = gc_new_scamval(SCAM_STR);
     ret->count = 0;
     ret->mem_size = 0;
@@ -129,7 +129,7 @@ scamval* scamerr_min_arity(const char* name, size_t got, size_t expected) {
     return scamerr("'%s' got %d arg(s), expected at least %d", name, got, expected);
 }
 
-scamval* scamerr_eof() {
+scamval* scamerr_eof(void) {
     return scamerr("reached EOF while reading from a port");
 }
 
@@ -166,7 +166,7 @@ scamval* scamport(FILE* fp) {
     return ret;
 }
 
-scamval* scamnull() {
+scamval* scamnull(void) {
     scamval* ret = gc_new_scamval(SCAM_NULL);
     ret->is_root = 0;
     return ret;

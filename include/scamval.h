@@ -64,7 +64,7 @@ struct scamval {
 
 /*** SCAMVAL CONSTRUCTORS ***/
 scamval* scamsym(const char*);
-scamval* scamnull();
+scamval* scamnull(void);
 
 
 /*** NUMERIC API ***/
@@ -77,8 +77,8 @@ double scam_as_dec(const scamval*);
 
 
 /*** SEQUENCE API ***/
-scamval* scamlist();
-scamval* scamsexpr();
+scamval* scamlist(void);
+scamval* scamsexpr(void);
 scamval* scamsexpr_from_vals(size_t, ...);
 // Return a reference to the i'th element of the sequence
 scamval* scamseq_get(const scamval*, size_t i);
@@ -110,7 +110,7 @@ scamval* scamstr(const char*);
 scamval* scamstr_read(FILE*);
 // Initialize a string from a character array without making a copy
 scamval* scamstr_no_copy(char*);
-scamval* scamstr_empty();
+scamval* scamstr_empty(void);
 scamval* scamstr_from_char(char);
 const char* scam_as_str(const scamval*);
 void scamstr_set(scamval*, size_t, char);
@@ -160,7 +160,7 @@ void scamport_set_status(scamval*, int);
 /*** DICTIONARY API ***/
 // Initialize dictionaries
 scamval* scamdict(scamval* enclosing);
-scamval* scamdict_builtins();
+scamval* scamdict_builtins(void);
 // Create a new binding in the dictionary, or update an existing one
 void scamdict_bind(scamval* dct, scamval* sym, scamval* val);
 // Lookup the symbol in the dictionary, returning a copy of the value if it exists and an error if 

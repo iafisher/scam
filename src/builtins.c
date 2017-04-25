@@ -851,7 +851,7 @@ void add_const_builtin(scamval* env, char* sym, scambuiltin_fun bltin) {
     scamdict_bind(env, scamsym(sym), scambuiltin_const(bltin));
 }
 
-scamval* scamdict_builtins() {
+scamval* scamdict_builtins(void) {
     scamval* env = scamdict(NULL);
     add_builtin(env, "begin", builtin_begin);
     add_const_builtin(env, "-", builtin_sub);
