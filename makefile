@@ -1,24 +1,65 @@
-CC=gcc
-FLAGS=-std=gnu99 -Wall -lm
-FILES=eval.c parse.c scamval.c stream.c tokenize.c builtins.c collector.c
-TEST_FILES=tests/stream_tests.c tests/tokenize_tests.c tests/parse_tests.c
-VALGRIND_FLAGS=-q --leak-check=full --num-callers=500
+CC = gcc
+OBJS = builtins.o collector.o eval.o parse.o scamval.o stream.o tokenize.o
+TEST_OBJS = tests/parse_tests.o tests/stream_tests.o tests/tokenize_tests.o
+DEBUG = -g
+CFLAGS = -Wall $(DEBUG) -std=gnu99 -c
+LFLAGS = -Wall $(DEBUG) -lm
 
-all: *.c *.h
-	$(CC) scam.c $(FILES) -o scam $(FLAGS)
+scam: scam.o $(OBJS)
+	$(CC) $(OBJS) scam.o -o scam $(LFLAGS) 
 
-debug: *.c *.h
-	$(CC) scam.c $(FILES) -o scam $(FLAGS) -g
+builtins.o: builtins.c collector.h eval.h
+	$(CC) $(CFLAGS) builtins.c
 
-test: *.c *.h tests/*.c tests/*.h
-	$(CC) tests/tests.c $(FILES) $(TEST_FILES) -o tests/tests $(FLAGS) -g
-	$(CC) tests/test_repl.c $(FILES) -o tests/test_repl $(FLAGS) -g
-	$(CC) $(FILES) tests/run_test_script.c -o tests/run_test_script $(FLAGS)
-	valgrind $(VALGRIND_FLAGS) ./tests/tests
-	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_stdlib.scm
-	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_core.scm
-	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_escapes.scm
-	valgrind $(VALGRIND_FLAGS) ./tests/run_test_script tests/test_dict.scm
+collector.o: collector.c collector.h
+	$(CC) $(CFLAGS) collector.c
 
-benchmark: *.c *.h benchmarks/*.c 
-	$(CC) benchmarks/benchmark.c $(FILES) -o benchmarks/benchmark $(FLAGS)
+eval.o: eval.c parse.h eval.h collector.h
+	$(CC) $(CFLAGS) eval.c
+
+parse.o: parse.c collector.h parser.h tokenize.h
+	$(CC) $(CFLAGS) parse.c
+
+scam.o: scam.c collector.h eval.h
+	$(CC) $(CFLAGS) scam.c
+
+scamval.o: scamval.c collector.h scamval.h
+	$(CC) $(CFLAGS) scamval.c
+
+stream.o: stream.c stream.h collector.h
+	$(CC) $(CFLAGS) stream.c
+
+tokenize.o: tokenize.c tokenize.h
+	$(CC) $(CFLAGS) tokenize.c
+
+tests/tests: tests/tests.o $(OBJS) $(TEST_OBJS)
+	$(CC) $(OBJS) $(TEST_OBJS) tests/tests.o -o tests/tests $(LFLAGS) 
+
+tests/tests.o: tests/tests.c tests/tests.h
+	$(CC) $(CFLAGS) tests/tests.c -o tests/tests.o
+
+tests/parse_tests.o: tests/parse_tests.c parse.h scamval.h
+	$(CC) $(CFLAGS) tests/parse_tests.c -o tests/parse_tests.o
+
+tests/stream_tests.o: tests/stream_tests.c stream.h tests/tests.h
+	$(CC) $(CFLAGS) tests/stream_tests.c -o tests/stream_tests.o
+
+tests/tokenize_tests.o: tests/tokenize_tests.c tokenize.h
+	$(CC) $(CFLAGS) tests/tokenize_tests.c -o tests/tokenize_tests.o
+
+tests/run_test_script: tests/run_test_script.o $(OBJS)
+	$(CC) $(OBJS) tests/run_test_script.o -o tests/run_test_script $(LFLAGS) 
+
+tests/run_test_script.o: tests/run_test_script.c collector.h eval.h scamval.h
+	$(CC) $(CFLAGS) tests/run_test_script.c -o tests/run_test_script.o
+
+clean:
+	rm *.o
+
+parser.h: tokenize.h scamval.h
+
+collector.h: scamval.h
+
+eval.h: scamval.h
+
+tokenize.h: stream.h
