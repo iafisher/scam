@@ -1,6 +1,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
-#include "../tokenize.h"
+#include "tokenize.h"
 
 void tkntest(char* s, int n, ...);
 

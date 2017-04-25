@@ -1,65 +1,71 @@
 CC = gcc
-OBJS = builtins.o collector.o eval.o parse.o scamval.o stream.o tokenize.o
-TEST_OBJS = tests/parse_tests.o tests/stream_tests.o tests/tokenize_tests.o
+OBJS = lib/builtins.o lib/collector.o lib/eval.o lib/parse.o lib/scamval.o lib/stream.o lib/tokenize.o
+TEST_OBJS = lib/parse_tests.o lib/stream_tests.o lib/tokenize_tests.o
 DEBUG = -g
-CFLAGS = -Wall $(DEBUG) -std=gnu99 -c
+CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
 LFLAGS = -Wall $(DEBUG) -lm
 
-scam: scam.o $(OBJS)
-	$(CC) $(OBJS) scam.o -o scam $(LFLAGS) 
+scam: lib/scam.o $(OBJS)
+	$(CC) $(OBJS) lib/scam.o -o scam $(LFLAGS) 
 
-builtins.o: builtins.c collector.h eval.h
-	$(CC) $(CFLAGS) builtins.c
+lib/builtins.o: src/builtins.c include/collector.h include/eval.h
+	$(CC) $(CFLAGS) src/builtins.c -o lib/builtins.o
 
-collector.o: collector.c collector.h
-	$(CC) $(CFLAGS) collector.c
+lib/collector.o: src/collector.c include/collector.h
+	$(CC) $(CFLAGS) src/collector.c -o lib/collector.o
 
-eval.o: eval.c parse.h eval.h collector.h
-	$(CC) $(CFLAGS) eval.c
+lib/eval.o: src/eval.c include/parse.h include/eval.h include/collector.h
+	$(CC) $(CFLAGS) src/eval.c -o lib/eval.o
 
-parse.o: parse.c collector.h parser.h tokenize.h
-	$(CC) $(CFLAGS) parse.c
+lib/parse.o: src/parse.c include/collector.h include/parser.h include/tokenize.h
+	$(CC) $(CFLAGS) src/parse.c -o lib/parse.o
 
-scam.o: scam.c collector.h eval.h
-	$(CC) $(CFLAGS) scam.c
+lib/scam.o: src/scam.c include/collector.h include/eval.h
+	$(CC) $(CFLAGS) src/scam.c -o lib/scam.o
 
-scamval.o: scamval.c collector.h scamval.h
-	$(CC) $(CFLAGS) scamval.c
+lib/scamval.o: src/scamval.c include/collector.h include/scamval.h
+	$(CC) $(CFLAGS) src/scamval.c -o lib/scamval.o
 
-stream.o: stream.c stream.h collector.h
-	$(CC) $(CFLAGS) stream.c
+lib/stream.o: src/stream.c include/stream.h include/collector.h
+	$(CC) $(CFLAGS) src/stream.c -o lib/stream.o
 
-tokenize.o: tokenize.c tokenize.h
-	$(CC) $(CFLAGS) tokenize.c
+lib/tokenize.o: src/tokenize.c include/tokenize.h
+	$(CC) $(CFLAGS) src/tokenize.c -o lib/tokenize.o
 
-tests/tests: tests/tests.o $(OBJS) $(TEST_OBJS)
-	$(CC) $(OBJS) $(TEST_OBJS) tests/tests.o -o tests/tests $(LFLAGS) 
+tests: lib/tests.o $(OBJS) $(TEST_OBJS)
+	$(CC) $(OBJS) $(TEST_OBJS) lib/tests.o -o tests $(LFLAGS) 
 
-tests/tests.o: tests/tests.c tests/tests.h
-	$(CC) $(CFLAGS) tests/tests.c -o tests/tests.o
+lib/tests.o: src/tests.c include/tests.h
+	$(CC) $(CFLAGS) src/tests.c -o lib/tests.o
 
-tests/parse_tests.o: tests/parse_tests.c parse.h scamval.h
-	$(CC) $(CFLAGS) tests/parse_tests.c -o tests/parse_tests.o
+lib/parse_tests.o: src/parse_tests.c include/parse.h include/scamval.h
+	$(CC) $(CFLAGS) src/parse_tests.c -o lib/parse_tests.o
 
-tests/stream_tests.o: tests/stream_tests.c stream.h tests/tests.h
-	$(CC) $(CFLAGS) tests/stream_tests.c -o tests/stream_tests.o
+lib/stream_tests.o: src/stream_tests.c include/stream.h include/tests.h
+	$(CC) $(CFLAGS) src/stream_tests.c -o lib/stream_tests.o
 
-tests/tokenize_tests.o: tests/tokenize_tests.c tokenize.h
-	$(CC) $(CFLAGS) tests/tokenize_tests.c -o tests/tokenize_tests.o
+lib/tokenize_tests.o: src/tokenize_tests.c include/tokenize.h
+	$(CC) $(CFLAGS) src/tokenize_tests.c -o lib/tokenize_tests.o
 
-tests/run_test_script: tests/run_test_script.o $(OBJS)
-	$(CC) $(OBJS) tests/run_test_script.o -o tests/run_test_script $(LFLAGS) 
+run_test_script: lib/run_test_script.o $(OBJS)
+	$(CC) $(OBJS) lib/run_test_script.o -o run_test_script $(LFLAGS) 
 
-tests/run_test_script.o: tests/run_test_script.c collector.h eval.h scamval.h
-	$(CC) $(CFLAGS) tests/run_test_script.c -o tests/run_test_script.o
+lib/run_test_script.o: src/run_test_script.c include/collector.h include/eval.h include/scamval.h
+	$(CC) $(CFLAGS) src/run_test_script.c -o lib/run_test_script.o
+
+test_repl: lib/test_repl.o $(OBJS)
+	$(CC) $(OBJS) lib/test_repl.o -o test_repl $(LFLAGS)
+
+lib/test_repl.o: src/test_repl.c include/collector.h include/eval.h include/parse.h include/stream.h include/tokenize.h
+	$(CC) $(CFLAGS) src/test_repl.c -o lib/test_repl.o
 
 clean:
-	rm *.o
+	rm lib/*.o
 
-parser.h: tokenize.h scamval.h
+include/parser.h: include/tokenize.h include/scamval.h
 
-collector.h: scamval.h
+include/collector.h: include/scamval.h
 
-eval.h: scamval.h
+include/eval.h: include/scamval.h
 
-tokenize.h: stream.h
+include/tokenize.h: include/stream.h

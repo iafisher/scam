@@ -2,8 +2,8 @@
 *.txt
 *.scm
 scam
-tests/tests
-tests/test_repl
-tests/run_test_script
+tests
+test_repl
+run_test_script
 benchmarks
 *.o

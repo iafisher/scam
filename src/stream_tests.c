@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../stream.h"
+#include "stream.h"
 #include "tests.h"
 
 #define GETC_ASSERT(strm, c) { \
@@ -30,8 +30,7 @@ void run_stream_test(streamtest_f, char* line, char* fp);
 void stream_test_103_27(Stream* strm);
 
 void stream_tests() {
-    run_stream_test(stream_test_103_27, "(+ 103 27)", 
-                                        "tests/stream_test_file.txt");
+    run_stream_test(stream_test_103_27, "(+ 103 27)", "resources/stream_test_file.txt");
 }
 
 void run_stream_test(streamtest_f func, char* line, char* fp) {

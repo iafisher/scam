@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../collector.h"
-#include "../eval.h"
-#include "../parse.h"
-#include "../stream.h"
-#include "../tokenize.h"
+#include "collector.h"
+#include "eval.h"
+#include "parse.h"
+#include "stream.h"
+#include "tokenize.h"
 
 void stream_repl(char*, size_t, Stream*);
 void tokenize_repl(char*);
