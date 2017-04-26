@@ -7,3 +7,4 @@ test_repl
 run_test_script
 benchmarks
 *.o
+profile

@@ -39,6 +39,8 @@ int main(int argc, char** argv) {
     if (load_flag || argc == 1) {
         run_repl(env);
     }
+    gc_unset_root(env);
+    gc_close();
     return 0;
 }
 

@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
         }
         ASSERT(expect == QUERY, "expected final answer", line);
         free(buffer);
+        fclose(fp);
         gc_close();
         return 0;
     } else {

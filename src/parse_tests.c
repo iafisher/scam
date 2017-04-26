@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
+#include "collector.h"
 #include "parse.h"
 #include "scamval.h"
 
@@ -34,6 +35,7 @@ void parsetest(char* line, int n, ...) {
             exit(EXIT_FAILURE);
         }
     }
+    gc_unset_root(ast);
     va_end(args);
 }
 
@@ -45,4 +47,5 @@ void parsetest_lit(char* line, int type_we_want) {
                                         scamtype_debug_name(type_we_want));
         exit(EXIT_FAILURE);
     }
+    gc_unset_root(v);
 }
