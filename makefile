@@ -6,6 +6,8 @@ PROFILE = -pg
 CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
 LFLAGS = -Wall $(DEBUG) -lm
 
+all: scam tests run_test_script test_repl
+
 scam: build/scam.o $(OBJS)
 	$(CC) $(OBJS) build/scam.o -o scam $(LFLAGS) 
 
@@ -61,7 +63,7 @@ build/test_repl.o: src/test_repl.c include/collector.h include/eval.h include/pa
 	$(CC) $(CFLAGS) src/test_repl.c -o build/test_repl.o
 
 clean:
-	rm build/*.o
+	rm build/*.o scam tests run_test_script test_repl
 
 include/parser.h: include/tokenize.h include/scamval.h
 
