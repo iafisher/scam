@@ -64,6 +64,7 @@ struct scamval {
 
 /*** SCAMVAL CONSTRUCTORS ***/
 scamval* scamsym(const char*);
+scamval* scamsym_no_copy(char*);
 scamval* scamnull(void);
 
 

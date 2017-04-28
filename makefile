@@ -1,10 +1,11 @@
 CC = gcc
-OBJS = build/builtins.o build/collector.o build/eval.o build/parse.o build/scamval.o build/stream.o build/tokenize.o
+OBJS = build/builtins.o build/collector.o build/eval.o build/parse.o build/scamval.o build/stream.o build/tokenize.o build/grammar.o build/flex.o
+OLD_OBJS = build/builtins.o build/collector.o build/eval.o build/parse.o build/scamval.o build/stream.o build/tokenize.o
 TEST_OBJS = build/parse_tests.o build/stream_tests.o build/tokenize_tests.o
 DEBUG = -g
 PROFILE = -pg
 CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
-LFLAGS = -Wall $(DEBUG) -lm
+LFLAGS = -Wall $(DEBUG) -lm -lfl
 
 all: scam tests run_test_script test_repl
 
@@ -20,7 +21,7 @@ build/collector.o: src/collector.c include/collector.h
 build/eval.o: src/eval.c include/parse.h include/eval.h include/collector.h
 	$(CC) $(CFLAGS) src/eval.c -o build/eval.o
 
-build/parse.o: src/parse.c include/collector.h include/parser.h include/tokenize.h
+build/parse.o: src/parse.c include/collector.h include/parse.h include/tokenize.h
 	$(CC) $(CFLAGS) src/parse.c -o build/parse.o
 
 build/scam.o: src/scam.c include/collector.h include/eval.h
@@ -34,6 +35,22 @@ build/stream.o: src/stream.c include/stream.h include/collector.h
 
 build/tokenize.o: src/tokenize.c include/tokenize.h
 	$(CC) $(CFLAGS) src/tokenize.c -o build/tokenize.o
+
+build/grammar.o: src/grammar.c src/flex.c
+	$(CC) -g -c src/grammar.c -o build/grammar.o -Iinclude
+
+src/grammar.c: src/grammar.y
+	bison -d src/grammar.y
+	mv grammar.c src/
+	mv grammar.h include/
+
+build/flex.o: src/flex.c
+	$(CC) -g -c src/flex.c -o build/flex.o -Iinclude
+
+src/flex.c: src/grammar.l
+	flex src/grammar.l
+	mv flex.c src/
+	mv flex.h include/
 
 tests: build/tests.o $(OBJS) $(TEST_OBJS)
 	$(CC) $(OBJS) $(TEST_OBJS) build/tests.o -o tests $(LFLAGS) 
@@ -63,7 +80,7 @@ build/test_repl.o: src/test_repl.c include/collector.h include/eval.h include/pa
 	$(CC) $(CFLAGS) src/test_repl.c -o build/test_repl.o
 
 clean:
-	rm build/*.o scam tests run_test_script test_repl
+	rm build/*.o src/flex.c src/grammar.c include/grammar.h scam tests run_test_script test_repl
 
 include/parser.h: include/tokenize.h include/scamval.h
 

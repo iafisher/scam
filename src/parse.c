@@ -45,11 +45,11 @@ scamval* parse(char* s_or_fp, tokenizer_init_t tz_init, match_t match_f) {
     }
 }
 
-scamval* parse_str(char* s) {
+scamval* old_parse_str(char* s) {
     return parse(s, tokenizer_from_str, match_sexpr);
 }
 
-scamval* parse_file(char* fp) {
+scamval* old_parse_file(char* fp) {
     return parse(fp, tokenizer_from_file, match_program);
 }
 

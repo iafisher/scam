@@ -110,6 +110,13 @@ scamval* scamsym(const char* s) {
     return scam_internal_str(SCAM_SYM, s);
 }
 
+scamval* scamsym_no_copy(char* s) {
+    scamval* ret = gc_new_scamval(SCAM_SYM);
+    ret->vals.s = s;
+    ret->count = ret->mem_size = strlen(s);
+    return ret;
+}
+
 enum { MAX_ERROR_SIZE = 100 };
 scamval* scamerr(const char* format, ...) {
     scamval* ret = gc_new_scamval(SCAM_ERR);

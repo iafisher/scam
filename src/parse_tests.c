@@ -18,9 +18,12 @@ void parse_tests(void) {
 }
 
 void parsetest(char* line, int n, ...) {
-    scamval* ast = parse_str(line);
+    //scamval* ast = parse_str(line);
+    scamval* block = parse_str(line);
+    scamval* ast = scamseq_get(block, 1);
     if (ast->type != SCAM_SEXPR) {
         printf("Failed parse test \"%s\": expected SCAM_SEXPR object\n", line);
+        gc_close();
         exit(EXIT_FAILURE);
     }
     va_list args;
@@ -32,6 +35,7 @@ void parsetest(char* line, int n, ...) {
             printf("Failed parse test \"%s\" on element %d; ", line, i);
             printf("got %s, expected %s\n", scamtype_debug_name(given_type),
                                             scamtype_debug_name(req_type));
+            gc_close();
             exit(EXIT_FAILURE);
         }
     }
@@ -40,11 +44,14 @@ void parsetest(char* line, int n, ...) {
 }
 
 void parsetest_lit(char* line, int type_we_want) {
-    scamval* v = parse_str(line);
+    //scamval* v = parse_str(line);
+    scamval* block = parse_str(line);
+    scamval* v = scamseq_get(block, 1);
     if (v->type != type_we_want) {
         printf("Failed parse test \"%s\" ", line);
         printf("got %s, expected %s\n", scamtype_debug_name(v->type),
                                         scamtype_debug_name(type_we_want));
+        gc_close();
         exit(EXIT_FAILURE);
     }
     gc_unset_root(v);

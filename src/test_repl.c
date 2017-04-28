@@ -143,6 +143,7 @@ void parse_repl(char* command) {
         puts("\topen <file path>: open a file for parsing");
         puts("\nAny other input is parsed and printed");
     } else {
+        //scamval* ast = parse_str(command);
         scamval* ast = parse_str(command);
         scamval_print_ast(ast, 0);
         gc_unset_root(ast);
