@@ -3,7 +3,7 @@ OBJS = build/builtins.o build/collector.o build/eval.o build/scamval.o build/gra
 DEBUG = -g
 PROFILE = -pg
 CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
-LFLAGS = -Wall $(DEBUG) -lm -lfl
+LFLAGS = -Wall $(DEBUG) -lm -lfl -lreadline
 
 all: scam tests run_test_script test_repl
 

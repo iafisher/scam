@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include "collector.h"
 #include "eval.h"
 
@@ -45,15 +49,25 @@ int main(int argc, char** argv) {
 }
 
 void run_repl(scamval* env) {
+    /*
     char* buffer = NULL;
     size_t len = 0;
+    */
     while (1) {
+        /*
         printf(">>> ");
         getline(&buffer, &len, stdin);
-        if (strcmp(buffer, "quit\n") == 0) break;
-        scamval* v = eval_str(buffer, env);
+        */
+        char* input = readline(">>> ");
+        add_history(input);
+        if (strcmp(input, "quit") == 0) {
+            free(input);
+            break;
+        }
+        scamval* v = eval_str(input, env);
         scamval_println(v);
         gc_unset_root(v);
+        free(input);
     }
-    free(buffer);
+    //free(buffer);
 }
