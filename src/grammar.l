@@ -25,5 +25,5 @@ false { return FALSE; }
 [a-zA-Z=/*+^%!?<>-][a-zA-Z0-9=/*+^%!?<>-]* { yylval->sval = strdup(yytext); return SYMBOL; }
 \"(\\.|[^\\"])*\" { yylval->sval = strdup_no_quotes(yytext); return STRING; }
 [^ \t\r\n] { return yytext[0]; }
-. ;
+.|\n ;
 %%
