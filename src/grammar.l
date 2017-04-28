@@ -18,6 +18,8 @@ char* strdup_no_quotes(const char* s) {
 
 %%
 define { return DEFINE; }
+true { return TRUE; }
+false { return FALSE; }
 -?[0-9]+ { yylval->ival = strtoll(yytext, NULL, 10); return INT; }
 -?[0-9]+\.[0-9]+ { yylval->fval = strtod(yytext, NULL); return FLOAT; }
 [a-zA-Z=/*+^%!?<>-][a-zA-Z0-9=/*+^%!?<>-]* { yylval->sval = strdup(yytext); return SYMBOL; }

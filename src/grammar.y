@@ -31,69 +31,12 @@ scamval* bison_parse_file(char*);
     scamval* nodeval;
 }
 
-%token DEFINE
+%token DEFINE TRUE FALSE
 %token <ival> INT
 %token <fval> FLOAT
 %token <sval> STRING SYMBOL
-/*%type <nodeval> program block define_variable define_function expression expression_plus symbol_list symbol_plus statement_or_expression symbol value expression_star dictionary_item dictionary_list*/
+%type <nodeval> program block define_variable define_function expression expression_plus symbol_list symbol_plus statement_or_expression symbol value expression_star dictionary_item dictionary_list
 
-%%
-program:
-    block
-    ;
-block:
-    block statement_or_expression
-    | statement_or_expression
-    ;
-statement_or_expression:
-    define_variable
-    | define_function 
-    | expression
-    ;
-define_variable:
-    '(' DEFINE symbol expression ')'
-    ;
-define_function:
-    '(' DEFINE symbol_list block ')'
-    ;
-symbol_list:
-    '(' symbol_plus ')'
-    ;
-symbol_plus:
-    symbol_plus symbol
-    | symbol
-    ;
-expression:
-    value
-    | symbol
-    | '(' expression_plus ')'
-    | '(' ')'
-    ;
-expression_star:
-    expression_star expression
-    |
-    ;
-expression_plus:
-    expression_star expression
-symbol:
-    SYMBOL
-    ;
-value:
-    INT
-    | FLOAT
-    | STRING
-    | '[' expression_star ']'
-    | '{' dictionary_list '}'
-    ;
-dictionary_list:
-    dictionary_list dictionary_item
-    |
-    ;
-dictionary_item:
-    expression ':' expression
-    ;
-%%
-/*
 %%
 program:
     block { *out = $1; }
@@ -115,7 +58,7 @@ define_variable:
 define_function:
     '(' DEFINE symbol_list block ')' {
         scamval* name = scamseq_pop($3, 0);
-        scamval* lambda = scamsexpr_from_vals(2, scamsym("lambda"), $4);
+        scamval* lambda = scamsexpr_from_vals(3, scamsym("lambda"), $3, $4);
         $$ = scamsexpr_from_vals(3, scamsym("define"), name, lambda);
     }
     ;
@@ -145,6 +88,8 @@ value:
     INT { $$ = scamint($1); }
     | FLOAT { $$ = scamdec($1); }
     | STRING { $$ = scamstr_no_copy($1); }
+    | TRUE { $$ = scambool(1); }
+    | FALSE { $$ = scambool(0); }
     | '[' expression_star ']' { $$ = $2; $$->type = SCAM_LIST; }
     | '{' dictionary_list '}' { $$ = $2; scamseq_prepend($$, scamsym("dict")); }
     ;
@@ -153,10 +98,12 @@ dictionary_list:
     | { $$ = scamsexpr(); }
     ;
 dictionary_item:
-    expression ':' expression { $$ = scamsexpr_from_vals(2, $1, $3); }
+    expression ':' expression { 
+        $$ = scamsexpr_from_vals(2, $1, $3); 
+        $$->type = SCAM_LIST;
+    }
     ;
 %%
-*/
 
 int yyerror(yyscan_t scanner, scamval** out, const char* s) {
     scamval* ret = scamerr(s);
