@@ -87,7 +87,7 @@ symbol:
 value:
     INT { $$ = scamint($1); }
     | FLOAT { $$ = scamdec($1); }
-    | STRING { $$ = scamstr_escapes($1); }
+    | STRING { $$ = scamstr_from_literal($1); }
     | TRUE { $$ = scambool(1); }
     | FALSE { $$ = scambool(0); }
     | '[' expression_star ']' { $$ = $2; $$->type = SCAM_LIST; }

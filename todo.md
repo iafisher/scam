@@ -6,6 +6,8 @@
 - Better error messages
 - Clearer memory management names: gc_unset_root is completely unclear
 - Profile and improve
+- `let` and `cond` statements
+- Allow comments in REPL?
 
 # Bugs
 - none that I know of (probably a bad sign)
