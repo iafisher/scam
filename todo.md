@@ -1,6 +1,5 @@
 # Short term
 - Finish standard library
-- Ensure that define cannot appear within expressions
 - Much more standard library tests
 - Update documentation
 - Garbage collector should mark free memory instead of actually freeing it

@@ -1,11 +1,14 @@
 CC = gcc
+LEX = flex
+YACC = bison
 OBJS = build/builtins.o build/collector.o build/eval.o build/scamval.o build/grammar.o build/flex.o
+EXECS = scam tests run_test_script test_repl
 DEBUG = -g
 PROFILE = -pg
 CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
 LFLAGS = -Wall $(DEBUG) -lm -lfl -lreadline
 
-all: scam tests run_test_script test_repl
+all: $(EXECS)
 
 scam: build/scam.o $(OBJS)
 	$(CC) $(OBJS) build/scam.o -o scam $(LFLAGS) 
@@ -29,7 +32,7 @@ build/grammar.o: src/grammar.c src/flex.c
 	$(CC) -g -c src/grammar.c -o build/grammar.o -Iinclude
 
 src/grammar.c: src/grammar.y
-	bison -d src/grammar.y
+	$(YACC) -d src/grammar.y
 	mv grammar.c src/
 	mv grammar.h include/
 
@@ -37,7 +40,7 @@ build/flex.o: src/flex.c
 	$(CC) -g -c src/flex.c -o build/flex.o -Iinclude
 
 src/flex.c: src/grammar.l
-	flex src/grammar.l
+	$(LEX) src/grammar.l
 	mv flex.c src/
 	mv flex.h include/
 
@@ -60,7 +63,7 @@ build/test_repl.o: src/test_repl.c include/collector.h include/eval.h include/pa
 	$(CC) $(CFLAGS) src/test_repl.c -o build/test_repl.o
 
 clean:
-	rm build/*.o src/flex.c src/grammar.c include/grammar.h scam tests run_test_script test_repl
+	rm build/*.o src/flex.c src/grammar.c include/grammar.h $(EXECS)
 
 include/collector.h: include/scamval.h
 

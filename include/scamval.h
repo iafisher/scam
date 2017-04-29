@@ -111,6 +111,7 @@ scamval* scamstr(const char*);
 scamval* scamstr_read(FILE*);
 // Initialize a string from a character array without making a copy
 scamval* scamstr_no_copy(char*);
+scamval* scamstr_escapes(char*);
 scamval* scamstr_empty(void);
 scamval* scamstr_from_char(char);
 const char* scam_as_str(const scamval*);
