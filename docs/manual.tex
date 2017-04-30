@@ -1,0 +1,279 @@
+\documentclass{article}
+
+\newcommand{\inlinecode}{\texttt}
+
+\begin{document}
+\title{The Scam Programming Language}
+\author{Ian Fisher}
+\date{}
+\maketitle
+
+\section{Introduction}
+Scam is a toy programming language with syntax and semantics based on Scheme.
+
+\section{Syntax}
+The syntax of the language is described by the following EBNF grammar. Whitespace is only significant between symbols and numbers.
+
+\begin{verbatim}
+    EXPR    := ( <EXPR>+ ) | <VALUE>
+    VALUE   := <NUMBER> | <SYMBOL> | <LIST> | <STRING> | <DICT>
+    COMMENT := ; <any ASCII char except newline> \n
+
+    SYMBOL := <any SYMBOL_CHAR other than 0-9> <SYMBOL_CHAR>*
+    LIST   := [ <EXPR>* ]
+    DICT   := { <DICT-EXPR>* }
+    STRING := " <any ASCII char, with normal backslash escapes> "
+    NUMBER := <INTEGER> | <FLOAT>
+
+    DICT-EXPR := <EXPR> : <EXPR>
+
+    SYMBOL_CHAR := /[A-Za-z0-9\-+?!%*/<>=_]/
+    INTEGER := /-?[0-9]+/
+    DECIMAL := /-?[0-9]+\.[0-9]+/
+\end{verbatim}
+
+While negative integer literals could be matched by either the \inlinecode{SYMBOL} or \inlinecode{INTEGER} rule, they are always interpreted as integers.
+
+\section{Semantics}
+\subsection{Named values}
+Scam has immutable named values rather than mutable variables--once a named value has been assigned, it cannot change over the lifetime of the program.
+
+\subsection{Type system}
+All literals and named values belong to exactly one of the following types:
+
+\begin{itemize}
+\item{Integer}
+\item{Decimal}
+\item{Boolean}
+\item{List}
+\item{String}
+\item{Function}
+\item{Port}
+\end{itemize}
+
+Scam is dynamically typed, so the types of named values need not (and in fact cannot) be declared at assignment. A list may contain elements of different types, and a function may return values of different types.
+
+\subsubsection{Integers, decimals and booleans}
+Integers and decimals are represented internally as C \inlinecode{long long} and \inlinecode{double}, respectively. This means that integers and decimals may overflow, and that decimal calculations will suffer from floating-point errors.
+
+\subsubsection{Lists and strings}
+The list is the primary general-purpose sequence type in Scam, and the string is a specialization of the list for sequences of ASCII characters.
+
+\subsubsection{Functions}
+Functions are first-class values in Scam. The notion of a function encapsulates the function body, the enclosing environment of the function, and the names of the parameters.
+
+\subsubsection{Ports}
+Port objects are used for input and output.
+
+\section{Evaluation}
+A Scam expression is always evaluated in the context of an environment, which is a mapping from symbols to values. An environment may be enclosed by another environment; if a symbol has a mapping in both the enclosed and enclosing environment, then its value is from the mapping in the enclosed environment.
+
+The following rules define the evaluation of Scam expressions.
+
+\begin{itemize}
+\item{A literal (a number, string literal, boolean, or list) evaluates to itself.}
+\item{A symbol evaluates to its value in the current environment, or to an error if it is not defined.}
+\item{An S-expression is evaluated as follows. The first element of the expression is evaluated, and if it is not a function, or if the number of remaining elements doesn't match the arity of the function, then an error is given. Otherwise, a new environment (enclosed by the function's environment) is created where the names of the parameters are bound to the arguments, and the body of the function is evaluated in this environment.}
+\end{itemize}
+
+\section{Builtin functions and statements}
+The following special forms are available.
+
+\begin{verbatim}
+    (if <cond> <true-clause> <false-clause>)
+\end{verbatim}
+
+An if-expression evaluates to the true clause if the condition is true, and to the false clause otherwise. The condition must evaluate to a boolean. At most one of the two clauses is ever evaluated.
+
+\begin{verbatim}
+    (define <identifier> <value>)
+    (define (<function-name> <arg-list>) <body>)
+\end{verbatim}
+
+The define statement creates a new binding in the current environment. It can only appear at the top level of a program, or at the beginning of a function body. Its return value is undefined.
+
+\begin{verbatim}
+    (lambda (<arg-list>) <body>)
+\end{verbatim}
+
+The lambda expression creates an anonymous function. The function closes over its current environment, so that references to variables defined outside the function are still valid, no matter where the function is eventually invoked.
+
+\section{Standard Library}
+\subsection{Arithmetic and boolean functions}
+The following arithmetic and boolean functions are installed in the default environment. All of the functions except \inlinecode{not} except two or more arguments. \inlinecode{not} takes a single argument, and \inlinecode{-} acts as the negation operator when given only one argument.
+
+\begin{verbatim}
+    + - * / // % and or not = >= <= > < !=
+\end{verbatim}
+
+The \inlinecode{/} operator performs floating point division regardless of the types of its operands, which \inlinecode{//} operator only performs floor division on integers. \inlinecode{//} and \inlinecode{\%} are the only two arithmetic operators with type restrictions: all others work on operands of any numerical type.
+
+The comparison operators are defined for integers, decimals, and strings. The \inlinecode{=} operator is additionally usefully defined for lists and booleans; it returns \inlinecode{false} for all other types, and with mixed types (unless both are numeric).
+
+\subsection{Sequence functions}
+\subsubsection{Defined for both sequence types (strings and lists)}
+
+\begin{verbatim}
+    (head seq)
+\end{verbatim}
+
+Return the first element of the sequence, or raise an error if the sequence is empty.
+
+\begin{verbatim}
+    (tail seq)
+\end{verbatim}
+
+Return every element in the sequence after the first element. If the sequence is empty, return the empty sequence.
+
+\begin{verbatim}
+    (last seq)
+\end{verbatim}
+
+Return the last element in the sequence, or raise an error if the sequence is empty.
+
+\begin{verbatim}
+    (init seq)
+\end{verbatim}
+
+Return every element in the sequence before the last element. If the sequence is empty, return the empty sequence.
+
+\begin{verbatim}
+    (len seq)
+\end{verbatim}
+
+Return the length of the sequence.
+
+\begin{verbatim}
+    (empty? seq)
+\end{verbatim}
+
+Return \inlinecode{true} if the sequence contains no elements, \inlinecode{false} otherwise.
+
+\begin{verbatim}
+    (prepend val seq)
+\end{verbatim}
+
+Prepend the value to the sequence (note the reversed order of the sequence and value).
+
+\begin{verbatim}
+    (append seq val)
+\end{verbatim}
+
+Append the value to the sequence.
+
+\begin{verbatim}
+    (concat seq1 seq2)
+\end{verbatim}
+
+Concatenate two sequences.
+
+\begin{verbatim}
+    (get seq i)
+\end{verbatim}
+
+Return the \inlinecode{i}th element of the sequence, or raise an error if \inlinecode{i} is out of bounds.
+
+\begin{verbatim}
+    (take seq end)
+\end{verbatim}
+
+Return the subsequence ending at index \inlinecode{end}.
+
+\begin{verbatim}
+    (drop seq start)
+\end{verbatim}
+
+Return the subsequence starting at index \inlinecode{start}.
+
+\begin{verbatim}
+    (slice seq start end)
+\end{verbatim}
+
+Return the subsequence whose first element is at index \inlinecode{start} and whose last element is at index \inlinecode{end - 1}. An error is raised if \inlinecode{start} or \inlinecode{end} are out of bounds.
+
+\begin{verbatim}
+    (find seq val)
+\end{verbatim}
+
+Return the index where the value first appears in the sequence, or \inlinecode{false} if the value is not in the sequence.
+
+\begin{verbatim}
+    (rfind seq val)
+\end{verbatim}
+
+Return the index where the value last appears in the sequence, or \inlinecode{false} if the value is not in the sequence.
+
+\subsubsection{String functions}
+\begin{verbatim}
+    (upper s)
+\end{verbatim}
+
+Return the string where all of the alphabetic characters have been changed to uppercase.
+
+\begin{verbatim}
+    (lower s)
+\end{verbatim}
+
+Return the string where all of the alphabetic characters have been changed to lowercase.
+
+\begin{verbatim}
+    (trim s)
+\end{verbatim}
+
+Return the string where all whitespace has been removed from the beginning and end.
+
+\subsection{I/O functions}
+\begin{verbatim}
+    (open name mode)
+\end{verbatim}
+
+Open a new port with the given name (usually a file path) in the given mode. For details on valid modes, see the documentation for the C function \inlinecode{fopen}.
+
+\begin{verbatim}
+    (close port)
+\end{verbatim}
+
+Close the port. After a port has been closed, any read or write operation will produce an error.
+
+\begin{verbatim}
+    (write port obj)
+\end{verbatim}
+
+Write the string representation of the object to the given port.
+
+\begin{verbatim}
+    (readline port)
+\end{verbatim}
+
+Read a line from the given port. The resulting string will include a newline at the end. If \inlinecode{readline} is called with no arguments, then a line is read from \inlinecode{stdin}.
+
+\begin{verbatim}
+    (print obj)
+\end{verbatim}
+
+Write the string representation of the object to \inlinecode{stdout}.
+
+\begin{verbatim}
+    (println obj)
+\end{verbatim}
+
+Same as \inlinecode{print}, except a terminating newline is also printed.
+
+\begin{verbatim}
+    (port-good? port)
+\end{verbatim}
+
+Return \inlinecode{true} if the port is available for reading or writing.
+
+\begin{verbatim}
+    (port-tell port)
+\end{verbatim}
+
+Return the current position of the port.
+
+\begin{verbatim}
+    (port-seek port i)
+\end{verbatim}
+
+Set the current position of the port.
+\end{document}
