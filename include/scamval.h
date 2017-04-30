@@ -4,7 +4,7 @@
 // Possible values for the type field of the scamval struct
 // Note that some of these types are never exposed to the user
 enum { SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA, SCAM_PORT, SCAM_BUILTIN, 
-       SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL, SCAM_DICT };
+       SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL, SCAM_DICT, SCAM_DOT_SYM };
 
 // Type values that are only used for typechecking
 enum { SCAM_SEQ=1000, SCAM_CONTAINER, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY };
@@ -44,13 +44,13 @@ struct scamdict_t {
 struct scamval {
     int type;
     size_t count, mem_size; // used by SCAM_LIST, SCAM_SEXPR and SCAM_STR
+    scamval* nspace;
     union {
-        // DO NOT ACCESS THESE VALUES DIRECTLY! 
-        // Use the APIs defined below 
+        // DO NOT ACCESS THESE VALUES DIRECTLY! Use the APIs defined below 
         long long n; // used by SCAM_INT and SCAM_BOOL
         double d; // SCAM_DEC
         char* s; // SCAM_STR, SCAM_SYM and SCAM_ERR
-        scamval** arr; // SCAM_LIST and SCAM_SEXPR
+        scamval** arr; // SCAM_LIST, SCAM_SEXPR and SCAM_DOT_SYM
         scamfun_t* fun; // SCAM_LAMBDA
         scamport_t* port; // SCAM_PORT
         scambuiltin_t* bltin; // SCAM_BUILTIN
@@ -64,6 +64,7 @@ struct scamval {
 
 /*** SCAMVAL CONSTRUCTORS ***/
 scamval* scamsym(const char*);
+scamval* scamdotsym(char*);
 scamval* scamsym_no_copy(char*);
 scamval* scamnull(void);
 

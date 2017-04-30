@@ -38,6 +38,7 @@ static void gc_del_scamval(scamval* v) {
     switch (v->type) {
         case SCAM_LIST:
         case SCAM_SEXPR:
+        case SCAM_DOT_SYM:
             free(v->vals.arr);
             break;
         case SCAM_ERR:
@@ -125,8 +126,9 @@ scamval* gc_new_scamval(int type) {
     ret->type = type;
     ret->seen = 0;
     ret->is_root = 1;
+    ret->nspace = NULL;
     scamval_objs[first_avail] = ret;
-    // update first_avail be the first available heap location
+    // update first_avail to be the first available heap location
     while (++first_avail < count && scamval_objs[first_avail] != NULL)
         ;
     return ret;

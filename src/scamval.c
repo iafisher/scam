@@ -147,6 +147,21 @@ scamval* scamsym_no_copy(char* s) {
     return ret;
 }
 
+scamval* scamdotsym(char* s) {
+    char* next_str = strchr(s, '.');
+    if (next_str) {
+        *next_str = '\0';
+    }
+    scamval* first = scamsym_no_copy(s);
+    scamval* ret = scam_internal_seq(SCAM_DOT_SYM);
+    scamseq_append(ret, first);
+    while (next_str) {
+        scamseq_append(ret, scamsym(next_str + 1));
+        next_str = strchr(next_str + 1, '.');
+    }
+    return ret;
+}
+
 enum { MAX_ERROR_SIZE = 100 };
 scamval* scamerr(const char* format, ...) {
     scamval* ret = gc_new_scamval(SCAM_ERR);
@@ -627,12 +642,13 @@ scamval* scamdict_lookup(const scamval* dct, const scamval* key) {
     }
 }
 
-static void scamseq_print(const scamval* seq, char* open, char* close) {
+static void scamseq_print(const scamval* seq, const char* open, const char* between, 
+                                              const char* close) {
     printf("%s", open);
     for (size_t i = 0; i < scamseq_len(seq); i++) {
         scamval_print(scamseq_get(seq, i));
         if (i != seq->count - 1)
-            printf(" ");
+            printf("%s", between);
     }
     printf("%s", close);
 }
@@ -675,8 +691,8 @@ void scamval_print(const scamval* v) {
         case SCAM_INT: printf("%lli", scam_as_int(v)); break;
         case SCAM_DEC: printf("%f", scam_as_dec(v)); break;
         case SCAM_BOOL: printf("%s", scam_as_bool(v) ? "true":"false"); break;
-        case SCAM_LIST: scamseq_print(v, "[", "]"); break;
-        case SCAM_SEXPR: scamseq_print(v, "(", ")"); break;
+        case SCAM_LIST: scamseq_print(v, "[", " ", "]"); break;
+        case SCAM_SEXPR: scamseq_print(v, "(", " ", ")"); break;
         case SCAM_LAMBDA: printf("<Scam function>"); break;
         case SCAM_BUILTIN: printf("<Scam builtin>"); break;
         case SCAM_PORT: printf("<Scam port>"); break;
@@ -684,6 +700,7 @@ void scamval_print(const scamval* v) {
         case SCAM_SYM: printf("%s", scam_as_str(v)); break;
         case SCAM_ERR: printf("Error: %s", scam_as_str(v)); break;
         case SCAM_DICT: scamdict_print(v); break;
+        case SCAM_DOT_SYM: scamseq_print(v, "", ".", ""); break;
     }
 }
 
@@ -789,6 +806,7 @@ const char* scamtype_name(int type) {
         case SCAM_ERR: return "error";
         case SCAM_NULL: return "null";
         case SCAM_DICT: return "dictionary";
+        case SCAM_DOT_SYM: return "dotted symbol";
         // abstract types
         case SCAM_SEQ: return "list or string";
         case SCAM_CONTAINER: return "list, string or dictionary";
@@ -814,6 +832,7 @@ const char* scamtype_debug_name(int type) {
         case SCAM_ERR: return "SCAM_ERR";
         case SCAM_NULL: return "SCAM_NULL";
         case SCAM_DICT: return "SCAM_DICT";
+        case SCAM_DOT_SYM: return "SCAM_DOT_SYM";
         // abstract types
         case SCAM_SEQ: return "SCAM_SEQ";
         case SCAM_CONTAINER: return "SCAM_CONTAINER";

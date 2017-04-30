@@ -36,6 +36,9 @@ scamval* eval_dict(scamval*, scamval*);
 scamval* eval(scamval* ast, scamval* env) {
     if (ast->type == SCAM_SYM) {
         return scamdict_lookup(env, ast);
+    /*} else if (ast->type == SCAM_DOT_SYM) {
+        SCAM_ASSERT(ast->nspace != NULL, ast, "no namespace found");
+        return ast;*/
     } else if (ast->type == SCAM_SEXPR) {
         SCAM_ASSERT(scamseq_len(ast) > 0, ast, "empty expression");
         // handle special expressions and statements

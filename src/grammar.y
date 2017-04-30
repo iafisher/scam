@@ -34,7 +34,7 @@ scamval* bison_parse_file(char*);
 %token DEFINE TRUE FALSE
 %token <ival> INT
 %token <fval> FLOAT
-%token <sval> STRING SYMBOL
+%token <sval> STRING SYMBOL DOTTED_SYMBOL
 %type <nodeval> program block define_variable define_function expression expression_plus symbol_list symbol_plus statement_or_expression symbol value expression_star dictionary_item dictionary_list
 
 %%
@@ -90,6 +90,7 @@ value:
     | STRING { $$ = scamstr_from_literal($1); }
     | TRUE { $$ = scambool(1); }
     | FALSE { $$ = scambool(0); }
+    | DOTTED_SYMBOL { $$ = scamdotsym($1); }
     | '[' expression_star ']' { $$ = $2; $$->type = SCAM_LIST; }
     | '{' dictionary_list '}' { $$ = $2; scamseq_prepend($$, scamsym("dict")); }
     ;
