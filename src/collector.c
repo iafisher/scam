@@ -58,6 +58,7 @@ static void gc_del_scamval(scamval* v) {
             free(v->vals.bltin);
             break;
         case SCAM_DICT:
+        case SCAM_TYPE_OBJ:
             free(v->vals.dct);
             break;
     }
@@ -160,6 +161,7 @@ scamval* gc_copy_scamval(scamval* v) {
         case SCAM_ERR:
             return scamerr(scam_as_str(v));
         case SCAM_DICT:
+        case SCAM_TYPE_OBJ:
         {
             scamval* ret = scamdict(scamdict_enclosing(v));
             scamdict_set_keys(ret, gc_copy_scamval(scamdict_keys(v)));

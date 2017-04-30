@@ -891,8 +891,8 @@ scamval* scamdict_builtins(void) {
     // dictionary functions
     add_builtin(env, "bind", builtin_bind);
     // constructors
-    add_const_builtin(env, "list", builtin_list);
-    add_const_builtin(env, "dict", builtin_dict);
+    //add_const_builtin(env, "list", builtin_list);
+    //add_const_builtin(env, "dict", builtin_dict);
     // IO functions
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);
@@ -921,5 +921,9 @@ scamval* scamdict_builtins(void) {
     scamdict_bind(env, scamsym("stdin"), scamport(stdin));
     scamdict_bind(env, scamsym("stdout"), scamport(stdout));
     scamdict_bind(env, scamsym("stderr"), scamport(stderr));
+    // type objects
+    scamval* list_type = scamtype_obj();
+    add_const_builtin(list_type, "len", builtin_len);
+    scamdict_bind(env, scamsym("list"), list_type);
     return env;
 }

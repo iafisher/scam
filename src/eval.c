@@ -36,14 +36,25 @@ scamval* eval_dict(scamval*, scamval*);
 scamval* eval(scamval* ast, scamval* env) {
     if (ast->type == SCAM_SYM) {
         return scamdict_lookup(env, ast);
-    /*} else if (ast->type == SCAM_DOT_SYM) {
-        SCAM_ASSERT(ast->nspace != NULL, ast, "no namespace found");
-        return ast;*/
+    } else if (ast->type == SCAM_DOT_SYM) {
+        if (scamseq_len(ast) == 1) {
+            return eval(scamseq_get(ast, 0), env);
+        } else {
+            scamval* first = eval(scamseq_pop(ast, 0), env);
+            if (first->type == SCAM_TYPE_OBJ) {
+                scamval* ret = eval(ast, first);
+                gc_unset_root(first);
+                return ret;
+            } else {
+                gc_unset_root(first);
+                return scamerr("expected type object on left side of dot");
+            }
+        }
     } else if (ast->type == SCAM_SEXPR) {
         SCAM_ASSERT(scamseq_len(ast) > 0, ast, "empty expression");
         // handle special expressions and statements
         if (scamseq_get(ast, 0)->type == SCAM_SYM) {
-            char* name = scamseq_get(ast, 0)->vals.s;
+            const char* name = scam_as_str(scamseq_get(ast, 0));
             if (strcmp(name, "define") == 0) {
                 return eval_define(ast, env);
             } else if (strcmp(name, "if") == 0) {
