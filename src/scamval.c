@@ -148,18 +148,7 @@ scamval* scamsym_no_copy(char* s) {
 }
 
 scamval* scamdotsym(char* s) {
-    char* next_str = strchr(s, '.');
-    if (next_str) {
-        *next_str = '\0';
-    }
-    scamval* first = scamsym_no_copy(s);
-    scamval* ret = scam_internal_seq(SCAM_DOT_SYM);
-    scamseq_append(ret, first);
-    while (next_str) {
-        scamseq_append(ret, scamsym(next_str + 1));
-        next_str = strchr(next_str + 1, '.');
-    }
-    return ret;
+    return scam_internal_seq(SCAM_DOT_SYM);
 }
 
 enum { MAX_ERROR_SIZE = 100 };
