@@ -802,6 +802,10 @@ scamval* scamerr_type(const char* name, size_t pos, int got, int expected) {
 
 const char* scamtype_name(int type) {
     switch (type) {
+        #define EXPAND_TYPE(type_val, type_name) \
+            case type_val: return type_name;
+        #include "type.def"
+        /*
         case SCAM_INT: return "integer";
         case SCAM_DEC: return "decimal";
         case SCAM_BOOL: return "boolean";
@@ -823,33 +827,16 @@ const char* scamtype_name(int type) {
         case SCAM_NUM: return "integer or decimal";
         case SCAM_CMP: return "integer, decimal or string";
         case SCAM_ANY: return "any value";
+        */
         default: return "bad scamval type";
     }
 }
 
 const char* scamtype_debug_name(int type) {
     switch (type) {
-        case SCAM_INT: return "SCAM_INT";
-        case SCAM_DEC: return "SCAM_DEC";
-        case SCAM_BOOL: return "SCAM_BOOL";
-        case SCAM_LIST: return "SCAM_LIST";
-        case SCAM_STR: return "SCAM_STR";
-        case SCAM_LAMBDA: return "SCAM_LAMBDA";
-        case SCAM_PORT: return "SCAM_PORT";
-        case SCAM_BUILTIN: return "SCAM_BUILTIN";
-        case SCAM_SEXPR: return "SCAM_SEXPR";
-        case SCAM_SYM: return "SCAM_SYM";
-        case SCAM_ERR: return "SCAM_ERR";
-        case SCAM_NULL: return "SCAM_NULL";
-        case SCAM_DICT: return "SCAM_DICT";
-        case SCAM_DOT_SYM: return "SCAM_DOT_SYM";
-        case SCAM_TYPE_OBJ: return "SCAM_TYPE_OBJ";
-        // abstract types
-        case SCAM_SEQ: return "SCAM_SEQ";
-        case SCAM_CONTAINER: return "SCAM_CONTAINER";
-        case SCAM_NUM: return "SCAM_NUM";
-        case SCAM_CMP: return "SCAM_CMP";
-        case SCAM_ANY: return "SCAM_ANY";
+        #define EXPAND_TYPE(type_val, type_name) \
+            case type_val: return #type_val ;
+        #include "type.def"
         default: return "bad scamval type";
     }
 }

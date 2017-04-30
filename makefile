@@ -25,7 +25,7 @@ build/eval.o: src/eval.c include/parse.h include/eval.h include/collector.h
 build/scam.o: src/scam.c include/collector.h include/eval.h
 	$(CC) $(CFLAGS) src/scam.c -o build/scam.o
 
-build/scamval.o: src/scamval.c include/collector.h include/scamval.h
+build/scamval.o: src/scamval.c src/type.def include/collector.h include/scamval.h
 	$(CC) $(CFLAGS) src/scamval.c -o build/scamval.o
 
 build/grammar.o: src/grammar.c src/flex.c
@@ -68,3 +68,5 @@ clean:
 include/collector.h: include/scamval.h
 
 include/eval.h: include/scamval.h
+
+include/scamval.h: src/type.def

@@ -3,11 +3,11 @@
 
 // Possible values for the type field of the scamval struct
 // Note that some of these types are never exposed to the user
-enum { SCAM_INT, SCAM_DEC, SCAM_BOOL, SCAM_LIST, SCAM_STR, SCAM_LAMBDA, SCAM_PORT, SCAM_BUILTIN, 
-       SCAM_SEXPR, SCAM_SYM, SCAM_ERR, SCAM_NULL, SCAM_DICT, SCAM_DOT_SYM, SCAM_TYPE_OBJ };
-
-// Type values that are only used for typechecking
-enum { SCAM_SEQ=1000, SCAM_CONTAINER, SCAM_NUM, SCAM_CMP, SCAM_FUNCTION, SCAM_ANY };
+enum {
+#define EXPAND_TYPE(type_val, type_name) \
+    type_val,
+#include "../src/type.def"
+};
 
 // Forward declaration of scamval and scamdict
 struct scamval;
