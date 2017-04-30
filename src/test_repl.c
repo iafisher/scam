@@ -1,10 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <readline/readline.h>
-#include <readline/history.h>
-
 #include "collector.h"
 #include "eval.h"
 #include "parse.h"
@@ -18,6 +14,8 @@ enum { REPL_EVAL, REPL_PARSE };
 int main(int argc, char** argv) {
     // Run the REPL
     int mode = REPL_EVAL;
+    char* buffer = NULL;
+    size_t s_len = 0;
     scamval* env = scamdict_builtins();
     print_generic_help();
     for (;;) {
@@ -26,24 +24,28 @@ int main(int argc, char** argv) {
             case REPL_EVAL: printf("eval"); break;
             default: printf("unknown mode"); break;
         }
-        char* input = readline(">>> ");
-        add_history(input);
-        if (strcmp(input, "quit") == 0) {
+        printf(">>> ");
+        int end = getline(&buffer, &s_len, stdin);
+        // remove trailing newline
+        if (end > 0) {
+            buffer[--end] = '\0';
+        }
+        if (strcmp(buffer, "quit") == 0) {
             break;
-        } else if (strcmp(input, "!eval") == 0) {
+        } else if (strcmp(buffer, "!eval") == 0) {
             mode = REPL_EVAL;
             continue;
-        } else if (strcmp(input, "!parse") == 0) {
+        } else if (strcmp(buffer, "!parse") == 0) {
             mode = REPL_PARSE;
             continue;
         }
         if (mode == REPL_PARSE) {
-            parse_repl(input);
+            parse_repl(buffer);
         } else if (mode == REPL_EVAL) {
-            eval_repl(input, env);
+            eval_repl(buffer, env);
         }
-        free(input);
     }
+    if (buffer) free(buffer);
     gc_close();
     return 0;
 }
