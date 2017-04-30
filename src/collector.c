@@ -9,6 +9,8 @@ static size_t first_avail = 0;
 // if you change either of these, make sure that the scamdict function in scamval.c will still work
 enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 
+static void gc_init();
+
 // Mark all objects which can be reached from the given object
 static void gc_mark(scamval* v) {
     if (v != NULL && !v->seen) {
@@ -105,11 +107,7 @@ void gc_set_root(scamval* v) {
 scamval* gc_new_scamval(int type) {
     if (scamval_objs == NULL) {
         // initialize internal heap for the first time
-        count = HEAP_INIT;
-        scamval_objs = gc_malloc(count * sizeof *scamval_objs);
-        for (size_t i = 0; i < count; i++) {
-            scamval_objs[i] = NULL;
-        }
+        gc_init();
     } else if (first_avail == count) {
         gc_collect();
         if (first_avail == count) {
@@ -127,7 +125,6 @@ scamval* gc_new_scamval(int type) {
     ret->type = type;
     ret->seen = 0;
     ret->is_root = 1;
-    ret->nspace = NULL;
     scamval_objs[first_avail] = ret;
     // update first_avail to be the first available heap location
     while (++first_avail < count && scamval_objs[first_avail] != NULL)
@@ -280,4 +277,12 @@ void* gc_calloc(size_t num, size_t size) {
         }
     }
     return ret;
+}
+
+static void gc_init() {
+    count = HEAP_INIT;
+    scamval_objs = gc_malloc(count * sizeof *scamval_objs);
+    for (size_t i = 0; i < count; i++) {
+        scamval_objs[i] = NULL;
+    }
 }

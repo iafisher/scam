@@ -9,11 +9,9 @@ enum {
 #include "../src/type.def"
 };
 
-// Forward declaration of scamval and scamdict
+// Forward declaration of scamval
 struct scamval;
 typedef struct scamval scamval;
-struct scamdict_t;
-typedef struct scamdict_t scamdict_t;
 
 typedef scamval* (*scambuiltin_fun)(scamval*);
 typedef struct {
@@ -33,18 +31,17 @@ typedef struct {
     FILE* fp;
 } scamport_t;
 
-struct scamdict_t {
+typedef struct {
     // pointer to enclosing dict (if dict is an environment)
     scamval* enclosing;
     // symbols and values are stored as scamval lists
     scamval* syms;
     scamval* vals;
-};
+} scamdict_t;
 
 struct scamval {
     int type;
     size_t count, mem_size; // used by SCAM_LIST, SCAM_SEXPR and SCAM_STR
-    scamval* nspace;
     union {
         // DO NOT ACCESS THESE VALUES DIRECTLY! Use the APIs defined below 
         long long n; // used by SCAM_INT and SCAM_BOOL
@@ -64,9 +61,9 @@ struct scamval {
 
 /*** SCAMVAL CONSTRUCTORS ***/
 scamval* scamsym(const char*);
-scamval* scamdotsym();
 scamval* scamsym_no_copy(char*);
 scamval* scamnull(void);
+scamval* scamdotsym();
 
 
 /*** NUMERIC API ***/

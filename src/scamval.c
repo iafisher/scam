@@ -563,7 +563,7 @@ scamval* scamdict(scamval* enclosing) {
     return ret;
 }
 
-scamval* scamtype_obj(void) {
+scamval* scamtype_obj() {
     scamval* ret = scamdict(NULL);
     if (ret) {
         ret->type = SCAM_TYPE_OBJ;

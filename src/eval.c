@@ -32,6 +32,7 @@ scamval* eval_and(scamval*, scamval*);
 scamval* eval_or(scamval*, scamval*);
 scamval* eval_list(scamval*, scamval*);
 scamval* eval_dict(scamval*, scamval*);
+scamval* eval_type(scamval*, scamval*);
 
 scamval* eval(scamval* ast, scamval* env) {
     if (ast->type == SCAM_SYM) {
@@ -65,6 +66,8 @@ scamval* eval(scamval* ast, scamval* env) {
                 return eval_and(ast, env);
             } else if (strcmp(name, "or") == 0) {
                 return eval_or(ast, env);
+            } else if (strcmp(name, "type") == 0) {
+                return eval_type(ast, env);
             }
         }
         scamval* arglist = eval_list(ast, env);
@@ -221,4 +224,14 @@ scamval* eval_list(scamval* ast, scamval* env) {
         }
     }
     return ast;
+}
+
+scamval* eval_type(scamval* ast, scamval* env) {
+    SCAM_ASSERT_ARITY("type", ast, 2)
+    scamval* v = eval(scamseq_get(ast, 1), env);
+    scamval* type = scamint(v->type);
+    scamval* ret = scamdict_lookup(env, type);
+    gc_unset_root(type);
+    gc_unset_root(v);
+    return ret;
 }

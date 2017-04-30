@@ -924,6 +924,6 @@ scamval* scamdict_builtins(void) {
     // type objects
     scamval* list_type = scamtype_obj();
     add_const_builtin(list_type, "len", builtin_len);
-    scamdict_bind(env, scamsym("list"), list_type);
+    scamdict_bind(env, scamint(SCAM_LIST), list_type);
     return env;
 }
