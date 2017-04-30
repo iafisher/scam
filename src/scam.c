@@ -49,15 +49,7 @@ int main(int argc, char** argv) {
 }
 
 void run_repl(scamval* env) {
-    /*
-    char* buffer = NULL;
-    size_t len = 0;
-    */
     while (1) {
-        /*
-        printf(">>> ");
-        getline(&buffer, &len, stdin);
-        */
         char* input = readline(">>> ");
         add_history(input);
         if (strcmp(input, "quit") == 0) {
@@ -69,5 +61,4 @@ void run_repl(scamval* env) {
         gc_unset_root(v);
         free(input);
     }
-    //free(buffer);
 }
