@@ -12,5 +12,4 @@ invoke_valgrind ./tests
 invoke_run_test_script resources/test_stdlib.scm
 invoke_run_test_script resources/test_core.scm
 invoke_run_test_script resources/test_escapes.scm
-invoke_run_test_script resources/test_dict.scm
 invoke_run_test_script resources/test_programs.scm

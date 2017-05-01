@@ -892,7 +892,7 @@ scamval* scamdict_builtins(void) {
     add_builtin(env, "bind", builtin_bind);
     // constructors
     //add_const_builtin(env, "list", builtin_list);
-    //add_const_builtin(env, "dict", builtin_dict);
+    add_const_builtin(env, "dict", builtin_dict);
     // IO functions
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);

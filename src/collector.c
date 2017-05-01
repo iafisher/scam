@@ -28,6 +28,7 @@ static void gc_mark(scamval* v) {
                 gc_mark(v->vals.fun->env);
                 break;
             case SCAM_DICT:
+            case SCAM_TYPE_OBJ:
                 gc_mark(v->vals.dct->enclosing);
                 gc_mark(v->vals.dct->syms);
                 gc_mark(v->vals.dct->vals);
