@@ -28,7 +28,6 @@ static void gc_mark(scamval* v) {
                 gc_mark(v->vals.fun->env);
                 break;
             case SCAM_DICT:
-            case SCAM_TYPE_OBJ:
                 gc_mark(v->vals.dct->enclosing);
                 gc_mark(v->vals.dct->syms);
                 gc_mark(v->vals.dct->vals);
@@ -41,7 +40,6 @@ static void gc_del_scamval(scamval* v) {
     switch (v->type) {
         case SCAM_LIST:
         case SCAM_SEXPR:
-        case SCAM_DOT_SYM:
             free(v->vals.arr);
             break;
         case SCAM_ERR:
@@ -61,7 +59,6 @@ static void gc_del_scamval(scamval* v) {
             free(v->vals.bltin);
             break;
         case SCAM_DICT:
-        case SCAM_TYPE_OBJ:
             free(v->vals.dct);
             break;
     }
@@ -159,7 +156,6 @@ scamval* gc_copy_scamval(scamval* v) {
         case SCAM_ERR:
             return scamerr(scam_as_str(v));
         case SCAM_DICT:
-        case SCAM_TYPE_OBJ:
         {
             scamval* ret = scamdict(scamdict_enclosing(v));
             scamdict_set_keys(ret, gc_copy_scamval(scamdict_keys(v)));

@@ -63,7 +63,6 @@ struct scamval {
 scamval* scamsym(const char*);
 scamval* scamsym_no_copy(char*);
 scamval* scamnull(void);
-scamval* scamdotsym();
 
 
 /*** NUMERIC API ***/

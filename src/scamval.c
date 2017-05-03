@@ -147,10 +147,6 @@ scamval* scamsym_no_copy(char* s) {
     return ret;
 }
 
-scamval* scamdotsym(char* s) {
-    return scam_internal_seq(SCAM_DOT_SYM);
-}
-
 enum { MAX_ERROR_SIZE = 100 };
 scamval* scamerr(const char* format, ...) {
     scamval* ret = gc_new_scamval(SCAM_ERR);
@@ -563,14 +559,6 @@ scamval* scamdict(scamval* enclosing) {
     return ret;
 }
 
-scamval* scamtype_obj() {
-    scamval* ret = scamdict(NULL);
-    if (ret) {
-        ret->type = SCAM_TYPE_OBJ;
-    }
-    return ret;
-}
-
 scamval* scamdict_keys(const scamval* dct) { return dct->vals.dct->syms; }
 scamval* scamdict_vals(const scamval* dct) { return dct->vals.dct->vals; }
 scamval* scamdict_enclosing(const scamval* dct) { 
@@ -697,8 +685,6 @@ void scamval_print(const scamval* v) {
         case SCAM_SYM: printf("%s", scam_as_str(v)); break;
         case SCAM_ERR: printf("Error: %s", scam_as_str(v)); break;
         case SCAM_DICT: scamdict_print(v); break;
-        case SCAM_DOT_SYM: scamseq_print(v, "", ".", ""); break;
-        case SCAM_TYPE_OBJ: printf("<Scam type object>"); break;
     }
 }
 
@@ -808,8 +794,6 @@ const char* scamtype_name(int type) {
         case SCAM_ERR: return "error";
         case SCAM_NULL: return "null";
         case SCAM_DICT: return "dictionary";
-        case SCAM_DOT_SYM: return "dotted symbol";
-        case SCAM_TYPE_OBJ: return "type";
         // abstract types
         case SCAM_SEQ: return "list or string";
         case SCAM_CONTAINER: return "list, string or dictionary";
