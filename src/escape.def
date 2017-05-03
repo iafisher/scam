@@ -1,0 +1,13 @@
+ESCAPE('\a', 'a')
+ESCAPE('\b', 'b')
+ESCAPE('\f', 'f')
+ESCAPE('\n', 'n')
+ESCAPE('\r', 'r')
+ESCAPE('\t', 't')
+ESCAPE('\v', 'v')
+ESCAPE('\\', '\\')
+ESCAPE('\"', '"')
+OPTIONAL_ESCAPE('\'', '\'')
+OPTIONAL_ESCAPE('\?', '?')
+#undef ESCAPE
+#undef OPTIONAL_ESCAPE
