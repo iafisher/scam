@@ -554,6 +554,11 @@ scamval* builtin_dict(scamval* args) {
     return ret;
 }
 
+scamval* builtin_str(scamval* args) {
+    TYPECHECK_ARGS("str", args, 1, SCAM_ANY);
+    return scamstr_no_copy(scamval_to_str(scamseq_get(args, 0)));
+}
+
 scamval* builtin_print(scamval* args) {
     TYPECHECK_ARGS("print", args, 1, SCAM_ANY);
     scamval* arg = scamseq_get(args, 0);
@@ -897,6 +902,7 @@ scamval* scamdict_builtins(void) {
     // constructors
     add_const_builtin(env, "list", builtin_list);
     add_const_builtin(env, "dict", builtin_dict);
+    add_const_builtin(env, "str", builtin_str);
     // IO functions
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);

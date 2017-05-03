@@ -670,8 +670,131 @@ static void scamstr_print(const scamval* s) {
     putchar('"');
 }
 
+char* scamstr_to_str(const scamval* v) {
+    size_t n = scamstr_len(v);
+    // count escaped characters, which need extra space in the output
+    for (size_t i = 0; i < n; i++) {
+        char c = scamstr_get(v, i);
+        if (c == '\a' || c == '\b' || c == '\f' || c == '\n' || c == '\r' || c == '\t' ||
+            c == '\v' || c == '\\' || c == '\"') {
+            n++;
+        }
+    }
+    char* ret = malloc((n + 3) * sizeof *ret);
+    if (!ret) return NULL;
+    ret[0] = '"';
+    size_t ret_i = 1;
+    for (size_t i = 0; i < scamstr_len(v); i++) {
+        char c = scamstr_get(v, i);
+        switch (c) {
+            case '\a': ret[ret_i] = '\\'; ret[++ret_i] = 'a'; break;
+            case '\b': ret[ret_i] = '\\'; ret[++ret_i] = 'b'; break;
+            case '\f': ret[ret_i] = '\\'; ret[++ret_i] = 'f'; break;
+            case '\n': ret[ret_i] = '\\'; ret[++ret_i] = 'n'; break;
+            case '\r': ret[ret_i] = '\\'; ret[++ret_i] = 'r'; break;
+            case '\t': ret[ret_i] = '\\'; ret[++ret_i] = 't'; break;
+            case '\v': ret[ret_i] = '\\'; ret[++ret_i] = 'v'; break;
+            case '\\': ret[ret_i] = '\\'; ret[++ret_i] = '\\'; break;
+            case '\"': ret[ret_i] = '\\'; ret[++ret_i] = '"'; break;
+            default: ret[ret_i] = c;
+        }
+        ret_i++;
+    }
+    ret[ret_i++] = '"';
+    ret[ret_i] = '\0';
+    return ret;
+}
+
+char* scamseq_to_str(const scamval* v, const char* start, const char* mid, const char* end) {
+    if (scamseq_len(v) > 0) {
+        size_t n = strlen(start) + (strlen(mid) * (scamseq_len(v) - 1)) + strlen(end);
+        char* substrs[scamseq_len(v)];
+        for (size_t i = 0; i < scamseq_len(v); i++) {
+            substrs[i] = scamval_to_str(scamseq_get(v, i));
+            n += strlen(substrs[i]);
+        }
+        char* ret = malloc((n + 1) * sizeof *ret);
+        if (!ret) return NULL;
+        size_t index_in_ret = 0;
+        strcpy(ret, start);
+        index_in_ret += strlen(start);
+        for (size_t i = 0; i < scamseq_len(v); i++) {
+            strcpy(ret + index_in_ret, substrs[i]);
+            index_in_ret += strlen(substrs[i]);
+            if (i != scamseq_len(v) - 1) {
+                strcpy(ret + index_in_ret, mid);
+                index_in_ret += strlen(mid);
+            }
+            free(substrs[i]);
+        }
+        strcpy(ret + index_in_ret, end);
+        return ret;
+    } else {
+        char* ret;
+        asprintf(&ret, "%s%s", start, end);
+        return ret;
+    }
+}
+
+char* scamdict_to_str(const scamval* v) {
+    if (scamdict_len(v) > 0) {
+        size_t n = 1 + (scamdict_len(v) - 1) + 1;
+        char* key_strs[scamdict_len(v)];
+        char* val_strs[scamdict_len(v)];
+        for (size_t i = 0; i < scamdict_len(v); i++) {
+            key_strs[i] = scamval_to_str(scamdict_key(v, i));
+            val_strs[i] = scamval_to_str(scamdict_val(v, i));
+            n += strlen(key_strs[i]) + strlen(val_strs[i]) + 1;
+        }
+        char* ret = malloc((n + 1) * sizeof *ret);
+        if (!ret) return NULL;
+        size_t index_in_ret = 0;
+        ret[index_in_ret++] = '{';
+        for (size_t i = 0; i < scamdict_len(v); i++) {
+            strcpy(ret + index_in_ret, key_strs[i]);
+            index_in_ret += strlen(key_strs[i]);
+            ret[index_in_ret++] = ':';
+            strcpy(ret + index_in_ret, val_strs[i]);
+            index_in_ret += strlen(val_strs[i]);
+            if (i != scamdict_len(v) - 1) {
+                ret[index_in_ret++] = ' ';
+            }
+            free(key_strs[i]);
+            free(val_strs[i]);
+        }
+        ret[index_in_ret++] = '}';
+        ret[index_in_ret] = '\0';
+        return ret;
+    } else {
+        return strdup("{}");
+    }
+}
+
+char* scamval_to_str(const scamval* v) {
+    if (!v) return NULL;
+    char* ret = NULL;
+    switch (v->type) {
+        case SCAM_INT: asprintf(&ret, "%lli", scam_as_int(v)); break;
+        case SCAM_DEC: asprintf(&ret, "%f", scam_as_dec(v)); break;
+        case SCAM_BOOL: asprintf(&ret, "%s", scam_as_bool(v) ? "true" : "false"); break;
+        case SCAM_LIST: return scamseq_to_str(v, "[", " ", "]");
+        case SCAM_SEXPR: return scamseq_to_str(v, "(", " ", ")");
+        case SCAM_LAMBDA: asprintf(&ret, "<Scam function>"); break;
+        case SCAM_BUILTIN: asprintf(&ret, "<Scam builtin>"); break;
+        case SCAM_PORT: asprintf(&ret, "<Scam port>"); break;
+        case SCAM_STR: return scamstr_to_str(v);
+        case SCAM_SYM: asprintf(&ret, "Error: %s", scam_as_str(v)); break;
+        case SCAM_DICT: return scamdict_to_str(v);
+    }
+    return ret;
+}
+
 void scamval_print(const scamval* v) {
     if (!v) return;
+    char* as_str = scamval_to_str(v);
+    printf("%s", as_str);
+    free(as_str);
+    /*
     switch (v->type) {
         case SCAM_INT: printf("%lli", scam_as_int(v)); break;
         case SCAM_DEC: printf("%f", scam_as_dec(v)); break;
@@ -686,6 +809,7 @@ void scamval_print(const scamval* v) {
         case SCAM_ERR: printf("Error: %s", scam_as_str(v)); break;
         case SCAM_DICT: scamdict_print(v); break;
     }
+    */
 }
 
 void scamval_println(const scamval* v) {

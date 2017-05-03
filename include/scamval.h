@@ -180,6 +180,7 @@ void scamdict_set_vals(scamval* dct, scamval* new_vals);
 
 
 /*** SCAMVAL PRINTING ***/
+char* scamval_to_str(const scamval*);
 void scamval_print(const scamval*);
 void scamval_println(const scamval*);
 void scamval_print_debug(const scamval*);
