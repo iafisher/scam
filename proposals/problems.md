@@ -1,6 +1,5 @@
 ## Bugs
 - REPL does not allow comments (This is because I can't figure out the flex regular expression syntax to match EOF.)
-- List items are not evaluated.
 
 
 ## Design flaws

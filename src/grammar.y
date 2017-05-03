@@ -90,7 +90,7 @@ value:
     | STRING { $$ = scamstr_from_literal($1); }
     | TRUE { $$ = scambool(1); }
     | FALSE { $$ = scambool(0); }
-    | '[' expression_star ']' { $$ = $2; $$->type = SCAM_LIST; }
+    | '[' expression_star ']' { $$ = $2; scamseq_prepend($$, scamsym("list")); }
     | '{' dictionary_list '}' { $$ = $2; scamseq_prepend($$, scamsym("dict")); }
     ;
 dictionary_list:
