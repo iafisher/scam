@@ -205,6 +205,12 @@ Return the index where the value last appears in the sequence, or \inlinecode{fa
 
 \subsubsection{String functions}
 \begin{verbatim}
+    (str obj)
+\end{verbatim}
+
+Return the string representation of the object. This function is not currently implemented.
+
+\begin{verbatim}
     (upper s)
 \end{verbatim}
 
@@ -220,9 +226,59 @@ Return the string where all of the alphabetic characters have been changed to lo
     (trim s)
 \end{verbatim}
 
-Return the string where all whitespace has been removed from the beginning and end.
+Return the string without leading and trailing whitespace.
 
-\subsection{I/O functions}
+\begin{verbatim}
+    (split s)
+\end{verbatim}
+
+Return a list of the words in \inlinecode{s}, where a word is defined as a sequence of non-whitespace characters. If \inlinecode{s} contains no non-whitespace characters then the empty list is returned.
+
+\subsubsection{List functions}
+\begin{verbatim}
+    (list x y ...)
+\end{verbatim}
+
+Alias for \inlinecode{[x y ...]}.
+
+\begin{verbatim}
+    (sort seq)
+\end{verbatim}
+
+Return \inlinecode{seq} sorted in ascending order.
+
+\begin{verbatim}
+    (map f seq)
+\end{verbatim}
+
+Return the list \inlinecode{[(f (get seq 0)) (f (get seq 1)) ...]}
+
+\begin{verbatim}
+    (filter pred seq)
+\end{verbatim}
+
+Return the list containing all elements of \inlinecode{seq} for which the unary function \inlinecode{pred} returns \inlinecode{true}.
+
+\subsection{Dictionary functions}
+\begin{verbatim}
+    (dict key-val1 key-val2 ...)
+\end{verbatim}
+
+Construct a dictionary from the key-value pairs. This function is exactly equivalent to \inlinecode{\{key1:val1 key2:val2\}}.
+
+\begin{verbatim}
+    (get dict key)
+\end{verbatim}
+
+Return the value of \inlinecode{key} in \inlinecode{dict}, raising an error if no key exists.
+
+\begin{verbatim}
+    (bind dict key val)
+\end{verbatim}
+
+Bind \inlinecode{key} to \inlinecode{val} in \inlinecode{dict} so that subsequent calls to \inlinecode{(get dict key)} return \inlinecode{val}.
+
+\subsection{I/O functions and objects}
 \begin{verbatim}
     (open name mode)
 \end{verbatim}
@@ -239,13 +295,19 @@ Close the port. After a port has been closed, any read or write operation will p
     (write port obj)
 \end{verbatim}
 
-Write the string representation of the object to the given port.
+Write the string representation of the object to the given port. This function is currently not implemented.
 
 \begin{verbatim}
     (readline port)
 \end{verbatim}
 
 Read a line from the given port. The resulting string will include a newline at the end. If \inlinecode{readline} is called with no arguments, then a line is read from \inlinecode{stdin}.
+
+\begin{verbatim}
+    (readchar port)
+\end{verbatim}
+
+Read a single character from the given port and return it as a string.
 
 \begin{verbatim}
     (print obj)
@@ -269,11 +331,81 @@ Return \inlinecode{true} if the port is available for reading or writing.
     (port-tell port)
 \end{verbatim}
 
-Return the current position of the port.
+Return the current position of the port. This function is currently not implemented.
 
 \begin{verbatim}
     (port-seek port i)
 \end{verbatim}
 
-Set the current position of the port.
+Set the current position of the port. This function is currently not implemented.
+
+\begin{verbatim}
+    stdin stdout stderr
+\end{verbatim}
+
+These names are automatically defined and bound to their usual streams.
+
+\subsection{Math functions}
+\begin{verbatim}
+    (ceil x)
+\end{verbatim}
+
+Return the smallest integer that is greater than \inlinecode{x}. \inlinecode{x} must be a decimal object.
+
+\begin{verbatim}
+    (floor x)
+\end{verbatim}
+
+Return the largest integer that is smaller than \inlinecode{x}. \inlinecode{x} must be a decimal object.
+
+\begin{verbatim}
+    (divmod n d)
+\end{verbatim}
+
+Return the list \inlinecode{[(// n d)  ( \% n d))]}. \inlinecode{d} cannot be 0.
+
+\begin{verbatim}
+    (sqrt x)
+\end{verbatim}
+
+Return the square root of \inlinecode{x}, a non-negative integer or decimal.
+
+\begin{verbatim}
+    (pow b e)
+\end{verbatim}
+
+Return \inlinecode{b} raised to the \inlinecode{e}'th power. \inlinecode{b} and \inlinecode{e} may be any integer or decimal.
+
+\begin{verbatim}
+    (ln x)
+\end{verbatim}
+
+Return the natural logarithm of \inlinecode{x}.
+
+\begin{verbatim}
+    (log x b)
+\end{verbatim}
+
+Return the logarithm of \inlinecode{x} in base \inlinecode{b}.
+
+\subsection{Miscellaneous builtins}
+\begin{verbatim}
+    (assert cond)
+\end{verbatim}
+
+Assert that the condition is true, raising an error if it is false.
+
+\begin{verbatim}
+    (range start end)
+\end{verbatim}
+
+Return a list of the integers in the range \inlinecode{[start, end)}. \inlinecode{start} must be less than or equal to \inlinecode{end}.
+
+\begin{verbatim}
+    (id obj)
+\end{verbatim}
+
+Return an integer that uniquely identifies the given object. In the current implementation this is the object's memory address.
+
+
 \end{document}

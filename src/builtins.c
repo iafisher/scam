@@ -649,7 +649,7 @@ scamval* builtin_floor(scamval* args) {
 }
 
 scamval* builtin_divmod(scamval* args) {
-    TYPECHECK_ARGS("divmod", args, 2, SCAM_INT);
+    TYPECHECK_ARGS("divmod", args, 2, SCAM_INT, SCAM_INT);
     long long dividend = scam_as_int(scamseq_get(args, 0));
     long long divisor = scam_as_int(scamseq_get(args, 1));
     lldiv_t res = lldiv(dividend, divisor);
@@ -675,7 +675,11 @@ scamval* builtin_sqrt(scamval* args) {
     TYPECHECK_ARGS("sqrt", args, 1, SCAM_NUM);
     scamval* num_arg = scamseq_get(args, 0);
     double d = scam_as_dec(num_arg);
-    return scamdec(sqrt(d));
+    if (d >= 0) {
+        return scamdec(sqrt(d));
+    } else {
+        return scamerr("cannot take square root of a negative number");
+    }
 }
 
 scamval* builtin_pow(scamval* args) {
