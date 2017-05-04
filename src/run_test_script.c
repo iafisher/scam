@@ -45,10 +45,13 @@ int is_query(const char*);
 ssize_t get_good_line(char**, size_t*, FILE*, int* line_no);
 
 int main(int argc, char* argv[]) {
-    if (argc == 2) {
+    for (int i = 1; i < argc; i++) {
         program_state_t ps;
-        ps_init(&ps, argv[1]);
-        ASSERT(ps.fsock != NULL, ps, "unable to open file")
+        ps_init(&ps, argv[i]);
+        if (!ps.fsock) {
+            printf("Error: unable to open file %s\n", ps.fpath);
+            return 1;
+        }
         scamval* env = scamdict_builtins();
         while (ps_next(&ps)) {
             ASSERT(is_query(ps.query), ps, "expected \">>> ...\"")
@@ -62,11 +65,11 @@ int main(int argc, char* argv[]) {
             }
             free(correct_str);
         }
+        gc_unset_root(env);
         ps_free(&ps);
-        return 0;
-    } else {
-        return 2;
     }
+    gc_close();
+    return 0;
 }
 
 void ps_init(program_state_t* ps, const char* file_path) {
@@ -85,7 +88,6 @@ void ps_free(program_state_t* ps) {
     if (ps->fpath) free(ps->fpath);
     if (ps->query) free(ps->query);
     if (ps->answer) free(ps->answer);
-    gc_close();
 }
 
 int ps_next(program_state_t* ps) {

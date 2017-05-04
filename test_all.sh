@@ -1,7 +1,4 @@
 #!/bin/bash
 
 valgrind -q --leak-check=full --show-leak-kinds=all --num-callers=500 ./tests
-valgrind -q --leak-check=full --show-leak-kinds=all --num-callers=500 ./run_test_script resources/test_stdlib.scm
-valgrind -q --leak-check=full --show-leak-kinds=all --num-callers=500 ./run_test_script resources/test_core.scm
-valgrind -q --leak-check=full --show-leak-kinds=all --num-callers=500 ./run_test_script resources/test_escapes.scm
-valgrind -q --leak-check=full --show-leak-kinds=all --num-callers=500 ./run_test_script resources/test_programs.scm
+echo resources/lib/test_* resources/lang/test_* | xargs -n 3 valgrind -q --leak-check=full --show-leak-kinds=all --num-callers=500 ./run_test_script 
