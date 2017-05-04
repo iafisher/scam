@@ -556,17 +556,12 @@ scamval* builtin_dict(scamval* args) {
 
 scamval* builtin_str(scamval* args) {
     TYPECHECK_ARGS("str", args, 1, SCAM_ANY);
-    scamval* arg = scamseq_get(args, 0);
-    if (arg->type != SCAM_STR) {
-        return scamstr_no_copy(scamval_to_str(scamseq_get(args, 0)));
-    } else {
-        return arg;
-    }
+    return scamstr_no_copy(scamval_to_str(scamseq_get(args, 0)));
 }
 
 scamval* builtin_repr(scamval* args) {
     TYPECHECK_ARGS("repr", args, 1, SCAM_ANY);
-    return scamstr_no_copy(scamval_to_str(scamseq_get(args, 0)));
+    return scamstr_no_copy(scamval_to_repr(scamseq_get(args, 0)));
 }
 
 scamval* builtin_print(scamval* args) {

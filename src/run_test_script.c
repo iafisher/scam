@@ -7,30 +7,29 @@
 #include "scamval.h"
 
 
+/* Assert that the condition is true, printing the error message if it is not */
 #define ASSERT(cond, ps, msg) \
     if (!(cond)) { \
-        printf("Error at line %d: %s\n", ps.line_no, msg); \
-        ps_free(&ps); \
-        return 1; \
+        printf("Error at line %d in %s: %s\n", ps.line_no, ps.fpath, msg); \
     }
 
-#define ASSERT_EQ(this_val, last_val, ps) \
-    if (!scamval_eq(this_val, last_val)) { \
-        printf("Error at line %d:\n  calculated from \"%s\"\n    ", ps.line_no, ps.query); \
-        scamval_print_debug(this_val); \
-        printf("\n  found\n    "); \
-        scamval_print_debug(last_val); \
-        printf("\n"); \
-        ps_free(&ps); \
-        return 2; \
+/* Assert that the answer string is equal to the given string, printing an error message if it is
+ * not
+ */
+#define ASSERT_EQ(answer_str, this_str, ps) \
+    if (strcmp(this_str, answer_str) != 0) { \
+        printf("Failed example at line %d in %s:\n", ps.line_no, ps.fpath); \
+        printf("  %s\n", ps.query + 3); \
+        printf("Expected:\n"); \
+        printf("  %s\n", answer_str); \
+        printf("Got:\n"); \
+        printf("  %s\n", this_str); \
     }
-
-// values for the 'expect' field in the program_state_t struct
-enum { QUERY, ANSWER };
 
 typedef struct {
     int line_no;
     FILE* fsock;
+    char* fpath;
     char* query;
     char* answer;
     size_t query_n, answer_n; // lengths of lines, used for getline
@@ -54,13 +53,14 @@ int main(int argc, char* argv[]) {
         while (ps_next(&ps)) {
             ASSERT(is_query(ps.query), ps, "expected \">>> ...\"")
             scamval* query_value = eval_str(ps.query + 3, env);
-            if (is_query(ps.answer)) {
-                ASSERT_EQ(query_value, scamnull(), ps)
-            } else if (strcmp(ps.answer, "ERROR") == 0) {
+            char* correct_str = scamval_to_repr(query_value);
+            char* this_str = is_query(ps.answer) ? "" : ps.answer;
+            if (strcmp(ps.answer, "ERROR") == 0) {
                 ASSERT(query_value->type == SCAM_ERR, ps, "expected error")
             } else {
-                ASSERT_EQ(query_value, eval_str(ps.answer, env), ps);
+                ASSERT_EQ(correct_str, this_str, ps);
             }
+            free(correct_str);
         }
         ps_free(&ps);
         return 0;
@@ -73,6 +73,7 @@ void ps_init(program_state_t* ps, const char* file_path) {
     if (!ps) return;
     ps->line_no = 0;
     ps->fsock = fopen(file_path, "r");
+    ps->fpath = strdup(file_path);
     ps->query = NULL;
     ps->answer = NULL;
     ps->query_n = 0;
@@ -81,6 +82,7 @@ void ps_init(program_state_t* ps, const char* file_path) {
 
 void ps_free(program_state_t* ps) {
     if (ps->fsock) fclose(ps->fsock);
+    if (ps->fpath) free(ps->fpath);
     if (ps->query) free(ps->query);
     if (ps->answer) free(ps->answer);
     gc_close();

@@ -640,7 +640,7 @@ void scamval_write(const scamval* v, FILE* fp) {
         case SCAM_SYM: fprintf(fp, "%s", scam_as_str(v)); break;
         case SCAM_ERR: fprintf(fp, "Error: %s", scam_as_str(v)); break;
         case SCAM_DICT: scamdict_write(v, fp); break;
-        default: fprintf(fp, "null");
+        //default: fprintf(fp, "null");
     }
 }
 
@@ -686,6 +686,15 @@ void scamdict_write(const scamval* v, FILE* fp) {
 }
 
 char* scamval_to_str(const scamval* v) {
+    if (!v) return NULL;
+    if (v->type == SCAM_STR) {
+        return strdup(scam_as_str(v));
+    } else {
+        return scamval_to_repr(v);
+    }
+}
+
+char* scamval_to_repr(const scamval* v) {
     if (!v) return NULL;
     char* ret;
     size_t n;
