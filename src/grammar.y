@@ -99,8 +99,7 @@ dictionary_list:
     ;
 dictionary_item:
     expression ':' expression { 
-        $$ = scamsexpr_from_vals(2, $1, $3); 
-        $$->type = SCAM_LIST;
+        $$ = scamsexpr_from_vals(3, scamsym("list"), $1, $3); 
     }
     ;
 %%

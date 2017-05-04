@@ -380,6 +380,15 @@ ERROR
 11
 >>> (ceil -1.3)
 -1
-; Very experimental support for dot syntax
-;>>> (list.len [1 2 3])
-;3
+
+; list, dict, str and repr
+>>> (list 1 2 3 4 5)
+[1 2 3 4 5]
+>>> (dict [1 "one"] [2 "two"] [3 "three"])
+{1:"one" 2:"two" 3:"three"}
+>>> (str {"North America":["United States"  "Canada"  "Mexico"]  "Asia":["China"  "Japan"]})
+"{\"North America\":[\"United States\" \"Canada\" \"Mexico\"] \"Asia\":[\"China\" \"Japan\"]}"
+>>> (str "abc")
+"abc"
+>>> (repr "abc")
+"\"abc\""

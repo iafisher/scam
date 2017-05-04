@@ -130,3 +130,9 @@ ERROR
 ; make sure lambda expressions must have a body
 >>> (lambda (x))
 ERROR
+
+; make sure that list and dictionary literals evaluate their components
+>>> [(* 2 2) (* 3 3) (* 4 4)]
+[4 9 16]
+>>> {(* 2 2):"four"  (* 3 3):(concat "nin" "e") 16:"sixteen"}
+{4:"four" 9:"nine" 16:"sixteen"}
