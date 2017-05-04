@@ -211,6 +211,12 @@ Return the index where the value last appears in the sequence, or \inlinecode{fa
 Return the string representation of the object.
 
 \begin{verbatim}
+    (repr obj)
+\end{verbatim}
+
+Return the string representation of the object. This function is identical to \inlinecode{str} except in how it handles string arguments. \inlinecode{repr} will put quotation marks at the beginning and end and replace special characters with their backslashed escape codes.
+
+\begin{verbatim}
     (upper s)
 \end{verbatim}
 

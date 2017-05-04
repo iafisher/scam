@@ -1,11 +1,11 @@
 ## Bugs
 - REPL does not allow comments (This is because I can't figure out the flex regular expression syntax to match EOF.)
+- Entering a blank line in the REPL gives an error.
 
 
 ## Design flaws
 - Standard library is unfinished
   - Need to implement `port-tell`, `port-seek`, and `write`
-- The `str` function should really be called `repr`, which means I need a `str` function as well.
 - There are no tests with restricted memory to make sure that the garbage collector works properly
 - Dictionaries use an inefficient unsorted array implementation, when they could use a hash table instead.
 - The garbage collector frees memory unnecessarily: it actually frees inaccessible objects rather than just marking them free and reusing the memory later.
