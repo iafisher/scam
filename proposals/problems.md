@@ -5,12 +5,14 @@
 ## Design flaws
 - Standard library is unfinished
   - Need to implement `port-tell`, `port-seek`, and `write`
+- The `str` function should really be called `repr`, which means I need a `str` function as well.
 - There are no tests with restricted memory to make sure that the garbage collector works properly
 - Dictionaries use an inefficient unsorted array implementation, when they could use a hash table instead.
 - The garbage collector frees memory unnecessarily: it actually frees inaccessible objects rather than just marking them free and reusing the memory later.
 - The syntax error messages suck because they use the builtin Bison messages, which are not very helpful. I should write a custom error parser that takes over when the Bison parser fails to give better messages.
 - There should be a more direct relationship between the name of a type and the name of the function that constructs it.
 - The garbage collector uses global variables. It might be helpful to have some kind of `program_state` object that has all the garbage collecting information as well as references to the interfaces of builtin types.
+- The string conversion and printing functions contain a lot of redundancy and wasted memory allocation. There should be a single function that writes a scamval to a stream, and the string conversion function could determine the length of the string to be written, allocate a string of that length, and then pass a string stream to the `scamval_write` function.
 
 
 ## Features to add
