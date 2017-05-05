@@ -33,18 +33,9 @@ static scamval* scam_internal_seq(int type) {
     return ret;
 }
 
-scamval* scamlist(void) {
-    return scam_internal_seq(SCAM_LIST);
-}
-
-scamval* scamsexpr(void) {
-    return scam_internal_seq(SCAM_SEXPR);
-}
-
-scamval* scamsexpr_from_vals(size_t n, ...) {
-    va_list vlist;
-    va_start(vlist, n);
-    scamval* ret = gc_new_scamval(SCAM_SEXPR);
+// Construct an internal sequence from a variable argument list
+static scamval* scam_internal_seq_from(int type, size_t n, va_list vlist) {
+    scamval* ret = gc_new_scamval(type);
     ret->vals.arr = gc_malloc(n * sizeof *ret->vals.arr);
     for (int i = 0; i < n; i++) {
         ret->vals.arr[i] = va_arg(vlist, scamval*);
@@ -54,6 +45,26 @@ scamval* scamsexpr_from_vals(size_t n, ...) {
     ret->mem_size = n;
     va_end(vlist);
     return ret;
+}
+
+scamval* scamlist(void) {
+    return scam_internal_seq(SCAM_LIST);
+}
+
+scamval* scamlist_from(size_t n, ...) {
+    va_list vlist;
+    va_start(vlist, n);
+    return scam_internal_seq_from(SCAM_LIST, n, vlist);
+}
+
+scamval* scamsexpr(void) {
+    return scam_internal_seq(SCAM_SEXPR);
+}
+
+scamval* scamsexpr_from(size_t n, ...) {
+    va_list vlist;
+    va_start(vlist, n);
+    return scam_internal_seq_from(SCAM_SEXPR, n, vlist);
 }
 
 // Construct a value that is internally a string (strings, symbols and errors)

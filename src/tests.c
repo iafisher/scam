@@ -12,9 +12,65 @@ void evaltest_err(char* line, scamval* env, int line_no);
 int main(int argc, char* argv[]) {
     #define EVALTEST(line, answer) evaltest(line, answer, env, __LINE__);
     #define EVALTEST_ERR(line) evaltest_err(line, env, __LINE__);
+    #define EVALDEF(line) EVALTEST(line, scamnull());
     puts("\n=== EVALUATOR TESTS ===");
-    puts("(you should see a single failed (+ 1 1) == 3 test)\n");
+    puts("(you should see two failed (+ 1 1) == 3 tests)\n");
     scamval* env = scamdict_builtins();
+
+    /*** DEFINE ***/
+    EVALTEST("(define x 42) x", scamint(42));
+    EVALTEST("(define x 666) x", scamint(666));
+    // test shadowing a global variable in a local scope
+    EVALTEST("(define (redefine-x) (define x 13) x)  (redefine-x)", scamint(13));
+    // test shadowing a global variable with a function parameter
+    EVALTEST("(define (x-as-parameter x) x)  (x-as-parameter 17)", scamint(17));
+    // test that values are immutable
+    EVALTEST("(define items [1 2 3]) (tail items)", scamlist_from(2, scamint(2), scamint(3)));
+    EVALTEST("items", scamlist_from(3, scamint(1), scamint(2), scamint(3)));
+    // test bad defines
+    EVALTEST_ERR("(define 1 1)");
+    EVALTEST_ERR("(define (1) 1)");
+    EVALTEST_ERR("(define (foo 10) 10)");
+    EVALTEST_ERR("(define x)");
+    EVALTEST_ERR("(define (foo x))");
+
+    /*** RECURSION ***/
+    EVALTEST("(define (countdown x) (if (= x 0) x (countdown (- x 1))))", scamnull());
+    EVALTEST("(countdown 10)", scamint(0));
+    // somewhat involved power function
+    EVALDEF("(define (square x) (* x x))");
+    EVALDEF("(define (power b n) (define (even? x) (= (% x 2) 0)) (if (= n 0) 1 (if (even? n) (square (power b (// n 2))) (* b (power b (- n 1))))))");
+    EVALTEST("(power 287 0)", scamint(1));
+    EVALTEST("(power 2 8)", scamint(256));
+    EVALTEST("(power 17 8)", scamint(6975757441));
+
+    /*** CLOSURES ***/
+    EVALDEF("(define (make-fun x) (lambda (y) (+ x y)))");
+    EVALTEST("((make-fun 10) 32)", scamint(42));
+    // doubly nested closure
+    EVALDEF("(define (make-fun1 x) (lambda (y) (lambda (z) (+ x y z))))");
+    EVALTEST("(((make-fun1 1) 2) 3)", scamint(6));
+    // another type of closure
+    EVALDEF("(define (make-fun2) (define (double x) (* x 2)) double)");
+    EVALDEF("(define foo (make-fun2))");
+    EVALTEST("(foo 9)", scamint(18));
+    // variables from the closure don't bleed into the global scope
+    EVALTEST_ERR("double");
+
+    /*** LAMBDA ***/
+    EVALTEST("((lambda (x y) (+ x y)) 20 22)", scamint(42));
+    EVALTEST("((lambda () (* 21 2)))", scamint(42));
+    EVALTEST_ERR("((lambda (x y) (+ x y)) 20)");
+    EVALTEST_ERR("((lambda (x y) (+ x y)) 20 21 22)");
+    // parameters must be valid symbols
+    EVALTEST_ERR("(lambda (10) (* 10 2))");
+    EVALTEST_ERR("(lambda (x 10 y) (* x y))");
+    // lambda expressions must have a body
+    EVALTEST_ERR("(lambda (x))");
+
+    /*** LIST and DICTIONARY LITERALS ***/
+    EVALTEST("[(* 2 2) (* 3 3) (* 4 4)]", scamlist_from(3, scamint(4), scamint(9), scamint(16)));
+
     /*** ARITHMETIC FUNCTIONS ***/
     // addition
     EVALTEST("(+ 7 -10 936 -14)", scamint(7 - 10 +936 - 14));
@@ -43,7 +99,9 @@ int main(int argc, char* argv[]) {
     EVALTEST_ERR("(% 9.0 3)");
     EVALTEST_ERR("(% 1 0)");
     EVALTEST_ERR("(% 10 0 7 4)");
+
     /*** BOOLEAN OPERATORS ***/
+
     /*** COMPARISON AND EQUALITY ***/
     // numeric equality
     EVALTEST("(= 1 1)", scambool(1));
@@ -60,9 +118,27 @@ int main(int argc, char* argv[]) {
     EVALTEST("(= true false)", scambool(0));
     EVALTEST("(= false true)", scambool(0));
     // list equality
-    //EVALTEST("[1 2 3 4 5]", scam
-    // designed to fail
+    EVALTEST("(= [] [])", scambool(1));
+    EVALTEST("(= [\"S\" [\"NP\" \"VP\"]] [\"S\" [\"VP\" \"NP\"]])", scambool(0));
+    EVALTEST("(= [1 2 3 4 5] [1 2 3 4 5])", scambool(1));
+
+    /*** LIST FUNCTIONS ***/
+    EVALTEST("[1 2 3 4 5]", scamlist_from(5, scamint(1), scamint(2), scamint(3), scamint(4), 
+                                             scamint(5)));
+    EVALTEST("[[\"inception\"]]", scamlist_from(1, scamlist_from(1, scamstr("inception"))));
+
+    /*** IO FUNCTIONS ***/
+    EVALDEF("(define fp (open \"resources/foo.txt\" \"r\"))");
+    EVALTEST("(port-good? fp)", scambool(1));
+    EVALTEST("(readline fp)", scamstr("Lorem ipsum\n"));
+    EVALTEST("(port-good? fp)", scambool(1));
+    EVALTEST_ERR("(readline fp)");
+    EVALTEST("(port-good? fp)", scambool(0));
+    EVALDEF("(close fp)");
+
+    /*** INTENTIONAL FAIL ***/
     EVALTEST("(+ 1 1)", scamint(3));
+    EVALTEST_ERR("(+ 1 1)");
     gc_close();
     return 0;
 }

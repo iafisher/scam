@@ -76,8 +76,9 @@ double scam_as_dec(const scamval*);
 
 /*** SEQUENCE API ***/
 scamval* scamlist(void);
+scamval* scamlist_from(size_t, ...);
 scamval* scamsexpr(void);
-scamval* scamsexpr_from_vals(size_t, ...);
+scamval* scamsexpr_from(size_t, ...);
 // Return a reference to the i'th element of the sequence
 scamval* scamseq_get(const scamval*, size_t i);
 // Remove the i'th element of the sequence

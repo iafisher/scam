@@ -43,7 +43,7 @@ program:
     ;
 block:
     block statement_or_expression { $$ = $1; scamseq_append($$, $2); }
-    | statement_or_expression { $$ = scamsexpr_from_vals(2, scamsym("begin"), $1); }
+    | statement_or_expression { $$ = scamsexpr_from(2, scamsym("begin"), $1); }
     ;
 statement_or_expression:
     define_variable
@@ -52,14 +52,14 @@ statement_or_expression:
     ;
 define_variable:
     '(' DEFINE symbol expression ')' {
-        $$ = scamsexpr_from_vals(3, scamsym("define"), $3, $4); 
+        $$ = scamsexpr_from(3, scamsym("define"), $3, $4); 
     }
     ;
 define_function:
     '(' DEFINE symbol_list block ')' {
         scamval* name = scamseq_pop($3, 0);
-        scamval* lambda = scamsexpr_from_vals(3, scamsym("lambda"), $3, $4);
-        $$ = scamsexpr_from_vals(3, scamsym("define"), name, lambda);
+        scamval* lambda = scamsexpr_from(3, scamsym("lambda"), $3, $4);
+        $$ = scamsexpr_from(3, scamsym("define"), name, lambda);
     }
     ;
 symbol_list:
@@ -67,7 +67,7 @@ symbol_list:
     ;
 symbol_plus:
     symbol_plus symbol { $$ = $1; scamseq_append($$, $2); }
-    | symbol { $$ = scamsexpr_from_vals(1, $1); }
+    | symbol { $$ = scamsexpr_from(1, $1); }
     ;
 expression:
     value
@@ -99,7 +99,7 @@ dictionary_list:
     ;
 dictionary_item:
     expression ':' expression { 
-        $$ = scamsexpr_from_vals(3, scamsym("list"), $1, $3); 
+        $$ = scamsexpr_from(3, scamsym("list"), $1, $3); 
     }
     ;
 %%

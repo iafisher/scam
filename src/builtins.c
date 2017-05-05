@@ -775,7 +775,7 @@ scamval* builtin_map(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
     for (size_t i = 0; i < scamseq_len(list_arg); i++) {
         scamval* v = scamseq_get(list_arg, i);
-        scamval* arglist = scamsexpr_from_vals(1, v);
+        scamval* arglist = scamsexpr_from(1, v);
         scamseq_set(list_arg, i, eval_apply(fun, arglist));
         gc_unset_root(arglist);
     }
@@ -789,7 +789,7 @@ scamval* builtin_filter(scamval* args) {
     scamval* list_arg = scamseq_pop(args, 0);
     for (size_t i = 0; i < scamseq_len(list_arg); i++) {
         scamval* v = scamseq_get(list_arg, i);
-        scamval* arglist = scamsexpr_from_vals(1, v);
+        scamval* arglist = scamsexpr_from(1, v);
         scamval* cond = eval_apply(fun, arglist);
         gc_unset_root(arglist);
         if (cond->type == SCAM_BOOL) {
