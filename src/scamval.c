@@ -210,7 +210,9 @@ scamval* scamport(FILE* fp) {
 
 scamval* scamnull(void) {
     scamval* ret = gc_new_scamval(SCAM_NULL);
-    ret->is_root = 0;
+    // I don't know why this line existed in the first place, but it was causing errors so I
+    // commented it out
+    //ret->is_root = 0;
     return ret;
 }
 

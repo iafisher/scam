@@ -776,8 +776,15 @@ scamval* builtin_map(scamval* args) {
     for (size_t i = 0; i < scamseq_len(list_arg); i++) {
         scamval* v = scamseq_get(list_arg, i);
         scamval* arglist = scamsexpr_from(1, v);
-        scamseq_set(list_arg, i, eval_apply(fun, arglist));
+        scamval* res = eval_apply(fun, arglist);
         gc_unset_root(arglist);
+        if (res->type != SCAM_ERR) {
+            scamseq_set(list_arg, i, res);
+        } else {
+            gc_unset_root(fun);
+            gc_unset_root(list_arg);
+            return res;
+        }
     }
     gc_unset_root(fun);
     return list_arg;
@@ -797,6 +804,8 @@ scamval* builtin_filter(scamval* args) {
                 scamseq_delete(list_arg, i);
             }
             gc_unset_root(cond);
+        } else if (cond->type == SCAM_ERR) {
+            return cond;
         } else {
             gc_unset_root(cond);
             return scamerr("'filter' predicate should return boolean");
