@@ -564,6 +564,25 @@ scamval* scamdict(scamval* enclosing) {
     return ret;
 }
 
+scamval* scamdict_from(size_t n, ...) {
+    va_list vlist;
+    va_start(vlist, n);
+    scamval* ret = scamdict(NULL);
+    for (int i = 0; i < n; i++) {
+        scamval* key_val_pair = va_arg(vlist, scamval*);
+        if (key_val_pair->type == SCAM_LIST && scamseq_len(key_val_pair) == 2) {
+            scamval* key = scamseq_get(key_val_pair, 0);
+            scamval* val = scamseq_get(key_val_pair, 1);
+            scamdict_bind(ret, key, val);
+        } else {
+            gc_unset_root(ret);
+            return scamerr("scamdict_from takes key-value pairs as arguments");
+        }
+    }
+    va_end(vlist);
+    return ret;
+}
+
 scamval* scamdict_keys(const scamval* dct) { return dct->vals.dct->syms; }
 scamval* scamdict_vals(const scamval* dct) { return dct->vals.dct->vals; }
 scamval* scamdict_enclosing(const scamval* dct) { 

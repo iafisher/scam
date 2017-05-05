@@ -160,7 +160,7 @@ void scamport_set_status(scamval*, int);
 /*** DICTIONARY API ***/
 // Initialize dictionaries
 scamval* scamdict(scamval* enclosing);
-scamval* scamtype_obj(void);
+scamval* scamdict_from(size_t, ...);
 scamval* scamdict_builtins(void);
 // Create a new binding in the dictionary, or update an existing one
 void scamdict_bind(scamval* dct, scamval* sym, scamval* val);

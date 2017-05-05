@@ -6,13 +6,28 @@
 #include "parse.h"
 #include "scamval.h"
 
+void parsetest(char* line, const scamval* answer, int line_no);
+
 void evaltest(char* line, const scamval* answer, scamval* env, int line_no);
 void evaltest_err(char* line, scamval* env, int line_no);
 
 int main(int argc, char* argv[]) {
+    #define PARSETEST(line, answer) parsetest(line, answer, __LINE__);
     #define EVALTEST(line, answer) evaltest(line, answer, env, __LINE__);
     #define EVALTEST_ERR(line) evaltest_err(line, env, __LINE__);
     #define EVALDEF(line) EVALTEST(line, scamnull());
+    #define S scamsexpr_from
+    #define L scamlist_from
+    #define D scamdict_from
+    puts("\n=== PARSER TESTS ===");
+    puts("(you should see no failures)\n");
+
+    /*** ATOMS ***/
+    PARSETEST("174", scamint(174));
+    PARSETEST("-78.3", scamdec(-78.3));
+    PARSETEST("matador", scamsym("matador"));
+    PARSETEST("\"matador\"", scamstr("matador"));
+
     puts("\n=== EVALUATOR TESTS ===");
     puts("(you should see two failed (+ 1 1) == 3 tests)\n");
     scamval* env = scamdict_builtins();
@@ -25,8 +40,8 @@ int main(int argc, char* argv[]) {
     // test shadowing a global variable with a function parameter
     EVALTEST("(define (x-as-parameter x) x)  (x-as-parameter 17)", scamint(17));
     // test that values are immutable
-    EVALTEST("(define items [1 2 3]) (tail items)", scamlist_from(2, scamint(2), scamint(3)));
-    EVALTEST("items", scamlist_from(3, scamint(1), scamint(2), scamint(3)));
+    EVALTEST("(define items [1 2 3]) (tail items)", L(2, scamint(2), scamint(3)));
+    EVALTEST("items", L(3, scamint(1), scamint(2), scamint(3)));
     // test bad defines
     EVALTEST_ERR("(define 1 1)");
     EVALTEST_ERR("(define (1) 1)");
@@ -69,7 +84,8 @@ int main(int argc, char* argv[]) {
     EVALTEST_ERR("(lambda (x))");
 
     /*** LIST and DICTIONARY LITERALS ***/
-    EVALTEST("[(* 2 2) (* 3 3) (* 4 4)]", scamlist_from(3, scamint(4), scamint(9), scamint(16)));
+    EVALTEST("[(* 2 2) (* 3 3) (* 4 4)]", L(3, scamint(4), scamint(9), scamint(16)));
+    EVALTEST("{1:\"one\"}", D(1, L(2, scamint(1), scamstr("one"))));
 
     /*** ARITHMETIC FUNCTIONS ***/
     // addition
@@ -123,9 +139,8 @@ int main(int argc, char* argv[]) {
     EVALTEST("(= [1 2 3 4 5] [1 2 3 4 5])", scambool(1));
 
     /*** LIST FUNCTIONS ***/
-    EVALTEST("[1 2 3 4 5]", scamlist_from(5, scamint(1), scamint(2), scamint(3), scamint(4), 
-                                             scamint(5)));
-    EVALTEST("[[\"inception\"]]", scamlist_from(1, scamlist_from(1, scamstr("inception"))));
+    EVALTEST("[1 2 3 4 5]", L(5, scamint(1), scamint(2), scamint(3), scamint(4), scamint(5)));
+    EVALTEST("[[\"inception\"]]", L(1, L(1, scamstr("inception"))));
 
     /*** IO FUNCTIONS ***/
     EVALDEF("(define fp (open \"resources/foo.txt\" \"r\"))");
@@ -141,6 +156,20 @@ int main(int argc, char* argv[]) {
     EVALTEST_ERR("(+ 1 1)");
     gc_close();
     return 0;
+}
+
+void parsetest(char* line, const scamval* answer, int line_no) {
+    scamval* v = parse_str(line);
+    scamval* modified_answer = scamsexpr_from(2, scamsym("begin"), answer);
+    if (!scamval_eq(v, modified_answer)) {
+        printf("Failed parse example, line %d in %s:\n", line_no, __FILE__);
+        printf("  %s\n", line);
+        printf("Expected:\n  ");
+        scamval_println(modified_answer);
+        printf("Got:\n  ");
+        scamval_println(v);
+        printf("\n");
+    }
 }
 
 void evaltest(char* line, const scamval* answer, scamval* env, int line_no) {
