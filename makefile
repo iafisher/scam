@@ -7,8 +7,10 @@ DEBUG = -g
 PROFILE = -pg
 CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
 LFLAGS = -Wall $(DEBUG) -lm -lfl -lreadline
+VALGRIND_FLAGS = -q --leak-check=full --show-leak-kinds=all
 
 all: $(EXECS)
+	valgrind $(VALGRIND_FLAGS) ./tests
 
 scam: build/scam.o $(OBJS)
 	$(CC) $(OBJS) build/scam.o -o scam $(LFLAGS) 
@@ -47,7 +49,7 @@ src/flex.c: src/grammar.l
 tests: build/tests.o $(OBJS)
 	$(CC) $(OBJS) build/tests.o -o tests $(LFLAGS) 
 
-build/tests.o: src/tests.c include/tests.h include/collector.h
+build/tests.o: src/tests.c include/tests.h include/collector.h include/eval.h
 	$(CC) $(CFLAGS) src/tests.c -o build/tests.o
 
 run_test_script: build/run_test_script.o $(OBJS)

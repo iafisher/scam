@@ -87,7 +87,8 @@ scamval* generic_mixed_arith(char* name, scamval* args, arith_func op, int coerc
     TYPECHECK_ALL(name, args, 2, SCAM_NUM);
     scamval* first = scamseq_get(args, 0);
     double sum = scam_as_dec(first);
-    int seen_double = 0;
+    //int seen_double = 0;
+    int seen_double = (first->type == SCAM_DEC) ? 1 : 0;
     for (int i = 1; i < scamseq_len(args); i++) {
         scamval* v = scamseq_get(args, i);
         if (v->type == SCAM_INT) {
@@ -115,7 +116,7 @@ scamval* builtin_negate(scamval* args) {
     if (v->type == SCAM_INT) {
         return scamint(-1 * scam_as_int(v));
     } else {
-        return scamint(-1 * scam_as_dec(v));
+        return scamdec(-1 * scam_as_dec(v));
     }
 }
 

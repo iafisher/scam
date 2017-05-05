@@ -1,60 +1,102 @@
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include "collector.h"
+#include "eval.h"
 #include "parse.h"
 #include "scamval.h"
 
-void parsetest(char* line, int n, ...);
-void parsetest_lit(char* line, int type_we_want);
+void evaltest(char* line, const scamval* answer, scamval* env, int line_no);
+void evaltest_err(char* line, scamval* env, int line_no);
 
 int main(int argc, char* argv[]) {
-    parsetest_lit("-103", SCAM_INT);
-    parsetest_lit("-103.7", SCAM_DEC);
-    parsetest_lit("hello", SCAM_SYM);
-    parsetest_lit("\"hello\"", SCAM_STR);
-    parsetest("(+ 1 1)", 3, SCAM_SYM, SCAM_INT, SCAM_INT);
-    parsetest("(+ (* 9 2) 1)", 3, SCAM_SYM, SCAM_SEXPR, SCAM_INT);
-    parsetest("((lambda (x y) (+ x y)) 5 5.0)", 3, SCAM_SEXPR, SCAM_INT, SCAM_DEC);
+    #define EVALTEST(line, answer) evaltest(line, answer, env, __LINE__);
+    #define EVALTEST_ERR(line) evaltest_err(line, env, __LINE__);
+    puts("\n=== EVALUATOR TESTS ===");
+    puts("(you should see a single failed (+ 1 1) == 3 test)\n");
+    scamval* env = scamdict_builtins();
+    /*** ARITHMETIC FUNCTIONS ***/
+    // addition
+    EVALTEST("(+ 7 -10 936 -14)", scamint(7 - 10 +936 - 14));
+    EVALTEST("(+ 7.0 -10 936 -14)", scamdec(7 - 10 + 936 - 14));
+    // negation and subtraction
+    EVALTEST("(- 34.6)", scamdec(-34.6));
+    EVALTEST("(- 347 80 -2 17)", scamint(347 - 80 + 2 - 17));
+    EVALTEST("(- 347.0 80 -2 17)", scamdec(347 - 80 + 2 - 17));
+    // multiplication
+    EVALTEST("(* 9 9 -437)", scamint(9 * 9 * -437));
+    EVALTEST("(* 3.5 6.79 2.3)", scamdec(3.5 * 6.79 * 2.3));
+    // floating-point division
+    EVALTEST("(/ 10 3)", scamdec(10 / 3.0));
+    EVALTEST("(/ 3.7 8.91 2.3)", scamdec((3.7 / 8.91) / 2.3));
+    EVALTEST_ERR("(/ 1 0)");
+    EVALTEST_ERR("(/ 10 7 0 4)");
+    // floor division
+    EVALTEST("(// 10 3)", scamint(3));
+    EVALTEST("(// -81 3 9)", scamint((-81 / 3) / 9));
+    EVALTEST_ERR("(// 9 3.0)");
+    EVALTEST_ERR("(// 1 0)");
+    EVALTEST_ERR("(// 10 7 4 0)");
+    // remainder
+    EVALTEST("(% 10 3)", scamint(1));
+    EVALTEST("(% -76 4 18)", scamint((-76 % 4) % 18));
+    EVALTEST_ERR("(% 9.0 3)");
+    EVALTEST_ERR("(% 1 0)");
+    EVALTEST_ERR("(% 10 0 7 4)");
+    /*** BOOLEAN OPERATORS ***/
+    /*** COMPARISON AND EQUALITY ***/
+    // numeric equality
+    EVALTEST("(= 1 1)", scambool(1));
+    EVALTEST("(= -81 -81.0)", scambool(1));
+    EVALTEST("(= 1 0.99999)", scambool(0));
+    EVALTEST("(= 1 \"1\")", scambool(0));
+    // string equality
+    EVALTEST("(=  \"money\"  \"money\")", scambool(1));
+    EVALTEST("(=  \"lucre\"  \" lucre \")", scambool(0));
+    EVALTEST("(=  \"\"  \"\")", scambool(1));
+    // boolean equality
+    EVALTEST("(= true true)", scambool(1));
+    EVALTEST("(= false false)", scambool(1));
+    EVALTEST("(= true false)", scambool(0));
+    EVALTEST("(= false true)", scambool(0));
+    // list equality
+    //EVALTEST("[1 2 3 4 5]", scam
+    // designed to fail
+    EVALTEST("(+ 1 1)", scamint(3));
     gc_close();
     return 0;
 }
 
-void parsetest(char* line, int n, ...) {
-    //scamval* ast = parse_str(line);
-    scamval* block = parse_str(line);
-    scamval* ast = scamseq_get(block, 1);
-    if (ast->type != SCAM_SEXPR) {
-        printf("Failed parse test \"%s\": expected SCAM_SEXPR object\n", line);
-        gc_close();
-        exit(EXIT_FAILURE);
+void evaltest(char* line, const scamval* answer, scamval* env, int line_no) {
+    scamval* v = eval_str(line, env);
+    if (!scamval_eq(v, answer)) {
+        printf("Failed example, line %d in %s:\n", line_no, __FILE__);
+        printf("  %s\n", line);
+        printf("Expected:\n  ");
+        scamval_println(answer);
+        printf("Got:\n  ");
+        scamval_println(v);
+        printf("\n");
+    } else if (v->type != answer->type) {
+        printf("Failed example, line %d in %s:\n", line_no, __FILE__);
+        printf("  %s\n", line);
+        printf("Expected:\n  ");
+        printf("  %s\n", scamtype_debug_name(answer->type));
+        printf("Got:\n  ");
+        printf("  %s\n\n", scamtype_debug_name(v->type));
     }
-    va_list args;
-    va_start(args, n);
-    for (int i = 0; i < n; i++) {
-        int req_type = va_arg(args, int);
-        int given_type = scamseq_get(ast, i)->type;
-        if (req_type != given_type) {
-            printf("Failed parse test \"%s\" on element %d; ", line, i);
-            printf("got %s, expected %s\n", scamtype_debug_name(given_type),
-                                            scamtype_debug_name(req_type));
-            gc_close();
-            exit(EXIT_FAILURE);
-        }
-    }
-    gc_unset_root(ast);
-    va_end(args);
+    gc_unset_root(v);
 }
 
-void parsetest_lit(char* line, int type_we_want) {
-    //scamval* v = parse_str(line);
-    scamval* block = parse_str(line);
-    scamval* v = scamseq_get(block, 1);
-    if (v->type != type_we_want) {
-        printf("Failed parse test \"%s\" ", line);
-        printf("got %s, expected %s\n", scamtype_debug_name(v->type),
-                                        scamtype_debug_name(type_we_want));
-        gc_close();
-        exit(EXIT_FAILURE);
+void evaltest_err(char* line, scamval* env, int line_no) {
+    scamval* v = eval_str(line, env);
+    if (v->type != SCAM_ERR) {
+        printf("Failed example, line %d in %s:\n", line_no, __FILE__);
+        printf("  %s\n", line);
+        printf("Expected:\n  ERROR\n");
+        printf("Got:\n  ");
+        scamval_println(v);
+        printf("\n");
     }
     gc_unset_root(v);
 }
