@@ -25,14 +25,29 @@ int main(int argc, char* argv[]) {
     puts("(you should see no failures)\n");
 
     /*** ATOMS ***/
+    // numbers and booleans
+    PARSETEST("0", scamint(0));
+    PARSETEST("-0", scamint(0));
     PARSETEST("174", scamint(174));
     PARSETEST("-78.3", scamdec(-78.3));
+    PARSETEST("0xff67", scamint(0xff67));
+    PARSETEST("-0xff67", scamint(-0xff67));
+    //PARSETEST_ERR("012"); // octal literals are not supported
+    //PARSETEST_ERR("0x10g");
+    //PARSETEST_ERR("0x-57");
+    PARSETEST("true", scambool(1));
+    PARSETEST("false", scambool(0));
+    // strings and symbols
     PARSETEST("matador", scamsym("matador"));
+    PARSETEST("true0", scamsym("true0"));
+    PARSETEST("false0", scamsym("false0"));
     PARSETEST("\"matador\"", scamstr("matador"));
+    // expressions and lists
     PARSETEST("(+ 1 1)", S(3, scamsym("+"), scamint(1), scamint(1)));
     PARSETEST("[1 2 3]", S(4, scamsym("list"), scamint(1), scamint(2), scamint(3)));
     PARSETEST("{1:\"one\"}", S(2, scamsym("dict"), 
                                   S(3, scamsym("list"), scamint(1), scamstr("one"))));
+    // invalid expressions
     PARSETEST_ERR("(+ (define x 10) 3)");
 
     puts("\n=== EVALUATOR TESTS ===");
