@@ -478,6 +478,30 @@ scamval* builtin_lower(scamval* args) {
     return str_arg;
 }
 
+scamval* builtin_isupper(scamval* args) {
+    TYPECHECK_ARGS("isupper", args, 1, SCAM_STR);
+    scamval* str_arg = scamseq_pop(args, 0);
+    for (size_t i = 0; i < scamstr_len(str_arg); i++) {
+        char c = scamstr_get(str_arg, i);
+        if (isalpha(c) && !isupper(c)) {
+            return scambool(0);
+        }
+    }
+    return scambool(1);
+}
+
+scamval* builtin_islower(scamval* args) {
+    TYPECHECK_ARGS("islower", args, 1, SCAM_STR);
+    scamval* str_arg = scamseq_pop(args, 0);
+    for (size_t i = 0; i < scamstr_len(str_arg); i++) {
+        char c = scamstr_get(str_arg, i);
+        if (isalpha(c) && !islower(c)) {
+            return scambool(0);
+        }
+    }
+    return scambool(1);
+}
+
 scamval* builtin_trim(scamval* args) {
     TYPECHECK_ARGS("trim", args, 1, SCAM_STR);
     scamval* str_arg = scamseq_pop(args, 0);
@@ -910,6 +934,8 @@ scamval* scamdict_builtins(void) {
     // string functions
     add_builtin(env, "upper", builtin_upper);
     add_builtin(env, "lower", builtin_lower);
+    add_const_builtin(env, "isupper", builtin_isupper);
+    add_const_builtin(env, "islower", builtin_islower);
     add_builtin(env, "trim", builtin_trim);
     add_builtin(env, "split", builtin_split);
     // dictionary functions

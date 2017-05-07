@@ -256,6 +256,11 @@ int main(int argc, char* argv[]) {
     /*** STRING FUNCTIONS ***/
     EVALTEST("(upper \"humble\")", scamstr("HUMBLE"));
     EVALTEST("(lower \"HUMBLE\")", scamstr("humble"));
+    EVALTEST("(isupper \"WHAT HATH GOD WROUGHT?\")", scambool(1));
+    EVALTEST("(isupper \"What HATH GOD WROUGHT?\")", scambool(0));
+    EVALTEST("(islower \"WHAT HATH GOD WROUGHT?\")", scambool(0));
+    EVALTEST("(islower \"What HATH GOD WROUGHT?\")", scambool(0));
+    EVALTEST("(islower \"what hath god wrought?\")", scambool(1));
     EVALTEST("(trim \"      a b       \")", scamstr("a b"));
     EVALTEST("(split \" a b c  d\")", L(4, scamstr("a"), scamstr("b"), scamstr("c"), scamstr("d")));
 
