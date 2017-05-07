@@ -217,6 +217,18 @@ Return the string representation of the object.
 Return the string representation of the object. This function is identical to \inlinecode{str} except in how it handles string arguments. \inlinecode{repr} will put quotation marks at the beginning and end and replace special characters with their backslashed escape codes.
 
 \begin{verbatim}
+    (isupper s)
+\end{verbatim}
+
+Return \inlinecode{true} if the string contains at least one uppercase character and no lowercase alphabetic characters.
+
+\begin{verbatim}
+    (islower s)
+\end{verbatim}
+
+Return \inlinecode{true} if the string contains at least one lowercase character and no uppercase alphabetic characters.
+
+\begin{verbatim}
     (upper s)
 \end{verbatim}
 

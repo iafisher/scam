@@ -480,26 +480,36 @@ scamval* builtin_lower(scamval* args) {
 
 scamval* builtin_isupper(scamval* args) {
     TYPECHECK_ARGS("isupper", args, 1, SCAM_STR);
-    scamval* str_arg = scamseq_pop(args, 0);
+    scamval* str_arg = scamseq_get(args, 0);
+    int seen_upper = 0;
     for (size_t i = 0; i < scamstr_len(str_arg); i++) {
         char c = scamstr_get(str_arg, i);
-        if (isalpha(c) && !isupper(c)) {
-            return scambool(0);
+        if (isalpha(c)) {
+            if (!isupper(c)) {
+                return scambool(0);
+            } else {
+                seen_upper = 1;
+            }
         }
     }
-    return scambool(1);
+    return scambool(seen_upper);
 }
 
 scamval* builtin_islower(scamval* args) {
     TYPECHECK_ARGS("islower", args, 1, SCAM_STR);
-    scamval* str_arg = scamseq_pop(args, 0);
+    scamval* str_arg = scamseq_get(args, 0);
+    int seen_lower = 0;
     for (size_t i = 0; i < scamstr_len(str_arg); i++) {
         char c = scamstr_get(str_arg, i);
-        if (isalpha(c) && !islower(c)) {
-            return scambool(0);
+        if (isalpha(c)) {
+            if (!islower(c)) {
+                return scambool(0);
+            } else {
+                seen_lower = 1;
+            }
         }
     }
-    return scambool(1);
+    return scambool(seen_lower);
 }
 
 scamval* builtin_trim(scamval* args) {
