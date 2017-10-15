@@ -7,10 +7,8 @@ DEBUG = -g
 PROFILE = -pg
 CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
 LFLAGS = -Wall $(DEBUG) -lm -lfl -lreadline
-VALGRIND_FLAGS = -q --leak-check=full --show-leak-kinds=all
 
 all: $(EXECS)
-	valgrind $(VALGRIND_FLAGS) ./tests
 
 scam: build/scam.o $(OBJS)
 	$(CC) $(OBJS) build/scam.o -o scam $(LFLAGS) 
