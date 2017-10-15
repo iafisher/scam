@@ -897,12 +897,24 @@ ScamVal* builtin_not(ScamSeq* args) {
     return (ScamVal*)ScamBool_new(!ScamBool_unbox((ScamInt*)ScamSeq_get(args, 0)));
 }
 
+ScamVal* builtin_error(ScamSeq* args) {
+    TYPECHECK_ALL("error", args, 0, SCAM_STR);
+    if (ScamSeq_len(args) == 0) {
+        return (ScamVal*)ScamErr_new("");
+    } else {
+        ScamStr* concatenated = (ScamStr*)builtin_str_concat(args);
+        gc_unset_root((ScamVal*)concatenated);
+        return (ScamVal*)ScamErr_new(ScamStr_unbox(concatenated));
+    }
+}
+
 void add_builtin(ScamDict* env, char* sym, scambuiltin_fun bltin) {
     ScamDict_bind(env, ScamSym_new(sym), (ScamVal*)ScamBuiltin_new(bltin));
 }
 
-// If a builtin doesn't change its arguments, then it should be registered as constant so that the 
-// evaluator doesn't bother copying the argument list
+/* If a builtin doesn't change its arguments, then it should be registered as constant so that the 
+ * evaluator doesn't bother copying the argument list.
+ */
 void add_const_builtin(ScamDict* env, char* sym, scambuiltin_fun bltin) {
     ScamDict_bind(env, ScamSym_new(sym), (ScamVal*)ScamBuiltin_new_const(bltin));
 }
@@ -977,6 +989,7 @@ ScamDict* ScamDict_builtins(void) {
     add_builtin(env, "map", builtin_map);
     add_builtin(env, "filter", builtin_filter);
     add_const_builtin(env, "id", builtin_id);
+    add_builtin(env, "error", builtin_error);
     // stdin, stdout and stderr
     ScamDict_bind(env, ScamSym_new("stdin"), (ScamVal*)ScamPort_new(stdin));
     ScamDict_bind(env, ScamSym_new("stdout"), (ScamVal*)ScamPort_new(stdout));
