@@ -178,7 +178,7 @@ ScamStr* ScamErr_eof(void) {
 }
 
 ScamFunction* ScamFunction_new(ScamDict* env, ScamSeq* parameters, ScamSeq* body) {
-    SCAMVAL_NEW(ret, ScamFunction, SCAM_LAMBDA);
+    SCAMVAL_NEW(ret, ScamFunction, SCAM_FUNCTION);
     ret->env = env;
     ret->parameters = parameters;
     ret->body = body;
@@ -615,7 +615,7 @@ ScamVal* ScamDict_val(const ScamDict* dct, size_t i) {
 void ScamDict_bind(ScamDict* dct, ScamStr* sym, ScamVal* val) {
     gc_unset_root((ScamVal*)sym);
     gc_unset_root((ScamVal*)val);
-    if (sym->type == SCAM_PORT || sym->type == SCAM_LAMBDA || sym->type == SCAM_BUILTIN || 
+    if (sym->type == SCAM_PORT || sym->type == SCAM_FUNCTION || sym->type == SCAM_BUILTIN || 
         sym->type == SCAM_NULL) {
         // unbindable types
         return;
@@ -662,7 +662,7 @@ void ScamVal_write(const ScamVal* v, FILE* fp) {
         case SCAM_BOOL: fprintf(fp, "%s", ScamBool_unbox((ScamInt*)v) ? "true" : "false"); break;
         case SCAM_LIST: ScamSeq_write((ScamSeq*)v, "[", " ", "]", fp); break;
         case SCAM_SEXPR: ScamSeq_write((ScamSeq*)v, "(", " ", ")", fp); break;
-        case SCAM_LAMBDA: fprintf(fp, "<Scam function>"); break;
+        case SCAM_FUNCTION: fprintf(fp, "<Scam function>"); break;
         case SCAM_BUILTIN: fprintf(fp, "<Scam builtin>"); break;
         case SCAM_PORT: fprintf(fp, "<Scam port>"); break;
         case SCAM_STR: ScamStr_write((ScamStr*)v, fp); break;
@@ -782,8 +782,8 @@ int ScamVal_typecheck(const ScamVal* v, int type) {
             return v->type == SCAM_INT || v->type == SCAM_DEC;
         case SCAM_CMP: 
             return v->type == SCAM_STR || v->type == SCAM_INT || v->type == SCAM_DEC;
-        case SCAM_FUNCTION: 
-            return v->type == SCAM_LAMBDA || v->type == SCAM_BUILTIN;
+        case SCAM_BASE_FUNCTION: 
+            return v->type == SCAM_FUNCTION || v->type == SCAM_BUILTIN;
         default: 
             return v->type == type;
     }
@@ -830,27 +830,6 @@ const char* scamtype_name(int type) {
         #define EXPAND_TYPE(type_val, type_name) \
             case type_val: return type_name;
         #include "type.def"
-        /*
-        case SCAM_INT: return "integer";
-        case SCAM_DEC: return "decimal";
-        case SCAM_BOOL: return "boolean";
-        case SCAM_LIST: return "list";
-        case SCAM_STR: return "string";
-        case SCAM_LAMBDA: return "function";
-        case SCAM_PORT: return "port";
-        case SCAM_BUILTIN: return "builtin";
-        case SCAM_SEXPR: return "S-expression";
-        case SCAM_SYM: return "symbol";
-        case SCAM_ERR: return "error";
-        case SCAM_NULL: return "null";
-        case SCAM_DICT: return "dictionary";
-        // abstract types
-        case SCAM_SEQ: return "list or string";
-        case SCAM_CONTAINER: return "list, string or dictionary";
-        case SCAM_NUM: return "integer or decimal";
-        case SCAM_CMP: return "integer, decimal or string";
-        case SCAM_ANY: return "any value";
-        */
         default: return "bad ScamVal type";
     }
 }

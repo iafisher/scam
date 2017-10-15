@@ -66,7 +66,7 @@ typedef struct ScamDict_rec {
 } ScamDict;
 
 
-/* Used by SCAM_LAMBDA. */
+/* Used by SCAM_FUNCTION. */
 typedef struct {
     SCAMVAL_HEADER;
     ScamDict* env; /* A pointer to the environment the function was created in, for closures. */

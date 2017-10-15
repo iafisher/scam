@@ -802,7 +802,7 @@ ScamVal* builtin_sort(ScamSeq* args) {
 }
 
 ScamVal* builtin_map(ScamSeq* args) {
-    TYPECHECK_ARGS("map", args, 2, SCAM_FUNCTION, SCAM_LIST);
+    TYPECHECK_ARGS("map", args, 2, SCAM_BASE_FUNCTION, SCAM_LIST);
     ScamVal* fun = ScamSeq_pop(args, 0);
     ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
     for (size_t i = 0; i < ScamSeq_len(list_arg); i++) {
@@ -823,7 +823,7 @@ ScamVal* builtin_map(ScamSeq* args) {
 }
 
 ScamVal* builtin_filter(ScamSeq* args) {
-    TYPECHECK_ARGS("filter", args, 2, SCAM_FUNCTION, SCAM_LIST);
+    TYPECHECK_ARGS("filter", args, 2, SCAM_BASE_FUNCTION, SCAM_LIST);
     ScamVal* fun = ScamSeq_pop(args, 0);
     ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
     for (size_t i = 0; i < ScamSeq_len(list_arg); i++) {

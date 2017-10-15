@@ -22,7 +22,7 @@ static void gc_mark(ScamVal* v) {
                     gc_mark(ScamSeq_get((ScamSeq*)v, i));
                 }
                 break;
-            case SCAM_LAMBDA:
+            case SCAM_FUNCTION:
                 {
                     ScamFunction* f = (ScamFunction*)v;
                     gc_mark((ScamVal*)(f->parameters));

@@ -60,7 +60,7 @@ ScamVal* eval(ScamVal* ast_or_val, ScamDict* env) {
         }
         ScamVal* fun_val = ScamSeq_pop(arglist, 0);
         ScamVal* ret;
-        if (ScamVal_typecheck(fun_val, SCAM_FUNCTION)) {
+        if (ScamVal_typecheck(fun_val, SCAM_BASE_FUNCTION)) {
             ret = eval_apply(fun_val, arglist);
         } else {
             gc_unset_root((ScamVal*)arglist);
@@ -172,7 +172,7 @@ ScamVal* eval_or(ScamSeq* ast, ScamDict* env) {
 
 
 ScamVal* eval_apply(ScamVal* fun_val, ScamSeq* arglist) {
-    if (fun_val->type == SCAM_LAMBDA) {
+    if (fun_val->type == SCAM_FUNCTION) {
         ScamFunction* lamb = (ScamFunction*)fun_val;
         // make sure the right number of arguments were given
         size_t expected = ScamFunction_nparams(lamb);
