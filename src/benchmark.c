@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     size_t reps = 10;
     double shortest = 666;
     for (size_t i = 0; i < reps; i++) {
-        ScamExpr* ast = parse_file(argv[1]);
+        ScamSeq* ast = parse_file(argv[1]);
         clock_t begin = clock();
         eval((ScamVal*)ast, env);
         clock_t end = clock();

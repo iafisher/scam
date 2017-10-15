@@ -24,15 +24,15 @@
 // Assert that no element of the args is equal to zero, unless only the first element is zero and 
 // the args contains only two arguments
 #define ASSERT_NO_ZEROS(args) { \
-    if (ScamSeq_len((ScamSeq*)args) > 2) { \
-        ScamVal* first = ScamSeq_get((ScamSeq*)args, 0); \
+    if (ScamSeq_len(args) > 2) { \
+        ScamVal* first = ScamSeq_get(args, 0); \
         if ((first->type == SCAM_INT && ScamInt_unbox((ScamInt*)first) == 0) || \
             (first->type == SCAM_DEC && ScamDec_unbox((ScamDec*)first) == 0.0)) { \
             return (ScamVal*)ScamErr_new("cannot divide by zero"); \
         } \
     } \
-    for (int i = 1; i < ScamSeq_len((ScamSeq*)args); i++) { \
-        ScamVal* v = ScamSeq_get((ScamSeq*)args, i); \
+    for (int i = 1; i < ScamSeq_len(args); i++) { \
+        ScamVal* v = ScamSeq_get(args, i); \
         if ((v->type == SCAM_INT && ScamInt_unbox((ScamInt*)v) == 0) || \
             (v->type == SCAM_DEC && ScamDec_unbox((ScamDec*)v) == 0.0)) { \
             return (ScamVal*)ScamErr_new("cannot divide by zero"); \
@@ -40,16 +40,16 @@
     } \
 }
 
-ScamVal* typecheck_args(char* name, ScamList* args, size_t arity, ...) {
-    size_t n = ScamSeq_len((ScamSeq*)args);
+ScamVal* typecheck_args(char* name, ScamSeq* args, size_t arity, ...) {
+    size_t n = ScamSeq_len(args);
     if (n != arity) {
         return (ScamVal*)ScamErr_arity(name, n, arity);
     }
     va_list vlist;
     va_start(vlist, arity);
-    for (int i = 0; i < ScamSeq_len((ScamSeq*)args); i++) {
+    for (int i = 0; i < ScamSeq_len(args); i++) {
         int type_we_need = va_arg(vlist, int);
-        ScamVal* v = ScamSeq_get((ScamSeq*)args, i);
+        ScamVal* v = ScamSeq_get(args, i);
         if (!ScamVal_typecheck(v, type_we_need)) {
             return (ScamVal*)ScamErr_type(name, i, v->type, type_we_need);
         }
@@ -57,13 +57,13 @@ ScamVal* typecheck_args(char* name, ScamList* args, size_t arity, ...) {
     return NULL;
 }
 
-ScamVal* typecheck_all(char* name, ScamList* args, int min, int type_we_need) {
-    size_t n = ScamSeq_len((ScamSeq*)args);
+ScamVal* typecheck_all(char* name, ScamSeq* args, int min, int type_we_need) {
+    size_t n = ScamSeq_len(args);
     if (n < min) {
         return (ScamVal*)ScamErr_min_arity(name, n, min);
     }
     for (int i = 0; i < n; i++) {
-        ScamVal* v = ScamSeq_get((ScamSeq*)args, i);
+        ScamVal* v = ScamSeq_get(args, i);
         if (!ScamVal_typecheck(v, type_we_need)) {
             return (ScamVal*)ScamErr_type(name, i, v->type, type_we_need);
         }
@@ -72,24 +72,24 @@ ScamVal* typecheck_all(char* name, ScamList* args, int min, int type_we_need) {
 }
 
 typedef long long (int_arith_func)(long long, long long);
-ScamVal* generic_int_arith(char* name, ScamList* args, int_arith_func op) {
+ScamVal* generic_int_arith(char* name, ScamSeq* args, int_arith_func op) {
     TYPECHECK_ALL(name, args, 2, SCAM_INT);
-    ScamInt* first = (ScamInt*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamInt* first = (ScamInt*)ScamSeq_get(args, 0);
     long long sum = ScamInt_unbox(first);
-    for (int i = 1; i < ScamSeq_len((ScamSeq*)args); i++) {
-        sum = op(sum, ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, i)));
+    for (int i = 1; i < ScamSeq_len(args); i++) {
+        sum = op(sum, ScamInt_unbox((ScamInt*)ScamSeq_get(args, i)));
     }
     return (ScamVal*)ScamInt_new(sum);
 }
 
 typedef double (arith_func)(double, double);
-ScamVal* generic_mixed_arith(char* name, ScamList* args, arith_func op, int coerce_to_double) {
+ScamVal* generic_mixed_arith(char* name, ScamSeq* args, arith_func op, int coerce_to_double) {
     TYPECHECK_ALL(name, args, 2, SCAM_NUM);
-    ScamDec* first = (ScamDec*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamDec* first = (ScamDec*)ScamSeq_get(args, 0);
     double sum = ScamDec_unbox(first);
     int seen_double = (first->type == SCAM_DEC) ? 1 : 0;
-    for (int i = 1; i < ScamSeq_len((ScamSeq*)args); i++) {
-        ScamVal* v = ScamSeq_get((ScamSeq*)args, i);
+    for (int i = 1; i < ScamSeq_len(args); i++) {
+        ScamVal* v = ScamSeq_get(args, i);
         if (v->type == SCAM_INT) {
             sum = op(sum, ScamInt_unbox((ScamInt*)v));
         } else {
@@ -105,13 +105,13 @@ ScamVal* generic_mixed_arith(char* name, ScamList* args, arith_func op, int coer
 }
 
 double arith_add(double x, double y) { return x + y; }
-ScamVal* builtin_add(ScamList* args) {
+ScamVal* builtin_add(ScamSeq* args) {
     return generic_mixed_arith("+", args, arith_add, 0);
 }
 
-ScamVal* builtin_negate(ScamList* args) {
+ScamVal* builtin_negate(ScamSeq* args) {
     TYPECHECK_ARGS("-", args, 1, SCAM_NUM);
-    ScamVal* v = ScamSeq_get((ScamSeq*)args, 0);
+    ScamVal* v = ScamSeq_get(args, 0);
     if (v->type == SCAM_INT) {
         return (ScamVal*)ScamInt_new(-1 * ScamInt_unbox((ScamInt*)v));
     } else {
@@ -120,8 +120,8 @@ ScamVal* builtin_negate(ScamList* args) {
 }
 
 double arith_sub(double x, double y) { return x - y; }
-ScamVal* builtin_sub(ScamList* args) {
-    if (ScamSeq_len((ScamSeq*)args) == 1) {
+ScamVal* builtin_sub(ScamSeq* args) {
+    if (ScamSeq_len(args) == 1) {
         return builtin_negate(args);
     } else {
         return generic_mixed_arith("-", args, arith_sub, 0);
@@ -129,31 +129,31 @@ ScamVal* builtin_sub(ScamList* args) {
 }
 
 double arith_mult(double x, double y) { return x * y; }
-ScamVal* builtin_mult(ScamList* args) {
+ScamVal* builtin_mult(ScamSeq* args) {
     return generic_mixed_arith("*", args, arith_mult, 0);
 }
 
 long long arith_rem(long long x, long long y) { return x % y; }
-ScamVal* builtin_rem(ScamList* args) {
+ScamVal* builtin_rem(ScamSeq* args) {
     ASSERT_NO_ZEROS(args);
     return generic_int_arith("%", args, arith_rem);
 }
 
 double arith_real_div(double x, double y) { return x / y; }
-ScamVal* builtin_real_div(ScamList* args) {
+ScamVal* builtin_real_div(ScamSeq* args) {
     ASSERT_NO_ZEROS(args);
     return generic_mixed_arith("/", args, arith_real_div, 1);
 }
 
 long long arith_floor_div(long long x, long long y) { return x / y; }
-ScamVal* builtin_floor_div(ScamList* args) {
+ScamVal* builtin_floor_div(ScamSeq* args) {
     ASSERT_NO_ZEROS(args);
     return generic_int_arith("//", args, arith_floor_div);
 }
 
-ScamVal* builtin_len(ScamList* args) {
+ScamVal* builtin_len(ScamSeq* args) {
     TYPECHECK_ARGS("len", args, 1, SCAM_SEQ);
-    ScamVal* arg = ScamSeq_get((ScamSeq*)args, 0);
+    ScamVal* arg = ScamSeq_get(args, 0);
     if (arg->type == SCAM_STR) {
         return (ScamVal*)ScamInt_new(ScamStr_len((ScamStr*)arg));
     } else {
@@ -161,9 +161,9 @@ ScamVal* builtin_len(ScamList* args) {
     } 
 }
 
-ScamVal* builtin_empty(ScamList* args) {
+ScamVal* builtin_empty(ScamSeq* args) {
     TYPECHECK_ARGS("empty?", args, 1, SCAM_SEQ);
-    ScamVal* arg = ScamSeq_get((ScamSeq*)args, 0);
+    ScamVal* arg = ScamSeq_get(args, 0);
     if (arg->type == SCAM_STR) {
         return (ScamVal*)ScamBool_new(ScamStr_len((ScamStr*)arg) == 0);
     } else {
@@ -171,19 +171,19 @@ ScamVal* builtin_empty(ScamList* args) {
     } 
 }
 
-ScamVal* builtin_list_get(ScamList* args) {
-    ScamVal* list_arg = ScamSeq_get((ScamSeq*)args, 0);
-    size_t i = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
-    if (i >= 0 && i < ScamSeq_len((ScamSeq*)list_arg)) {
-        return gc_copy_ScamVal(ScamSeq_get((ScamSeq*)list_arg, i));
+ScamVal* builtin_list_get(ScamSeq* args) {
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    size_t i = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
+    if (i >= 0 && i < ScamSeq_len(list_arg)) {
+        return gc_copy_ScamVal(ScamSeq_get(list_arg, i));
     } else {
         return (ScamVal*)ScamErr_new("attempted sequence access out of range");
     }
 }
 
-ScamVal* builtin_str_get(ScamList* args) {
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
-    size_t i = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
+ScamVal* builtin_str_get(ScamSeq* args) {
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
+    size_t i = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
     if (i >= 0 && i < ScamStr_len(str_arg)) {
         return (ScamVal*)ScamStr_from_char(ScamStr_get(str_arg, i));
     } else {
@@ -191,15 +191,15 @@ ScamVal* builtin_str_get(ScamList* args) {
     }
 }
 
-ScamVal* builtin_dict_get(ScamList* args) {
-    ScamDict* dict_arg = (ScamDict*)ScamSeq_get((ScamSeq*)args, 0);
-    ScamSym* key_arg = (ScamSym*)ScamSeq_get((ScamSeq*)args, 1);
+ScamVal* builtin_dict_get(ScamSeq* args) {
+    ScamDict* dict_arg = (ScamDict*)ScamSeq_get(args, 0);
+    ScamStr* key_arg = (ScamStr*)ScamSeq_get(args, 1);
     return ScamDict_lookup(dict_arg, key_arg);
 }
 
-ScamVal* builtin_get(ScamList* args) {
+ScamVal* builtin_get(ScamSeq* args) {
     TYPECHECK_ARGS("get", args, 2, SCAM_CONTAINER, SCAM_ANY);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_DICT) {
         return builtin_dict_get(args);
     } else {
@@ -212,23 +212,23 @@ ScamVal* builtin_get(ScamList* args) {
     }
 }
 
-ScamVal* builtin_str_slice(ScamList* args) {
-    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
-    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 2));
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+ScamVal* builtin_str_slice(ScamSeq* args) {
+    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
+    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 2));
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     return (ScamVal*)ScamStr_substr(str_arg, start, end);
 }
 
-ScamVal* builtin_list_slice(ScamList* args) {
-    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
-    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 2));
-    ScamList* list_arg = (ScamList*)ScamSeq_get((ScamSeq*)args, 0);
-    return (ScamVal*)ScamSeq_subseq((ScamSeq*)list_arg, start, end);
+ScamVal* builtin_list_slice(ScamSeq* args) {
+    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
+    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 2));
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    return (ScamVal*)ScamSeq_subseq(list_arg, start, end);
 }
 
-ScamVal* builtin_slice(ScamList* args) {
+ScamVal* builtin_slice(ScamSeq* args) {
     TYPECHECK_ARGS("slice", args, 3, SCAM_SEQ, SCAM_INT, SCAM_INT);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_STR) {
         return builtin_str_slice(args);
     } else {
@@ -236,21 +236,21 @@ ScamVal* builtin_slice(ScamList* args) {
     }
 }
 
-ScamVal* builtin_str_take(ScamList* args) {
-    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+ScamVal* builtin_str_take(ScamSeq* args) {
+    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     return (ScamVal*)ScamStr_substr(str_arg, 0, end);
 }
 
-ScamVal* builtin_list_take(ScamList* args) {
-    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
-    ScamList* list_arg = (ScamList*)ScamSeq_get((ScamSeq*)args, 0);
-    return (ScamVal*)ScamSeq_subseq((ScamSeq*)list_arg, 0, end);
+ScamVal* builtin_list_take(ScamSeq* args) {
+    size_t end = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    return (ScamVal*)ScamSeq_subseq(list_arg, 0, end);
 }
 
-ScamVal* builtin_take(ScamList* args) {
+ScamVal* builtin_take(ScamSeq* args) {
     TYPECHECK_ARGS("take", args, 2, SCAM_SEQ, SCAM_INT);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_STR) {
         return builtin_str_take(args);
     } else {
@@ -258,21 +258,21 @@ ScamVal* builtin_take(ScamList* args) {
     }
 }
 
-ScamVal* builtin_str_drop(ScamList* args) {
-    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+ScamVal* builtin_str_drop(ScamSeq* args) {
+    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     return (ScamVal*)ScamStr_substr(str_arg, start, ScamStr_len(str_arg));
 }
 
-ScamVal* builtin_list_drop(ScamList* args) {
-    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
-    ScamList* list_arg = (ScamList*)ScamSeq_get((ScamSeq*)args, 0);
-    return (ScamVal*)ScamSeq_subseq((ScamSeq*)list_arg, start, ScamSeq_len((ScamSeq*)list_arg));
+ScamVal* builtin_list_drop(ScamSeq* args) {
+    size_t start = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    return (ScamVal*)ScamSeq_subseq(list_arg, start, ScamSeq_len(list_arg));
 }
 
-ScamVal* builtin_drop(ScamList* args) {
+ScamVal* builtin_drop(ScamSeq* args) {
     TYPECHECK_ARGS("drop", args, 2, SCAM_SEQ, SCAM_INT);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_STR) {
         return builtin_str_drop(args);
     } else {
@@ -280,17 +280,17 @@ ScamVal* builtin_drop(ScamList* args) {
     }
 }
 
-ScamVal* builtin_list_head(ScamList* args) {
-    ScamVal* list_arg = ScamSeq_get((ScamSeq*)args, 0);
-    if (ScamSeq_len((ScamSeq*)list_arg) > 0) {
-        return gc_copy_ScamVal(ScamSeq_get((ScamSeq*)list_arg, 0));
+ScamVal* builtin_list_head(ScamSeq* args) {
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    if (ScamSeq_len(list_arg) > 0) {
+        return gc_copy_ScamVal(ScamSeq_get(list_arg, 0));
     } else {
         return (ScamVal*)ScamErr_new("cannot take head of empty list");
     }
 }
 
-ScamVal* builtin_str_head(ScamList* args) {
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+ScamVal* builtin_str_head(ScamSeq* args) {
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     if (ScamStr_len(str_arg) > 0) {
         return (ScamVal*)ScamStr_from_char(ScamStr_get(str_arg, 0));
     } else {
@@ -298,9 +298,9 @@ ScamVal* builtin_str_head(ScamList* args) {
     }
 }
 
-ScamVal* builtin_head(ScamList* args) {
+ScamVal* builtin_head(ScamSeq* args) {
     TYPECHECK_ARGS("head", args, 1, SCAM_SEQ);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_STR) {
         return builtin_str_head(args);
     } else {
@@ -308,21 +308,21 @@ ScamVal* builtin_head(ScamList* args) {
     }
 }
 
-ScamVal* builtin_list_tail(ScamList* args) {
-    ScamVal* list_arg = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamSeq_delete((ScamSeq*)list_arg, 0);
-    return list_arg;
+ScamVal* builtin_list_tail(ScamSeq* args) {
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    ScamSeq_delete(list_arg, 0);
+    return (ScamVal*)list_arg;
 }
 
-ScamVal* builtin_str_tail(ScamList* args) {
-    ScamStr* str_arg = (ScamStr*)ScamSeq_pop((ScamSeq*)args, 0);
+ScamVal* builtin_str_tail(ScamSeq* args) {
+    ScamStr* str_arg = (ScamStr*)ScamSeq_pop(args, 0);
     ScamStr_pop(str_arg, 0);
     return (ScamVal*)str_arg;
 }
 
-ScamVal* builtin_tail(ScamList* args) {
+ScamVal* builtin_tail(ScamSeq* args) {
     TYPECHECK_ARGS("tail", args, 1, SCAM_SEQ);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_STR) {
         return builtin_str_tail(args);
     } else {
@@ -330,17 +330,17 @@ ScamVal* builtin_tail(ScamList* args) {
     }
 }
 
-ScamVal* builtin_list_last(ScamList* args) {
-    ScamVal* list_arg = ScamSeq_get((ScamSeq*)args, 0);
-    if (ScamSeq_len((ScamSeq*)list_arg) > 0) {
-        return gc_copy_ScamVal(ScamSeq_get((ScamSeq*)list_arg, ScamSeq_len((ScamSeq*)list_arg)-1));
+ScamVal* builtin_list_last(ScamSeq* args) {
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    if (ScamSeq_len(list_arg) > 0) {
+        return gc_copy_ScamVal(ScamSeq_get(list_arg, ScamSeq_len(list_arg)-1));
     } else {
         return (ScamVal*)ScamErr_new("cannot take last of empty list");
     }
 }
 
-ScamVal* builtin_str_last(ScamList* args) {
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+ScamVal* builtin_str_last(ScamSeq* args) {
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     size_t n = ScamStr_len(str_arg);
     if (n > 0) {
         return (ScamVal*)ScamStr_from_char(ScamStr_get(str_arg, n - 1));
@@ -349,9 +349,9 @@ ScamVal* builtin_str_last(ScamList* args) {
     }
 }
 
-ScamVal* builtin_last(ScamList* args) {
+ScamVal* builtin_last(ScamSeq* args) {
     TYPECHECK_ARGS("last", args, 1, SCAM_SEQ);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_STR) {
         return builtin_str_last(args);
     } else {
@@ -359,22 +359,22 @@ ScamVal* builtin_last(ScamList* args) {
     } 
 }
 
-ScamVal* builtin_list_init(ScamList* args) {
-    ScamVal* list_arg = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamSeq_delete((ScamSeq*)list_arg, ScamSeq_len((ScamSeq*)list_arg) - 1);
-    return list_arg;
+ScamVal* builtin_list_init(ScamSeq* args) {
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    ScamSeq_delete(list_arg, ScamSeq_len(list_arg) - 1);
+    return (ScamVal*)list_arg;
 }
 
-ScamVal* builtin_str_init(ScamList* args) {
-    ScamStr* str_arg = (ScamStr*)ScamSeq_pop((ScamSeq*)args, 0);
+ScamVal* builtin_str_init(ScamSeq* args) {
+    ScamStr* str_arg = (ScamStr*)ScamSeq_pop(args, 0);
     size_t n = ScamStr_len(str_arg);
     ScamStr_pop(str_arg, n - 1);
     return (ScamVal*)str_arg;
 }
 
-ScamVal* builtin_init(ScamList* args) {
+ScamVal* builtin_init(ScamSeq* args) {
     TYPECHECK_ARGS("init", args, 1, SCAM_SEQ);
-    int type = ScamSeq_get((ScamSeq*)args, 0)->type;
+    int type = ScamSeq_get(args, 0)->type;
     if (type == SCAM_STR) {
         return builtin_str_init(args);
     } else {
@@ -382,54 +382,54 @@ ScamVal* builtin_init(ScamList* args) {
     }
 }
 
-ScamVal* builtin_insert(ScamList* args) {
+ScamVal* builtin_insert(ScamSeq* args) {
     TYPECHECK_ARGS("insert", args, 3, SCAM_LIST, SCAM_INT, SCAM_ANY);
-    ScamVal* list_arg = ScamSeq_pop((ScamSeq*)args, 0);
-    size_t i = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 0));
-    ScamVal* to_insert = ScamSeq_pop((ScamSeq*)args, 1);
-    if (i >= 0 && i <= ScamSeq_len((ScamSeq*)list_arg)) {
-        ScamSeq_insert((ScamSeq*)list_arg, i, to_insert);
-        return list_arg;
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    size_t i = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 0));
+    ScamVal* to_insert = ScamSeq_pop(args, 1);
+    if (i >= 0 && i <= ScamSeq_len(list_arg)) {
+        ScamSeq_insert(list_arg, i, to_insert);
+        return (ScamVal*)list_arg;
     } else {
         return (ScamVal*)ScamErr_new("attempted sequence access out of range");
     }
 }
 
-ScamVal* builtin_append(ScamList* args) {
+ScamVal* builtin_append(ScamSeq* args) {
     TYPECHECK_ARGS("append", args, 2, SCAM_LIST, SCAM_ANY);
-    ScamVal* list_arg = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamVal* v = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamSeq_append((ScamSeq*)list_arg, v);
-    return list_arg;
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    ScamVal* v = ScamSeq_pop(args, 0);
+    ScamSeq_append(list_arg, v);
+    return (ScamVal*)list_arg;
 }
 
-ScamVal* builtin_prepend(ScamList* args) {
+ScamVal* builtin_prepend(ScamSeq* args) {
     TYPECHECK_ARGS("prepend", args, 2, SCAM_ANY, SCAM_LIST);
-    ScamVal* v = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamVal* list_arg = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamSeq_prepend((ScamSeq*)list_arg, v);
-    return list_arg;
+    ScamVal* v = ScamSeq_pop(args, 0);
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    ScamSeq_prepend(list_arg, v);
+    return (ScamVal*)list_arg;
 }
 
-ScamVal* builtin_list_concat(ScamList* args) {
-    ScamVal* first_arg = ScamSeq_pop((ScamSeq*)args, 0);
-    while (ScamSeq_len((ScamSeq*)args) > 0) {
-        ScamSeq_concat((ScamSeq*)first_arg, (ScamSeq*)ScamSeq_pop((ScamSeq*)args, 0));
-    }
-    return first_arg;
-}
-
-ScamVal* builtin_str_concat(ScamList* args) {
-    ScamStr* first_arg = (ScamStr*)ScamSeq_pop((ScamSeq*)args, 0);
-    while (ScamSeq_len((ScamSeq*)args) > 0) {
-        ScamStr_concat(first_arg, (ScamStr*)ScamSeq_pop((ScamSeq*)args, 0));
+ScamVal* builtin_list_concat(ScamSeq* args) {
+    ScamSeq* first_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    while (ScamSeq_len(args) > 0) {
+        ScamSeq_concat(first_arg, (ScamSeq*)ScamSeq_pop(args, 0));
     }
     return (ScamVal*)first_arg;
 }
 
-ScamVal* builtin_concat(ScamList* args) {
+ScamVal* builtin_str_concat(ScamSeq* args) {
+    ScamStr* first_arg = (ScamStr*)ScamSeq_pop(args, 0);
+    while (ScamSeq_len(args) > 0) {
+        ScamStr_concat(first_arg, (ScamStr*)ScamSeq_pop(args, 0));
+    }
+    return (ScamVal*)first_arg;
+}
+
+ScamVal* builtin_concat(ScamSeq* args) {
     TYPECHECK_ALL("concat", args, 2, SCAM_SEQ);
-    int narrowest_type = ScamSeq_narrowest_type((ScamSeq*)args);
+    int narrowest_type = ScamSeq_narrowest_type(args);
     if (narrowest_type == SCAM_LIST) {
         return builtin_list_concat(args);
     } else if (narrowest_type == SCAM_STR) {
@@ -439,47 +439,47 @@ ScamVal* builtin_concat(ScamList* args) {
     }
 }
 
-ScamVal* builtin_find(ScamList* args) {
+ScamVal* builtin_find(ScamSeq* args) {
     TYPECHECK_ARGS("find", args, 2, SCAM_LIST, SCAM_ANY);
-    ScamVal* list_arg = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* datum = ScamSeq_get((ScamSeq*)args, 1);
-    for (int i = 0; i < ScamSeq_len((ScamSeq*)list_arg); i++) {
-        if (ScamVal_eq(ScamSeq_get((ScamSeq*)list_arg, i), datum)) {
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    ScamVal* datum = ScamSeq_get(args, 1);
+    for (int i = 0; i < ScamSeq_len(list_arg); i++) {
+        if (ScamVal_eq(ScamSeq_get(list_arg, i), datum)) {
             return (ScamVal*)ScamInt_new(i);
         }
     }
     return (ScamVal*)ScamBool_new(0);
 }
 
-ScamVal* builtin_rfind(ScamList* args) {
+ScamVal* builtin_rfind(ScamSeq* args) {
     TYPECHECK_ARGS("rfind", args, 2, SCAM_LIST, SCAM_ANY);
-    ScamVal* list_arg = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* datum = ScamSeq_get((ScamSeq*)args, 1);
-    for (int i = ScamSeq_len((ScamSeq*)list_arg) - 1; i >= 0; i--) {
-        if (ScamVal_eq(ScamSeq_get((ScamSeq*)list_arg, i), datum)) {
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_get(args, 0);
+    ScamVal* datum = ScamSeq_get(args, 1);
+    for (int i = ScamSeq_len(list_arg) - 1; i >= 0; i--) {
+        if (ScamVal_eq(ScamSeq_get(list_arg, i), datum)) {
             return (ScamVal*)ScamInt_new(i);
         }
     }
     return (ScamVal*)ScamBool_new(0);
 }
 
-ScamVal* builtin_upper(ScamList* args) {
+ScamVal* builtin_upper(ScamSeq* args) {
     TYPECHECK_ARGS("upper", args, 1, SCAM_STR);
-    ScamStr* str_arg = (ScamStr*)ScamSeq_pop((ScamSeq*)args, 0);
+    ScamStr* str_arg = (ScamStr*)ScamSeq_pop(args, 0);
     ScamStr_map(str_arg, toupper);
     return (ScamVal*)str_arg;
 }
 
-ScamVal* builtin_lower(ScamList* args) {
+ScamVal* builtin_lower(ScamSeq* args) {
     TYPECHECK_ARGS("lower", args, 1, SCAM_STR);
-    ScamStr* str_arg = (ScamStr*)ScamSeq_pop((ScamSeq*)args, 0);
+    ScamStr* str_arg = (ScamStr*)ScamSeq_pop(args, 0);
     ScamStr_map(str_arg, tolower);
     return (ScamVal*)str_arg;
 }
 
-ScamVal* builtin_isupper(ScamList* args) {
+ScamVal* builtin_isupper(ScamSeq* args) {
     TYPECHECK_ARGS("isupper", args, 1, SCAM_STR);
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     int seen_upper = 0;
     for (size_t i = 0; i < ScamStr_len(str_arg); i++) {
         char c = ScamStr_get(str_arg, i);
@@ -494,9 +494,9 @@ ScamVal* builtin_isupper(ScamList* args) {
     return (ScamVal*)ScamBool_new(seen_upper);
 }
 
-ScamVal* builtin_islower(ScamList* args) {
+ScamVal* builtin_islower(ScamSeq* args) {
     TYPECHECK_ARGS("islower", args, 1, SCAM_STR);
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     int seen_lower = 0;
     for (size_t i = 0; i < ScamStr_len(str_arg); i++) {
         char c = ScamStr_get(str_arg, i);
@@ -511,9 +511,9 @@ ScamVal* builtin_islower(ScamList* args) {
     return (ScamVal*)ScamBool_new(seen_lower);
 }
 
-ScamVal* builtin_trim(ScamList* args) {
+ScamVal* builtin_trim(ScamSeq* args) {
     TYPECHECK_ARGS("trim", args, 1, SCAM_STR);
-    ScamStr* str_arg = (ScamStr*)ScamSeq_pop((ScamSeq*)args, 0);
+    ScamStr* str_arg = (ScamStr*)ScamSeq_pop(args, 0);
     size_t n = ScamStr_len(str_arg);
     // remove left whitespace
     size_t left_ws = 0;
@@ -531,10 +531,10 @@ ScamVal* builtin_trim(ScamList* args) {
     return (ScamVal*)str_arg;
 }
 
-ScamVal* builtin_split(ScamList* args) {
+ScamVal* builtin_split(ScamSeq* args) {
     TYPECHECK_ARGS("split", args, 1, SCAM_STR);
-    ScamList* ret = ScamList_new();
-    ScamStr* str_arg = (ScamStr*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamSeq* ret = ScamList_new();
+    ScamStr* str_arg = (ScamStr*)ScamSeq_get(args, 0);
     int start = 0;
     int in_word = 0;
     for (int i = 0; i < ScamStr_len(str_arg); i++) {
@@ -546,39 +546,39 @@ ScamVal* builtin_split(ScamList* args) {
         } else {
             if (in_word) {
                 in_word = 0;
-                ScamSeq_append((ScamSeq*)ret, (ScamVal*)ScamStr_substr(str_arg, start, i));
+                ScamSeq_append(ret, (ScamVal*)ScamStr_substr(str_arg, start, i));
             }
         }
     }
     // make sure to add the last word
     if (in_word) {
-        ScamSeq_append((ScamSeq*)ret, (ScamVal*)ScamStr_substr(str_arg, start, ScamStr_len(str_arg)));
+        ScamSeq_append(ret, (ScamVal*)ScamStr_substr(str_arg, start, ScamStr_len(str_arg)));
     }
     return (ScamVal*)ret;
 }
 
-ScamVal* builtin_bind(ScamList* args) {
+ScamVal* builtin_bind(ScamSeq* args) {
     TYPECHECK_ARGS("bind", args, 3, SCAM_DICT, SCAM_ANY, SCAM_ANY);
-    ScamDict* dict_arg = (ScamDict*)ScamSeq_get((ScamSeq*)args, 0);
-    ScamSym* key_arg = (ScamSym*)ScamSeq_get((ScamSeq*)args, 1);
-    ScamVal* val_arg = ScamSeq_get((ScamSeq*)args, 2);
+    ScamDict* dict_arg = (ScamDict*)ScamSeq_get(args, 0);
+    ScamStr* key_arg = (ScamStr*)ScamSeq_get(args, 1);
+    ScamVal* val_arg = ScamSeq_get(args, 2);
     ScamDict_bind(dict_arg, key_arg, val_arg);
     return (ScamVal*)dict_arg;
 }
 
-ScamVal* builtin_list(ScamList* args) {
+ScamVal* builtin_list(ScamSeq* args) {
     args->type = SCAM_LIST;
     return (ScamVal*)args;
 }
 
-ScamVal* builtin_dict(ScamList* args) {
+ScamVal* builtin_dict(ScamSeq* args) {
     TYPECHECK_ALL("dict", args, 0, SCAM_LIST);
     ScamDict* ret = ScamDict_new(NULL);
-    for (size_t i = 0; i < ScamSeq_len((ScamSeq*)args); i++) {
-        ScamVal* pair = ScamSeq_get((ScamSeq*)args, i);
-        if (ScamSeq_len((ScamSeq*)pair) == 2) {
-            ScamSym* key = (ScamSym*)ScamSeq_get((ScamSeq*)pair, 0);
-            ScamVal* val = ScamSeq_get((ScamSeq*)pair, 1);
+    for (size_t i = 0; i < ScamSeq_len(args); i++) {
+        ScamSeq* pair = (ScamSeq*)ScamSeq_get(args, i);
+        if (ScamSeq_len(pair) == 2) {
+            ScamStr* key = (ScamStr*)ScamSeq_get(pair, 0);
+            ScamVal* val = ScamSeq_get(pair, 1);
             ScamDict_bind(ret, key, val);
         } else {
             gc_unset_root((ScamVal*)ret);
@@ -588,19 +588,19 @@ ScamVal* builtin_dict(ScamList* args) {
     return (ScamVal*)ret;
 }
 
-ScamVal* builtin_str(ScamList* args) {
+ScamVal* builtin_str(ScamSeq* args) {
     TYPECHECK_ARGS("str", args, 1, SCAM_ANY);
-    return (ScamVal*)ScamStr_no_copy(ScamVal_to_str((ScamSeq_get((ScamSeq*)args, 0))));
+    return (ScamVal*)ScamStr_no_copy(ScamVal_to_str((ScamSeq_get(args, 0))));
 }
 
-ScamVal* builtin_repr(ScamList* args) {
+ScamVal* builtin_repr(ScamSeq* args) {
     TYPECHECK_ARGS("repr", args, 1, SCAM_ANY);
-    return (ScamVal*)ScamStr_no_copy(ScamVal_to_repr(ScamSeq_get((ScamSeq*)args, 0)));
+    return (ScamVal*)ScamStr_no_copy(ScamVal_to_repr(ScamSeq_get(args, 0)));
 }
 
-ScamVal* builtin_print(ScamList* args) {
+ScamVal* builtin_print(ScamSeq* args) {
     TYPECHECK_ARGS("print", args, 1, SCAM_ANY);
-    ScamVal* arg = ScamSeq_get((ScamSeq*)args, 0);
+    ScamVal* arg = ScamSeq_get(args, 0);
     if (arg->type != SCAM_STR) {
         ScamVal_print(arg);
     } else {
@@ -609,9 +609,9 @@ ScamVal* builtin_print(ScamList* args) {
     return ScamNull_new();
 }
 
-ScamVal* builtin_println(ScamList* args) {
+ScamVal* builtin_println(ScamSeq* args) {
     TYPECHECK_ARGS("println", args, 1, SCAM_ANY);
-    ScamVal* arg = ScamSeq_get((ScamSeq*)args, 0);
+    ScamVal* arg = ScamSeq_get(args, 0);
     if (arg->type != SCAM_STR) {
         ScamVal_println(arg);
     } else {
@@ -620,17 +620,17 @@ ScamVal* builtin_println(ScamList* args) {
     return ScamNull_new();
 }
 
-ScamVal* builtin_open(ScamList* args) {
+ScamVal* builtin_open(ScamSeq* args) {
     TYPECHECK_ARGS("open", args, 2, SCAM_STR, SCAM_STR);
-    const char* fname = ScamStr_unbox((ScamStr*)ScamSeq_get((ScamSeq*)args, 0));
-    const char* mode = ScamStr_unbox((ScamStr*)ScamSeq_get((ScamSeq*)args, 1));
+    const char* fname = ScamStr_unbox((ScamStr*)ScamSeq_get(args, 0));
+    const char* mode = ScamStr_unbox((ScamStr*)ScamSeq_get(args, 1));
     FILE* fp = fopen(fname, mode);
     return (ScamVal*)ScamPort_new(fp);
 }
 
-ScamVal* builtin_close(ScamList* args) {
+ScamVal* builtin_close(ScamSeq* args) {
     TYPECHECK_ARGS("close", args, 1, SCAM_PORT);
-    ScamPort* port_arg = (ScamPort*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamPort* port_arg = (ScamPort*)ScamSeq_get(args, 0);
     if (ScamPort_status(port_arg) == SCAMPORT_OPEN) {
         fclose(ScamPort_unbox(port_arg));
         ScamPort_set_status(port_arg, SCAMPORT_CLOSED);
@@ -640,9 +640,9 @@ ScamVal* builtin_close(ScamList* args) {
     }
 }
 
-ScamVal* builtin_port_good(ScamList* args) {
+ScamVal* builtin_port_good(ScamSeq* args) {
     TYPECHECK_ARGS("port-good?", args, 1, SCAM_PORT);
-    ScamPort* port_arg = (ScamPort*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamPort* port_arg = (ScamPort*)ScamSeq_get(args, 0);
     if (ScamPort_status(port_arg) == SCAMPORT_OPEN) {
         FILE* fp = ScamPort_unbox(port_arg);
         return (ScamVal*)ScamBool_new(!ferror(fp) && !feof(fp));
@@ -651,12 +651,12 @@ ScamVal* builtin_port_good(ScamList* args) {
     }
 }
 
-ScamVal* builtin_readline(ScamList* args) {
-    if (ScamSeq_len((ScamSeq*)args) == 0) {
+ScamVal* builtin_readline(ScamSeq* args) {
+    if (ScamSeq_len(args) == 0) {
         return (ScamVal*)ScamStr_read(stdin);
     } else {
         TYPECHECK_ARGS("readline", args, 1, SCAM_PORT);
-        ScamPort* port_arg = (ScamPort*)ScamSeq_get((ScamSeq*)args, 0);
+        ScamPort* port_arg = (ScamPort*)ScamSeq_get(args, 0);
         if (ScamPort_status(port_arg) == SCAMPORT_OPEN) {
             return (ScamVal*)ScamStr_read(ScamPort_unbox(port_arg));
         } else {
@@ -665,9 +665,9 @@ ScamVal* builtin_readline(ScamList* args) {
     }
 }
 
-ScamVal* builtin_readchar(ScamList* args) {
+ScamVal* builtin_readchar(ScamSeq* args) {
     TYPECHECK_ARGS("readchar", args, 1, SCAM_PORT);
-    ScamPort* port_arg = (ScamPort*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamPort* port_arg = (ScamPort*)ScamSeq_get(args, 0);
     if (ScamPort_status(port_arg) == SCAMPORT_OPEN) {
         char c = fgetc(ScamPort_unbox(port_arg));
         if (c != EOF) {
@@ -680,32 +680,32 @@ ScamVal* builtin_readchar(ScamList* args) {
     }
 }
 
-ScamVal* builtin_ceil(ScamList* args) {
+ScamVal* builtin_ceil(ScamSeq* args) {
     TYPECHECK_ARGS("ceil", args, 1, SCAM_DEC);
-    double d = ScamDec_unbox((ScamDec*)ScamSeq_get((ScamSeq*)args, 0));
+    double d = ScamDec_unbox((ScamDec*)ScamSeq_get(args, 0));
     return (ScamVal*)ScamInt_new(ceil(d));
 }
 
-ScamVal* builtin_floor(ScamList* args) {
+ScamVal* builtin_floor(ScamSeq* args) {
     TYPECHECK_ARGS("floor", args, 1, SCAM_DEC);
-    double d = ScamDec_unbox((ScamDec*)ScamSeq_get((ScamSeq*)args, 0));
+    double d = ScamDec_unbox((ScamDec*)ScamSeq_get(args, 0));
     return (ScamVal*)ScamInt_new(floor(d));
 }
 
-ScamVal* builtin_divmod(ScamList* args) {
+ScamVal* builtin_divmod(ScamSeq* args) {
     TYPECHECK_ARGS("divmod", args, 2, SCAM_INT, SCAM_INT);
-    long long dividend = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 0));
-    long long divisor = ScamInt_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 1));
+    long long dividend = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 0));
+    long long divisor = ScamInt_unbox((ScamInt*)ScamSeq_get(args, 1));
     lldiv_t res = lldiv(dividend, divisor);
-    ScamList* ret = ScamList_new();
-    ScamSeq_append((ScamSeq*)ret, (ScamVal*)ScamInt_new(res.quot));
-    ScamSeq_append((ScamSeq*)ret, (ScamVal*)ScamInt_new(res.rem));
+    ScamSeq* ret = ScamList_new();
+    ScamSeq_append(ret, (ScamVal*)ScamInt_new(res.quot));
+    ScamSeq_append(ret, (ScamVal*)ScamInt_new(res.rem));
     return (ScamVal*)ret;
 }
 
-ScamVal* builtin_abs(ScamList* args) {
+ScamVal* builtin_abs(ScamSeq* args) {
     TYPECHECK_ARGS("abs", args, 1, SCAM_NUM);
-    ScamVal* num_arg = ScamSeq_get((ScamSeq*)args, 0);
+    ScamVal* num_arg = ScamSeq_get(args, 0);
     if (num_arg->type == SCAM_DEC) {
         double d = ScamDec_unbox((ScamDec*)num_arg);
         return (ScamVal*)ScamDec_new(fabs(d));
@@ -715,9 +715,9 @@ ScamVal* builtin_abs(ScamList* args) {
     }
 }
 
-ScamVal* builtin_sqrt(ScamList* args) {
+ScamVal* builtin_sqrt(ScamSeq* args) {
     TYPECHECK_ARGS("sqrt", args, 1, SCAM_NUM);
-    ScamDec* num_arg = (ScamDec*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamDec* num_arg = (ScamDec*)ScamSeq_get(args, 0);
     double d = ScamDec_unbox(num_arg);
     if (d >= 0) {
         return (ScamVal*)ScamDec_new(sqrt(d));
@@ -726,10 +726,10 @@ ScamVal* builtin_sqrt(ScamList* args) {
     }
 }
 
-ScamVal* builtin_pow(ScamList* args) {
+ScamVal* builtin_pow(ScamSeq* args) {
     TYPECHECK_ARGS("pow", args, 2, SCAM_NUM, SCAM_NUM);
-    ScamVal* base_arg = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* exp_arg = ScamSeq_get((ScamSeq*)args, 1);
+    ScamVal* base_arg = ScamSeq_get(args, 0);
+    ScamVal* exp_arg = ScamSeq_get(args, 1);
     double base = ScamDec_unbox((ScamDec*)base_arg);
     double exp = ScamDec_unbox((ScamDec*)exp_arg);
     if (base_arg->type == SCAM_INT && exp_arg->type == SCAM_INT) {
@@ -739,25 +739,25 @@ ScamVal* builtin_pow(ScamList* args) {
     }
 }
 
-ScamVal* builtin_ln(ScamList* args) {
+ScamVal* builtin_ln(ScamSeq* args) {
     TYPECHECK_ARGS("ln", args, 1, SCAM_NUM);
-    ScamDec* num_arg = (ScamDec*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamDec* num_arg = (ScamDec*)ScamSeq_get(args, 0);
     double d = ScamDec_unbox(num_arg);
     return (ScamVal*)ScamDec_new(log(d));
 }
 
-ScamVal* builtin_log(ScamList* args) {
+ScamVal* builtin_log(ScamSeq* args) {
     TYPECHECK_ARGS("log", args, 2, SCAM_NUM, SCAM_NUM);
-    ScamDec* num_arg = (ScamDec*)ScamSeq_get((ScamSeq*)args, 0);
-    ScamDec* base_arg = (ScamDec*)ScamSeq_get((ScamSeq*)args, 1);
+    ScamDec* num_arg = (ScamDec*)ScamSeq_get(args, 0);
+    ScamDec* base_arg = (ScamDec*)ScamSeq_get(args, 1);
     double d = ScamDec_unbox(num_arg);
     double base = ScamDec_unbox(base_arg);
     return (ScamVal*)ScamDec_new(log(d) / log(base));
 }
 
-ScamVal* builtin_assert(ScamList* args) {
+ScamVal* builtin_assert(ScamSeq* args) {
     TYPECHECK_ARGS("assert", args, 1, SCAM_BOOL);
-    ScamInt* cond = (ScamInt*)ScamSeq_get((ScamSeq*)args, 0);
+    ScamInt* cond = (ScamInt*)ScamSeq_get(args, 0);
     if (ScamBool_unbox(cond)) {
         return (ScamVal*)ScamBool_new(1);
     } else {
@@ -765,15 +765,15 @@ ScamVal* builtin_assert(ScamList* args) {
     }
 }
 
-ScamVal* builtin_range(ScamList* args) {
+ScamVal* builtin_range(ScamSeq* args) {
     TYPECHECK_ARGS("range", args, 2, SCAM_INT, SCAM_INT);
-    ScamInt* lower = (ScamInt*)ScamSeq_get((ScamSeq*)args, 0);
-    ScamInt* upper = (ScamInt*)ScamSeq_get((ScamSeq*)args, 1);
+    ScamInt* lower = (ScamInt*)ScamSeq_get(args, 0);
+    ScamInt* upper = (ScamInt*)ScamSeq_get(args, 1);
     if (ScamInt_unbox(lower) <= ScamInt_unbox(upper)) {
         int count = ScamInt_unbox(lower);
-        ScamList* ret = ScamList_new();
+        ScamSeq* ret = ScamList_new();
         while (count < ScamInt_unbox(upper)) {
-            ScamSeq_append((ScamSeq*)ret, (ScamVal*)ScamInt_new(count));
+            ScamSeq_append(ret, (ScamVal*)ScamInt_new(count));
             count++;
         }
         return (ScamVal*)ret;
@@ -794,24 +794,24 @@ int ScamVal_cmp(const void* a, const void* b) {
     }
 }
 
-ScamVal* builtin_sort(ScamList* args) {
+ScamVal* builtin_sort(ScamSeq* args) {
     TYPECHECK_ARGS("sort", args, 1, SCAM_LIST);
-    ScamList* list_arg = (ScamList*)ScamSeq_pop((ScamSeq*)args, 0);
-    qsort(list_arg->arr, ScamSeq_len((ScamSeq*)list_arg), sizeof *list_arg->arr, ScamVal_cmp);
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    qsort(list_arg->arr, ScamSeq_len(list_arg), sizeof *list_arg->arr, ScamVal_cmp);
     return (ScamVal*)list_arg;
 }
 
-ScamVal* builtin_map(ScamList* args) {
+ScamVal* builtin_map(ScamSeq* args) {
     TYPECHECK_ARGS("map", args, 2, SCAM_FUNCTION, SCAM_LIST);
-    ScamVal* fun = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamList* list_arg = (ScamList*)ScamSeq_pop((ScamSeq*)args, 0);
-    for (size_t i = 0; i < ScamSeq_len((ScamSeq*)list_arg); i++) {
-        ScamVal* v = ScamSeq_get((ScamSeq*)list_arg, i);
-        ScamExpr* arglist = ScamExpr_from(1, v);
-        ScamVal* res = eval_apply(fun, (ScamList*)arglist);
+    ScamVal* fun = ScamSeq_pop(args, 0);
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    for (size_t i = 0; i < ScamSeq_len(list_arg); i++) {
+        ScamVal* v = ScamSeq_get(list_arg, i);
+        ScamSeq* arglist = ScamExpr_from(1, v);
+        ScamVal* res = eval_apply(fun, arglist);
         gc_unset_root((ScamVal*)arglist);
         if (res->type != SCAM_ERR) {
-            ScamSeq_set((ScamSeq*)list_arg, i, res);
+            ScamSeq_set(list_arg, i, res);
         } else {
             gc_unset_root(fun);
             gc_unset_root((ScamVal*)list_arg);
@@ -822,18 +822,18 @@ ScamVal* builtin_map(ScamList* args) {
     return (ScamVal*)list_arg;
 }
 
-ScamVal* builtin_filter(ScamList* args) {
+ScamVal* builtin_filter(ScamSeq* args) {
     TYPECHECK_ARGS("filter", args, 2, SCAM_FUNCTION, SCAM_LIST);
-    ScamVal* fun = ScamSeq_pop((ScamSeq*)args, 0);
-    ScamList* list_arg = (ScamList*)ScamSeq_pop((ScamSeq*)args, 0);
-    for (size_t i = 0; i < ScamSeq_len((ScamSeq*)list_arg); i++) {
-        ScamVal* v = ScamSeq_get((ScamSeq*)list_arg, i);
-        ScamExpr* arglist = ScamExpr_from(1, v);
-        ScamVal* cond = eval_apply(fun, (ScamList*)arglist);
+    ScamVal* fun = ScamSeq_pop(args, 0);
+    ScamSeq* list_arg = (ScamSeq*)ScamSeq_pop(args, 0);
+    for (size_t i = 0; i < ScamSeq_len(list_arg); i++) {
+        ScamVal* v = ScamSeq_get(list_arg, i);
+        ScamSeq* arglist = ScamExpr_from(1, v);
+        ScamVal* cond = eval_apply(fun, arglist);
         gc_unset_root((ScamVal*)arglist);
         if (cond->type == SCAM_BOOL) {
             if (!ScamBool_unbox((ScamInt*)cond)) {
-                ScamSeq_delete((ScamSeq*)list_arg, i);
+                ScamSeq_delete(list_arg, i);
             }
             gc_unset_root(cond);
         } else if (cond->type == SCAM_ERR) {
@@ -847,54 +847,54 @@ ScamVal* builtin_filter(ScamList* args) {
     return (ScamVal*)list_arg;
 }
 
-ScamVal* builtin_id(ScamList* args) {
+ScamVal* builtin_id(ScamSeq* args) {
     TYPECHECK_ARGS("id", args, 1, SCAM_ANY);
-    return (ScamVal*)ScamInt_new((long long)ScamSeq_get((ScamSeq*)args, 0));
+    return (ScamVal*)ScamInt_new((long long)ScamSeq_get(args, 0));
 }
 
-ScamVal* builtin_begin(ScamList* args) {
+ScamVal* builtin_begin(ScamSeq* args) {
     TYPECHECK_ALL("begin", args, 1, SCAM_ANY);
-    return ScamSeq_pop((ScamSeq*)args, ScamSeq_len((ScamSeq*)args) - 1);
+    return ScamSeq_pop(args, ScamSeq_len(args) - 1);
 }
 
-ScamVal* builtin_eq(ScamList* args) {
+ScamVal* builtin_eq(ScamSeq* args) {
     TYPECHECK_ARGS("=", args, 2, SCAM_ANY, SCAM_ANY);
-    ScamVal* left = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* right = ScamSeq_get((ScamSeq*)args, 1);
+    ScamVal* left = ScamSeq_get(args, 0);
+    ScamVal* right = ScamSeq_get(args, 1);
     return (ScamVal*)ScamBool_new(ScamVal_eq(left, right));
 }
 
-ScamVal* builtin_gt(ScamList* args) {
+ScamVal* builtin_gt(ScamSeq* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
-    ScamVal* left = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* right = ScamSeq_get((ScamSeq*)args, 1);
+    ScamVal* left = ScamSeq_get(args, 0);
+    ScamVal* right = ScamSeq_get(args, 1);
     return (ScamVal*)ScamBool_new(ScamVal_gt(left, right));
 }
 
-ScamVal* builtin_lt(ScamList* args) {
+ScamVal* builtin_lt(ScamSeq* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
-    ScamVal* left = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* right = ScamSeq_get((ScamSeq*)args, 1);
+    ScamVal* left = ScamSeq_get(args, 0);
+    ScamVal* right = ScamSeq_get(args, 1);
     return (ScamVal*)ScamBool_new(!ScamVal_gt(left, right) && !ScamVal_eq(left, right));
 }
 
-ScamVal* builtin_gte(ScamList* args) {
+ScamVal* builtin_gte(ScamSeq* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
-    ScamVal* left = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* right = ScamSeq_get((ScamSeq*)args, 1);
+    ScamVal* left = ScamSeq_get(args, 0);
+    ScamVal* right = ScamSeq_get(args, 1);
     return (ScamVal*)ScamBool_new(ScamVal_gt(left, right) || ScamVal_eq(left, right));
 }
 
-ScamVal* builtin_lte(ScamList* args) {
+ScamVal* builtin_lte(ScamSeq* args) {
     TYPECHECK_ARGS(">", args, 2, SCAM_CMP, SCAM_CMP);
-    ScamVal* left = ScamSeq_get((ScamSeq*)args, 0);
-    ScamVal* right = ScamSeq_get((ScamSeq*)args, 1);
+    ScamVal* left = ScamSeq_get(args, 0);
+    ScamVal* right = ScamSeq_get(args, 1);
     return (ScamVal*)ScamBool_new(!ScamVal_gt(left, right));
 }
 
-ScamVal* builtin_not(ScamList* args) {
+ScamVal* builtin_not(ScamSeq* args) {
     TYPECHECK_ARGS("not", args, 1, SCAM_BOOL);
-    return (ScamVal*)ScamBool_new(!ScamBool_unbox((ScamInt*)ScamSeq_get((ScamSeq*)args, 0)));
+    return (ScamVal*)ScamBool_new(!ScamBool_unbox((ScamInt*)ScamSeq_get(args, 0)));
 }
 
 void add_builtin(ScamDict* env, char* sym, scambuiltin_fun bltin) {

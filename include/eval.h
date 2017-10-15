@@ -16,4 +16,4 @@ ScamVal* eval_file(char* fp, ScamDict* env);
 
 
 /* Evaluate a function application. */
-ScamVal* eval_apply(ScamVal* fun, ScamList* arglist);
+ScamVal* eval_apply(ScamVal* fun, ScamSeq* arglist);

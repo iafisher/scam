@@ -320,7 +320,7 @@ int main(int argc, char* argv[]) {
 }
 
 void parsetest(char* line, const ScamVal* answer, int line_no) {
-    ScamExpr* v = parse_str(line);
+    ScamSeq* v = parse_str(line);
     ScamVal* modified_answer = (ScamVal*)ScamExpr_from(2, ScamSym_new("begin"), answer);
     if (!ScamVal_eq((ScamVal*)v, modified_answer)) {
         printf("Failed parse example, line %d in %s:\n", line_no, __FILE__);
@@ -334,7 +334,7 @@ void parsetest(char* line, const ScamVal* answer, int line_no) {
 }
 
 void parsetest_err(char* line, int line_no) {
-    ScamExpr* v = parse_str(line);
+    ScamSeq* v = parse_str(line);
     if (v->type != SCAM_ERR) {
         printf("Failed parse example, line %d in %s:\n", line_no, __FILE__);
         printf("  %s\n", line);

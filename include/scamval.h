@@ -19,87 +19,63 @@ enum {
     int is_root;
 
 
-#define SCAMSEQ_HEADER \
-    SCAMVAL_HEADER; \
-    size_t count, mem_size; \
-    ScamVal** arr;
-
-
-#define SCAMSTR_HEADER \
-    SCAMSEQ_HEADER; \
-    char* s;
-
-
+/* Used by SCAM_NULL, inherited by everything else. */
 typedef struct {
     SCAMVAL_HEADER;
 } ScamVal;
 
 
+/* Used by SCAM_INT. */
 typedef struct {
     SCAMVAL_HEADER;
     long long n;
 } ScamInt;
 
 
+/* Used by SCAM_DEC. */
 typedef struct {
     SCAMVAL_HEADER;
     double d;
 } ScamDec;
 
 
+/* Used by SCAM_SEXPR, SCAM_LIST and SCAM_DOT_SYM. */
 typedef struct {
-    SCAMSEQ_HEADER;
+    SCAMVAL_HEADER;
+    size_t count, mem_size;
+    ScamVal** arr;
 } ScamSeq;
 
 
+/* Used by SCAM_STR, SCAM_SYM and SCAM_ERR. */
 typedef struct {
-    SCAMSTR_HEADER;
+    SCAMVAL_HEADER;
+    size_t count, mem_size;
+    char* s;
 } ScamStr;
 
 
-typedef struct {
-    SCAMSTR_HEADER;
-} ScamSym;
-
-
-typedef struct {
-    SCAMSTR_HEADER;
-} ScamErr;
-
-
-typedef struct {
-    SCAMSEQ_HEADER;
-} ScamList;
-
-
-typedef struct {
-    SCAMSEQ_HEADER;
-} ScamExpr;
-
-
-typedef struct {
-    SCAMSEQ_HEADER;
-} ScamDotSym;
-
-
-typedef struct ScamDict_rec{
+/* Used by SCAM_DICT. */
+typedef struct ScamDict_rec {
     SCAMVAL_HEADER;
     /* A pointer to the enclosing dictionary (if the dictionary is an environment). */
     struct ScamDict_rec* enclosing;
     /* Symbols and values are stored as unsorted ScamVal lists (inefficient, I know). */
-    ScamList* syms;
-    ScamList* vals;
+    ScamSeq* syms;
+    ScamSeq* vals;
 } ScamDict;
 
 
+/* Used by SCAM_LAMBDA. */
 typedef struct {
     SCAMVAL_HEADER;
     ScamDict* env; /* A pointer to the environment the function was created in, for closures. */
-    ScamList* parameters;
-    ScamExpr* body;
+    ScamSeq* parameters;
+    ScamSeq* body;
 } ScamFunction;
 
 
+/* Used by SCAM_PORT. */
 enum { SCAMPORT_OPEN, SCAMPORT_CLOSED };
 typedef struct {
     SCAMVAL_HEADER;
@@ -108,7 +84,8 @@ typedef struct {
 } ScamPort;
 
 
-typedef ScamVal* (*scambuiltin_fun)(ScamList*);
+/* Used by SCAM_BUILTIN. */
+typedef ScamVal* (*scambuiltin_fun)(ScamSeq*);
 typedef struct {
     SCAMVAL_HEADER;
     scambuiltin_fun fun;
@@ -118,8 +95,8 @@ typedef struct {
 
 
 /*** SCAMVAL CONSTRUCTORS ***/
-ScamSym* ScamSym_new(const char*);
-ScamSym* ScamSym_no_copy(char*);
+ScamStr* ScamSym_new(const char*);
+ScamStr* ScamSym_no_copy(char*);
 ScamVal* ScamNull_new(void);
 
 
@@ -133,10 +110,10 @@ double ScamDec_unbox(const ScamDec*);
 
 
 /*** SEQUENCE API ***/
-ScamList* ScamList_new(void);
-ScamList* ScamList_from(size_t, ...);
-ScamExpr* ScamExpr_new(void);
-ScamExpr* ScamExpr_from(size_t, ...);
+ScamSeq* ScamList_new(void);
+ScamSeq* ScamList_from(size_t, ...);
+ScamSeq* ScamExpr_new(void);
+ScamSeq* ScamExpr_from(size_t, ...);
 
 /* Return a reference to the i'th element of the sequence. */
 ScamVal* ScamSeq_get(const ScamSeq*, size_t i);
@@ -204,14 +181,14 @@ size_t ScamStr_len(const ScamStr*);
 
 
 /*** FUNCTION API ***/
-ScamFunction* ScamFunction_new(ScamDict* env, ScamList* parameters, ScamExpr* body);
+ScamFunction* ScamFunction_new(ScamDict* env, ScamSeq* parameters, ScamSeq* body);
 ScamBuiltin* ScamBuiltin_new(scambuiltin_fun);
 
 /* Construct a constant scambuiltin (one that doesn't change its arguments). */
 ScamBuiltin* ScamBuiltin_new_const(scambuiltin_fun);
 size_t ScamFunction_nparams(const ScamFunction*);
-ScamSym* ScamFunction_param(const ScamFunction*, size_t);
-ScamExpr* ScamFunction_body(const ScamFunction*);
+ScamStr* ScamFunction_param(const ScamFunction*, size_t);
+ScamSeq* ScamFunction_body(const ScamFunction*);
 
 /* Initialize an environment enclosed by the function's environment. */
 ScamDict* ScamFunction_env(const ScamFunction*);
@@ -223,10 +200,11 @@ int ScamBuiltin_is_const(const ScamBuiltin*);
 
 
 /*** ERROR API ***/
-ScamErr* ScamErr_new(const char*, ...);
-ScamErr* ScamErr_arity(const char* name, size_t got, size_t expected);
-ScamErr* ScamErr_min_arity(const char* name, size_t got, size_t expected);
-ScamErr* ScamErr_eof();
+ScamStr* ScamErr_new(const char*, ...);
+ScamStr* ScamErr_arity(const char* name, size_t got, size_t expected);
+ScamStr* ScamErr_min_arity(const char* name, size_t got, size_t expected);
+ScamStr* ScamErr_type(const char* name, size_t pos, int got, int expected);
+ScamStr* ScamErr_eof();
 
 
 /*** PORT API ***/
@@ -242,26 +220,26 @@ ScamDict* ScamDict_from(size_t, ...);
 ScamDict* ScamDict_builtins(void);
 
 /* Create a new binding in the dictionary, or update an existing one. */
-void ScamDict_bind(ScamDict* dct, ScamSym* sym, ScamVal* val);
+void ScamDict_bind(ScamDict* dct, ScamStr* sym, ScamVal* val);
 
 /* Lookup the symbol in the dictionary and return a copy of the value if it exists and an error if 
  * it doesn't.
  */
-ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamSym* sym);
+ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamStr* sym);
 size_t ScamDict_len(const ScamDict* dct);
 ScamDict* ScamDict_enclosing(const ScamDict*);
 
 /* Get references to the dictionary keys and values. */
-ScamList* ScamDict_keys(const ScamDict*);
-ScamList* ScamDict_vals(const ScamDict*);
+ScamSeq* ScamDict_keys(const ScamDict*);
+ScamSeq* ScamDict_vals(const ScamDict*);
 
 /* Get references to individual keys and values. */
-ScamSym* ScamDict_key(const ScamDict*, size_t);
+ScamStr* ScamDict_key(const ScamDict*, size_t);
 ScamVal* ScamDict_val(const ScamDict*, size_t);
 
 /* Set dictionary keys and values. */
-void ScamDict_set_keys(ScamDict*, ScamList* new_keys);
-void ScamDict_set_vals(ScamDict*, ScamList* new_vals);
+void ScamDict_set_keys(ScamDict*, ScamSeq* new_keys);
+void ScamDict_set_vals(ScamDict*, ScamSeq* new_vals);
 
 
 /*** SCAMVAL PRINTING ***/
@@ -291,6 +269,3 @@ int narrowest_type(int, int);
 
 /* Return the narrowest type applicable to all elements of the sequence. */
 int ScamSeq_narrowest_type(ScamSeq*);
-
-/* Construct a type error message. */
-ScamErr* ScamErr_type(const char* name, size_t pos, int got, int expected);

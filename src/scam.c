@@ -116,7 +116,7 @@ void run_debug_repl(ScamDict* env) {
 
 void parse_repl(char* command) {
     if (strstr(command, "open") == command && strlen(command) >= 6) {
-        ScamExpr* ast = parse_file(command + 5);
+        ScamSeq* ast = parse_file(command + 5);
         ScamVal_print_ast((ScamVal*)ast, 0);
         gc_unset_root((ScamVal*)ast);
     } else if (strcmp(command, "help") == 0) {
@@ -125,7 +125,7 @@ void parse_repl(char* command) {
         puts("\topen <file path>: open a file for parsing");
         puts("\nAny other input is parsed and printed");
     } else {
-        ScamExpr* ast = parse_str(command);
+        ScamSeq* ast = parse_str(command);
         ScamVal_print_ast((ScamVal*)ast, 0);
         gc_unset_root((ScamVal*)ast);
     }

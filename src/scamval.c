@@ -26,9 +26,7 @@ ScamInt* ScamBool_new(int b) {
     return ret;
 }
 
-/* Construct a value that is internally a sequence (lists and S-expressions).
- *   - This only works as long as ScamList and ScamExpr have the same memory footprint.
- */
+/* Construct a value that is internally a sequence. */
 static ScamSeq* ScamSeq_new(int type) {
     SCAMVAL_NEW(ret, ScamSeq, type);
     ret->count = 0;
@@ -51,29 +49,27 @@ static ScamSeq* ScamSeq_new_from(int type, size_t n, va_list vlist) {
     return ret;
 }
 
-ScamList* ScamList_new(void) {
-    return (ScamList*)ScamSeq_new(SCAM_LIST);
+ScamSeq* ScamList_new(void) {
+    return ScamSeq_new(SCAM_LIST);
 }
 
-ScamList* ScamList_from(size_t n, ...) {
+ScamSeq* ScamList_from(size_t n, ...) {
     va_list vlist;
     va_start(vlist, n);
-    return (ScamList*)ScamSeq_new_from(SCAM_LIST, n, vlist);
+    return ScamSeq_new_from(SCAM_LIST, n, vlist);
 }
 
-ScamExpr* ScamExpr_new(void) {
-    return (ScamExpr*)ScamSeq_new(SCAM_SEXPR);
+ScamSeq* ScamExpr_new(void) {
+    return ScamSeq_new(SCAM_SEXPR);
 }
 
-ScamExpr* ScamExpr_from(size_t n, ...) {
+ScamSeq* ScamExpr_from(size_t n, ...) {
     va_list vlist;
     va_start(vlist, n);
-    return (ScamExpr*)ScamSeq_new_from(SCAM_SEXPR, n, vlist);
+    return ScamSeq_new_from(SCAM_SEXPR, n, vlist);
 }
 
-/* Construct a value that is internally a string (strings, symbols and errors). 
- *   - This will only work as long as ScamStr, ScamSym and ScamErr have the same memory footprint.
- */
+/* Construct a value that is internally a string (strings, symbols and errors). */
 static ScamStr* ScamStr_base_new(int type, const char* s) {
     SCAMVAL_NEW(ret, ScamStr, type);
     ret->count = strlen(s);
@@ -101,7 +97,7 @@ ScamStr* ScamStr_from_literal(char* s) {
                 #define OPTIONAL_ESCAPE(c, escaped) \
                 case escaped: s[i+1] = c; break;
                 #include "escape.def"
-                default: free(s); return (ScamVal*)ScamErr_new("invalid backslash escape");
+                default: free(s); return ScamErr_new("invalid backslash escape");
             }
             memmove(s+i, s+i+1, n-i);
             n--;
@@ -147,20 +143,20 @@ ScamStr* ScamStr_from_char(char c) {
     return ret;
 }
 
-ScamSym* ScamSym_new(const char* s) {
-    return (ScamSym*)ScamStr_base_new(SCAM_SYM, s);
+ScamStr* ScamSym_new(const char* s) {
+    return (ScamStr*)ScamStr_base_new(SCAM_SYM, s);
 }
 
-ScamSym* ScamSym_no_copy(char* s) {
-    SCAMVAL_NEW(ret, ScamSym, SCAM_SYM);
+ScamStr* ScamSym_no_copy(char* s) {
+    SCAMVAL_NEW(ret, ScamStr, SCAM_SYM);
     ret->s = s;
     ret->count = ret->mem_size = strlen(s);
     return ret;
 }
 
 enum { MAX_ERROR_SIZE = 100 };
-ScamErr* ScamErr_new(const char* format, ...) {
-    SCAMVAL_NEW(ret, ScamErr, SCAM_ERR);
+ScamStr* ScamErr_new(const char* format, ...) {
+    SCAMVAL_NEW(ret, ScamStr, SCAM_ERR);
     va_list vlist;
     va_start(vlist, format);
     ret->s = gc_malloc(MAX_ERROR_SIZE);
@@ -169,19 +165,19 @@ ScamErr* ScamErr_new(const char* format, ...) {
     return ret;
 }
 
-ScamErr* ScamErr_arity(const char* name, size_t got, size_t expected) {
+ScamStr* ScamErr_arity(const char* name, size_t got, size_t expected) {
     return ScamErr_new("'%s' got %d arg(s), expected %d", name, got, expected);
 }
 
-ScamErr* ScamErr_min_arity(const char* name, size_t got, size_t expected) {
+ScamStr* ScamErr_min_arity(const char* name, size_t got, size_t expected) {
     return ScamErr_new("'%s' got %d arg(s), expected at least %d", name, got, expected);
 }
 
-ScamErr* ScamErr_eof(void) {
+ScamStr* ScamErr_eof(void) {
     return ScamErr_new("reached EOF while reading from a port");
 }
 
-ScamFunction* ScamFunction_new(ScamDict* env, ScamList* parameters, ScamExpr* body) {
+ScamFunction* ScamFunction_new(ScamDict* env, ScamSeq* parameters, ScamSeq* body) {
     SCAMVAL_NEW(ret, ScamFunction, SCAM_LAMBDA);
     ret->env = env;
     ret->parameters = parameters;
@@ -253,7 +249,7 @@ static int ScamSeq_eq(const ScamSeq* v1, const ScamSeq* v2) {
 
 static int ScamDict_eq(const ScamDict* v1, const ScamDict* v2) {
     for (size_t i = 0; i < ScamDict_len(v1); i++) {
-        ScamSym* key = ScamDict_key(v1, i);
+        ScamStr* key = ScamDict_key(v1, i);
         ScamVal* val1 = ScamDict_val(v1, i);
         ScamVal* val2 = ScamDict_lookup(v2, key);
         if (!ScamVal_eq(val1, val2)) {
@@ -430,15 +426,15 @@ ScamVal* ScamSeq_subseq(const ScamSeq* seq, size_t start, size_t end) {
 
 /*** FUNCTION API ***/
 size_t ScamFunction_nparams(const ScamFunction* f) {
-    return ScamSeq_len((ScamSeq*)f->parameters);
+    return ScamSeq_len(f->parameters);
 }
 
-ScamSym* ScamFunction_param(const ScamFunction* f, size_t i) {
-    return (ScamSym*)gc_copy_ScamVal(ScamSeq_get((ScamSeq*)f->parameters, i));
+ScamStr* ScamFunction_param(const ScamFunction* f, size_t i) {
+    return (ScamStr*)gc_copy_ScamVal(ScamSeq_get(f->parameters, i));
 }
 
-ScamExpr* ScamFunction_body(const ScamFunction* f) {
-    return (ScamExpr*)gc_copy_ScamVal((ScamVal*)f->body);
+ScamSeq* ScamFunction_body(const ScamFunction* f) {
+    return (ScamSeq*)gc_copy_ScamVal((ScamVal*)f->body);
 }
 
 ScamDict* ScamFunction_env(const ScamFunction* f) {
@@ -572,10 +568,10 @@ ScamDict* ScamDict_from(size_t n, ...) {
     va_start(vlist, n);
     ScamDict* ret = ScamDict_new(NULL);
     for (int i = 0; i < n; i++) {
-        ScamVal* key_val_pair = va_arg(vlist, ScamVal*);
-        if (key_val_pair->type == SCAM_LIST && ScamSeq_len((ScamSeq*)key_val_pair) == 2) {
-            ScamSym* key = (ScamSym*)ScamSeq_get((ScamSeq*)key_val_pair, 0);
-            ScamVal* val = ScamSeq_get((ScamSeq*)key_val_pair, 1);
+        ScamSeq* key_val_pair = (ScamSeq*)va_arg(vlist, ScamVal*);
+        if (key_val_pair->type == SCAM_LIST && ScamSeq_len(key_val_pair) == 2) {
+            ScamStr* key = (ScamStr*)ScamSeq_get(key_val_pair, 0);
+            ScamVal* val = ScamSeq_get(key_val_pair, 1);
             ScamDict_bind(ret, key, val);
         } else {
             gc_unset_root((ScamVal*)ret);
@@ -586,37 +582,37 @@ ScamDict* ScamDict_from(size_t n, ...) {
     return ret;
 }
 
-ScamList* ScamDict_keys(const ScamDict* dct) { return dct->syms; }
-ScamList* ScamDict_vals(const ScamDict* dct) { return dct->vals; }
+ScamSeq* ScamDict_keys(const ScamDict* dct) { return dct->syms; }
+ScamSeq* ScamDict_vals(const ScamDict* dct) { return dct->vals; }
 ScamDict* ScamDict_enclosing(const ScamDict* dct) { 
     return dct->enclosing; 
 }
 
-void ScamDict_set_keys(ScamDict* dct, ScamList* new_keys) {
+void ScamDict_set_keys(ScamDict* dct, ScamSeq* new_keys) {
     gc_unset_root((ScamVal*)ScamDict_keys(dct));
     dct->syms = new_keys;
     gc_unset_root((ScamVal*)new_keys);
 }
 
-void ScamDict_set_vals(ScamDict* dct, ScamList* new_vals) {
+void ScamDict_set_vals(ScamDict* dct, ScamSeq* new_vals) {
     gc_unset_root((ScamVal*)ScamDict_vals(dct));
     dct->vals = new_vals;
     gc_unset_root((ScamVal*)new_vals);
 }
 
 size_t ScamDict_len(const ScamDict* dct) {
-    return ScamSeq_len((ScamSeq*)dct->syms);
+    return ScamSeq_len(dct->syms);
 }
 
-ScamSym* ScamDict_key(const ScamDict* dct, size_t i) {
-    return (ScamSym*)ScamSeq_get((ScamSeq*)ScamDict_keys(dct), i);
+ScamStr* ScamDict_key(const ScamDict* dct, size_t i) {
+    return (ScamStr*)ScamSeq_get(ScamDict_keys(dct), i);
 }
 
 ScamVal* ScamDict_val(const ScamDict* dct, size_t i) {
-    return ScamSeq_get((ScamSeq*)ScamDict_vals(dct), i);
+    return ScamSeq_get(ScamDict_vals(dct), i);
 }
 
-void ScamDict_bind(ScamDict* dct, ScamSym* sym, ScamVal* val) {
+void ScamDict_bind(ScamDict* dct, ScamStr* sym, ScamVal* val) {
     gc_unset_root((ScamVal*)sym);
     gc_unset_root((ScamVal*)val);
     if (sym->type == SCAM_PORT || sym->type == SCAM_LAMBDA || sym->type == SCAM_BUILTIN || 
@@ -628,17 +624,17 @@ void ScamDict_bind(ScamDict* dct, ScamSym* sym, ScamVal* val) {
     for (int i = 0; i < ScamDict_len(dct); i++) {
         if (ScamVal_eq((ScamVal*)ScamDict_key(dct, i), (ScamVal*)sym)) {
             gc_unset_root((ScamVal*)ScamDict_val(dct, i));
-            ScamSeq_set((ScamSeq*)ScamDict_vals(dct), i, val);
+            ScamSeq_set(ScamDict_vals(dct), i, val);
             return;
         }
     }
-    ScamSeq_append((ScamSeq*)ScamDict_keys(dct), (ScamVal*)sym);
-    ScamSeq_append((ScamSeq*)ScamDict_vals(dct), val);
+    ScamSeq_append(ScamDict_keys(dct), (ScamVal*)sym);
+    ScamSeq_append(ScamDict_vals(dct), val);
 }
 
-ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamSym* key) {
+ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamStr* key) {
     for (int i = 0; i < ScamDict_len(dct); i++) {
-        ScamSym* this_key = ScamDict_key(dct, i);
+        ScamStr* this_key = ScamDict_key(dct, i);
         if (ScamVal_eq((ScamVal*)key, (ScamVal*)this_key)) {
             return ScamDict_val(dct, i);
         }
@@ -824,7 +820,7 @@ int ScamSeq_narrowest_type(ScamSeq* args) {
     return type_so_far;
 }
 
-ScamErr* ScamErr_type(const char* name, size_t pos, int got, int expected) {
+ScamStr* ScamErr_type(const char* name, size_t pos, int got, int expected) {
     return ScamErr_new("'%s' got %s as arg %d, expected %s", name, scamtype_name(got), pos+1, 
                        scamtype_name(expected));
 }

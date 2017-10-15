@@ -131,7 +131,7 @@ ScamVal* gc_copy_ScamVal(ScamVal* v) {
         case SCAM_SEXPR:
         {
             ScamSeq* seq = (ScamSeq*)v;
-            ScamList* ret = (ScamList*)gc_new_ScamVal(seq->type, sizeof *ret);
+            SCAMVAL_NEW(ret, ScamSeq, seq->type);
             ret->arr = gc_malloc(seq->count * sizeof *seq->arr);
             ret->count = 0;
             ret->mem_size = seq->count;
@@ -155,8 +155,8 @@ ScamVal* gc_copy_ScamVal(ScamVal* v) {
         case SCAM_DICT:
         {
             ScamDict* ret = ScamDict_new(ScamDict_enclosing((ScamDict*)v));
-            ScamDict_set_keys(ret, (ScamList*)gc_copy_ScamVal((ScamVal*)ScamDict_keys((ScamDict*)v)));
-            ScamDict_set_vals(ret, (ScamList*)gc_copy_ScamVal((ScamVal*)ScamDict_vals((ScamDict*)v)));
+            ScamDict_set_keys(ret, (ScamSeq*)gc_copy_ScamVal((ScamVal*)ScamDict_keys((ScamDict*)v)));
+            ScamDict_set_vals(ret, (ScamSeq*)gc_copy_ScamVal((ScamVal*)ScamDict_vals((ScamDict*)v)));
             return (ScamVal*)ret;
         }
         default:
