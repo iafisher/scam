@@ -52,11 +52,11 @@ int main(int argc, char* argv[]) {
             printf("Error: unable to open file %s\n", ps.fpath);
             return 1;
         }
-        scamval* env = scamdict_builtins();
+        ScamDict* env = ScamDict_builtins();
         while (ps_next(&ps)) {
             ASSERT(is_query(ps.query), ps, "expected \">>> ...\"")
-            scamval* query_value = eval_str(ps.query + 3, env);
-            char* correct_str = scamval_to_repr(query_value);
+            ScamVal* query_value = eval_str(ps.query + 3, env);
+            char* correct_str = ScamVal_to_repr(query_value);
             char* this_str = is_query(ps.answer) ? "" : ps.answer;
             if (strcmp(ps.answer, "ERROR") == 0) {
                 ASSERT(query_value->type == SCAM_ERR, ps, "expected error")
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
             }
             free(correct_str);
         }
-        gc_unset_root(env);
+        gc_unset_root((ScamVal*)env);
         ps_free(&ps);
     }
     gc_close();

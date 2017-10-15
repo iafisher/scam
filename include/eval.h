@@ -4,16 +4,16 @@
 
 
 /* Evaluate a Scam AST or value. */
-scamval* eval(scamval*, scamval* env);
+ScamVal* eval(ScamVal*, ScamDict* env);
 
 
 /* Parse a string into a Scam AST and evaluate it. */
-scamval* eval_str(char* s, scamval* env);
+ScamVal* eval_str(char* s, ScamDict* env);
 
 
 /* Parse a file into a Scam AST and evaluate it. */
-scamval* eval_file(char* fp, scamval* env);
+ScamVal* eval_file(char* fp, ScamDict* env);
 
 
 /* Evaluate a function application. */
-scamval* eval_apply(scamval* fun, scamval* arglist);
+ScamVal* eval_apply(ScamVal* fun, ScamList* arglist);

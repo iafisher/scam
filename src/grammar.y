@@ -2,7 +2,7 @@
 %defines "grammar.h"
 %define api.pure full
 %lex-param {void* scanner}
-%parse-param {void* scanner} {scamval** out}
+%parse-param {void* scanner} {ScamVal** out}
 
 %code requires {
 #include "scamval.h"
@@ -18,17 +18,17 @@ typedef void* yyscan_t;
 #include <string.h>
 #include "scamval.h"
 #include "flex.h"
-int yyerror(yyscan_t scanner, scamval** out, const char* msg);
+int yyerror(yyscan_t scanner, ScamVal** out, const char* msg);
 
-scamval* bison_parse_str(char*);
-scamval* bison_parse_file(char*);
+ScamVal* bison_parse_str(char*);
+ScamVal* bison_parse_file(char*);
 }
 
 %union {
     long long ival;
     double fval;
     char* sval;
-    scamval* nodeval;
+    ScamVal* nodeval;
 }
 
 %token DEFINE TRUE FALSE
@@ -42,8 +42,8 @@ program:
     block { *out = $1; }
     ;
 block:
-    block statement_or_expression { $$ = $1; scamseq_append($$, $2); }
-    | statement_or_expression { $$ = scamsexpr_from(2, scamsym("begin"), $1); }
+    block statement_or_expression { $$ = $1; ScamSeq_append((ScamSeq*)$$, $2); }
+    | statement_or_expression { $$ = ScamExpr_from(2, ScamSym_new("begin"), $1); }
     ;
 statement_or_expression:
     define_variable
@@ -52,86 +52,86 @@ statement_or_expression:
     ;
 define_variable:
     '(' DEFINE symbol expression ')' {
-        $$ = scamsexpr_from(3, scamsym("define"), $3, $4); 
+        $$ = (ScamVal*)ScamExpr_from(3, ScamSym_new("define"), $3, $4); 
     }
     ;
 define_function:
     '(' DEFINE symbol_list block ')' {
-        scamval* name = scamseq_pop($3, 0);
-        scamval* lambda = scamsexpr_from(3, scamsym("lambda"), $3, $4);
-        $$ = scamsexpr_from(3, scamsym("define"), name, lambda);
+        ScamVal* name = ScamSeq_pop((ScamSeq*)$3, 0);
+        ScamVal* lambda = (ScamVal*)ScamExpr_from(3, ScamSym_new("lambda"), $3, $4);
+        $$ = (ScamVal*)ScamExpr_from(3, ScamSym_new("define"), name, lambda);
     }
     ;
 symbol_list:
     '(' symbol_plus ')' { $$ = $2; }
     ;
 symbol_plus:
-    symbol_plus symbol { $$ = $1; scamseq_append($$, $2); }
-    | symbol { $$ = scamsexpr_from(1, $1); }
+    symbol_plus symbol { $$ = $1; ScamSeq_append((ScamSeq*)$$, $2); }
+    | symbol { $$ = (ScamVal*)ScamExpr_from(1, $1); }
     ;
 expression:
     value
     | symbol
     | '(' expression_plus ')' { $$ = $2; } 
-    | '(' ')' { $$ = scamsexpr(); }
+    | '(' ')' { $$ = (ScamVal*)ScamExpr_new(); }
     ;
 expression_star:
-    expression_star expression { $$ = $1; scamseq_append($$, $2); }
-    | { $$ = scamsexpr(); }
+    expression_star expression { $$ = $1; ScamSeq_append((ScamSeq*)$$, $2); }
+    | { $$ = (ScamVal*)ScamExpr_new(); }
     ;
 expression_plus:
-    expression_star expression { $$ = $1; scamseq_append($$, $2); }
+    expression_star expression { $$ = $1; ScamSeq_append((ScamSeq*)$$, $2); }
 symbol:
-    SYMBOL { $$ = scamsym_no_copy($1); }
+    SYMBOL { $$ = (ScamVal*)ScamSym_no_copy($1); }
     ;
 value:
-    INT { $$ = scamint($1); }
-    | FLOAT { $$ = scamdec($1); }
-    | STRING { $$ = scamstr_from_literal($1); }
-    | TRUE { $$ = scambool(1); }
-    | FALSE { $$ = scambool(0); }
-    | '[' expression_star ']' { $$ = $2; scamseq_prepend($$, scamsym("list")); }
-    | '{' dictionary_list '}' { $$ = $2; scamseq_prepend($$, scamsym("dict")); }
+    INT { $$ = (ScamVal*)ScamInt_new($1); }
+    | FLOAT { $$ = (ScamVal*)ScamDec_new($1); }
+    | STRING { $$ = (ScamVal*)ScamStr_from_literal($1); }
+    | TRUE { $$ = (ScamVal*)ScamBool_new(1); }
+    | FALSE { $$ = (ScamVal*)ScamBool_new(0); }
+    | '[' expression_star ']' { $$ = $2; ScamSeq_prepend((ScamSeq*)$$, (ScamVal*)ScamSym_new("list")); }
+    | '{' dictionary_list '}' { $$ = $2; ScamSeq_prepend((ScamSeq*)$$, (ScamVal*)ScamSym_new("dict")); }
     ;
 dictionary_list:
-    dictionary_list dictionary_item { $$ = $1; scamseq_append($$, $2); }
-    | { $$ = scamsexpr(); }
+    dictionary_list dictionary_item { $$ = $1; ScamSeq_append((ScamSeq*)$$, $2); }
+    | { $$ = (ScamVal*)ScamExpr_new(); }
     ;
 dictionary_item:
     expression ':' expression { 
-        $$ = scamsexpr_from(3, scamsym("list"), $1, $3); 
+        $$ = (ScamVal*)ScamExpr_from(3, ScamSym_new("list"), $1, $3); 
     }
     ;
 %%
 
-int yyerror(yyscan_t scanner, scamval** out, const char* s) {
-    scamval* ret = scamerr(s);
+int yyerror(yyscan_t scanner, ScamVal** out, const char* s) {
+    ScamVal* ret = (ScamVal*)ScamErr_new(s);
     *out = ret;
     return 0;
 }
 
 // Note that this function will close the file when it's done
-static scamval* parse_file_helper(FILE*);
+static ScamVal* parse_file_helper(FILE*);
 
-scamval* parse_str(char* s) {
+ScamVal* parse_str(char* s) {
     return parse_file_helper(fmemopen(s, strlen(s), "r"));
 }
 
-scamval* parse_file(char* fp) {
+ScamVal* parse_file(char* fp) {
     return parse_file_helper(fopen(fp, "r"));
 }
 
-static scamval* parse_file_helper(FILE* fsock) {
+static ScamVal* parse_file_helper(FILE* fsock) {
     if (fsock) {
-        scamval* ret = NULL;
+        ScamVal* ret = NULL;
         yyscan_t myscanner;
         yylex_init(&myscanner);
         yyset_in(fsock, myscanner);
         yyparse(myscanner, &ret);
         yylex_destroy(myscanner);
         fclose(fsock);
-        return ret ? ret : scamerr("failed to generate parse tree");
+        return ret ? ret : (ScamVal*)ScamErr_new("failed to generate parse tree");
     } else {
-        return scamerr("unable to open file");
+        return (ScamVal*)ScamErr_new("unable to open file");
     }
 }

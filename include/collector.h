@@ -2,21 +2,26 @@
 #include "scamval.h"
 
 
-/* Allocate a new scamval from the garbage collector's internal heap. */
-scamval* gc_new_scamval(int);
+/* Allocate a new ScamVal from the garbage collector's internal heap. */
+ScamVal* gc_new_ScamVal(int type, size_t sz);
 
-/* Create a copy of a scamval (this doesn't always result in an actual copy in memory, but if the 
- * proper API from scamval.h is used, then the user shouldn't know the difference).
+
+#define SCAMVAL_NEW(name, typ, typ_as_int) \
+    typ* name = (typ*)gc_new_ScamVal(typ_as_int, sizeof *name);
+
+
+/* Create a copy of a ScamVal (this doesn't always result in an actual copy in memory, but if the 
+ * proper API from ScamVal.h is used, then the user shouldn't know the difference).
  */
-scamval* gc_copy_scamval(scamval*);
+ScamVal* gc_copy_ScamVal(ScamVal*);
 
 /* Relinquish control of a pointer (i.e., call this when you're done with a pointer, and don't try 
  * to use that pointer afterwards).
  */
-void gc_unset_root(scamval*);
+void gc_unset_root(ScamVal*);
 
 /* Opposite of gc_unset_root, used internally by some of the sequence APIs. */
-void gc_set_root(scamval*);
+void gc_set_root(ScamVal*);
 
 
 /* Invoke the garbage collector manually (generally unnecessary). */

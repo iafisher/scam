@@ -4,10 +4,10 @@
 
 
 /* Parse a string and return either an AST or an error. */
-scamval* old_parse_str(char* s);
-scamval* parse_str(char* s);
+ScamExpr* old_parse_str(char* s);
+ScamExpr* parse_str(char* s);
 
 
 /* Parse a file given its path and return either an AST or an error. */
-scamval* old_parse_file(char* fp);
-scamval* parse_file(char* fp);
+ScamExpr* old_parse_file(char* fp);
+ScamExpr* parse_file(char* fp);

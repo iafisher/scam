@@ -2,7 +2,7 @@
 #include <string.h>
 #include "collector.h"
 
-static scamval** scamval_objs = NULL;
+static ScamVal** scamval_objs = NULL;
 static size_t count = 0;
 static size_t first_avail = 0;
 
@@ -12,54 +12,50 @@ enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 static void gc_init();
 
 // Mark all objects which can be reached from the given object
-static void gc_mark(scamval* v) {
+static void gc_mark(ScamVal* v) {
     if (v != NULL && !v->seen) {
         v->seen = 1;
         switch (v->type) {
             case SCAM_LIST:
             case SCAM_SEXPR:
-                for (size_t i = 0; i < scamseq_len(v); i++) {
-                    gc_mark(scamseq_get(v, i));
+                for (size_t i = 0; i < ScamSeq_len((ScamSeq*)v); i++) {
+                    gc_mark(ScamSeq_get((ScamSeq*)v, i));
                 }
                 break;
             case SCAM_LAMBDA:
-                gc_mark(v->vals.fun->parameters);
-                gc_mark(v->vals.fun->body);
-                gc_mark(v->vals.fun->env);
+                {
+                    ScamFunction* f = (ScamFunction*)v;
+                    gc_mark((ScamVal*)(f->parameters));
+                    gc_mark((ScamVal*)(f->body));
+                    gc_mark((ScamVal*)(f->env));
+                }
                 break;
             case SCAM_DICT:
-                gc_mark(v->vals.dct->enclosing);
-                gc_mark(v->vals.dct->syms);
-                gc_mark(v->vals.dct->vals);
+                {
+                    ScamDict* dct = (ScamDict*)v;
+                    gc_mark((ScamVal*)(dct->enclosing));
+                    gc_mark((ScamVal*)(dct->syms));
+                    gc_mark((ScamVal*)(dct->vals));
+                }
                 break;
         }
     }
 }
 
-static void gc_del_scamval(scamval* v) {
+static void gc_del_ScamVal(ScamVal* v) {
     switch (v->type) {
         case SCAM_LIST:
         case SCAM_SEXPR:
-            free(v->vals.arr);
+            free(((ScamSeq*)v)->arr);
             break;
         case SCAM_ERR:
         case SCAM_SYM:
         case SCAM_STR:
-            free(v->vals.s);
-            break;
-        case SCAM_LAMBDA:
-            free(v->vals.fun);
+            free(((ScamStr*)v)->s);
             break;
         case SCAM_PORT:
-            if (scamport_status(v) == SCAMPORT_OPEN)
-                fclose(scam_as_file(v));
-            free(v->vals.port);
-            break;
-        case SCAM_BUILTIN:
-            free(v->vals.bltin);
-            break;
-        case SCAM_DICT:
-            free(v->vals.dct);
+            if (ScamPort_status((ScamPort*)v) == SCAMPORT_OPEN)
+                fclose(ScamPort_unbox((ScamPort*)v));
             break;
     }
     free(v);
@@ -69,10 +65,10 @@ static void gc_del_scamval(scamval* v) {
 // that have
 static void gc_sweep(void) {
     for (size_t i = 0; i < count; i++) {
-        scamval* v = scamval_objs[i];
+        ScamVal* v = scamval_objs[i];
         if (v != NULL) {
             if (!v->seen) {
-                gc_del_scamval(v);
+                gc_del_ScamVal(v);
                 scamval_objs[i] = NULL;
                 if (i < first_avail) {
                     first_avail = i;
@@ -86,7 +82,7 @@ static void gc_sweep(void) {
 
 void gc_collect(void) {
     for (size_t i = 0; i < count; i++) {
-        scamval* v = scamval_objs[i];
+        ScamVal* v = scamval_objs[i];
         if (v != NULL && !v->seen && v->is_root) {
             gc_mark(v);
         }
@@ -94,15 +90,15 @@ void gc_collect(void) {
     gc_sweep();
 }
 
-void gc_unset_root(scamval* v) {
+void gc_unset_root(ScamVal* v) {
     v->is_root = 0;
 }
 
-void gc_set_root(scamval* v) {
+void gc_set_root(ScamVal* v) {
     v->is_root = 1;
 }
 
-scamval* gc_new_scamval(int type) {
+ScamVal* gc_new_ScamVal(int type, size_t sz) {
     if (scamval_objs == NULL) {
         // initialize internal heap for the first time
         gc_init();
@@ -111,15 +107,14 @@ scamval* gc_new_scamval(int type) {
         if (first_avail == count) {
             // grow internal heap
             size_t new_count = count * HEAP_GROW;
-            scamval_objs = gc_realloc(scamval_objs, 
-                                      new_count * sizeof *scamval_objs);
+            scamval_objs = gc_realloc(scamval_objs, new_count*sizeof *scamval_objs);
             for (size_t i = count; i < new_count; i++) {
                 scamval_objs[i] = NULL;
             }
             count = new_count;
         }
     }
-    scamval* ret = gc_malloc(sizeof *ret);
+    ScamVal* ret = gc_malloc(sz);
     ret->type = type;
     ret->seen = 0;
     ret->is_root = 1;
@@ -130,37 +125,39 @@ scamval* gc_new_scamval(int type) {
     return ret;
 }
 
-scamval* gc_copy_scamval(scamval* v) {
+ScamVal* gc_copy_ScamVal(ScamVal* v) {
     switch (v->type) {
         case SCAM_LIST:
         case SCAM_SEXPR:
         {
-            scamval* ret = gc_new_scamval(v->type);
-            ret->vals.arr = gc_malloc(v->count * sizeof *v->vals.arr);
+            ScamSeq* seq = (ScamSeq*)v;
+            ScamList* ret = (ScamList*)gc_new_ScamVal(seq->type, sizeof *ret);
+            ret->arr = gc_malloc(seq->count * sizeof *seq->arr);
             ret->count = 0;
-            ret->mem_size = v->count;
-            for (int i = 0; i < v->count; i++) {
-                ret->vals.arr[i] = gc_copy_scamval(v->vals.arr[i]);
-                gc_unset_root(ret->vals.arr[i]);
-                // count must always contain an accurate count of the allocated elements of the 
-                // list, in case the garbage collector is invoked in the middle of copying and needs
-                // to mark the elements of this list
+            ret->mem_size = seq->count;
+            for (int i = 0; i < seq->count; i++) {
+                ret->arr[i] = gc_copy_ScamVal(seq->arr[i]);
+                gc_unset_root(ret->arr[i]);
+                /* count must always contain an accurate count of the allocated elements of the 
+                 * list, in case the garbage collector is invoked in the middle of copying and needs
+                 * to mark the elements of this list.
+                 */
                 ret->count++;
             }
-            return ret;
+            return (ScamVal*)ret;
         }
         case SCAM_STR:
-            return scamstr(scam_as_str(v));
+            return (ScamVal*)ScamStr_new(ScamStr_unbox((ScamStr*)v));
         case SCAM_SYM:
-            return scamsym(scam_as_str(v));
+            return (ScamVal*)ScamSym_new(ScamStr_unbox((ScamStr*)v));
         case SCAM_ERR:
-            return scamerr(scam_as_str(v));
+            return (ScamVal*)ScamErr_new(ScamStr_unbox((ScamStr*)v));
         case SCAM_DICT:
         {
-            scamval* ret = scamdict(scamdict_enclosing(v));
-            scamdict_set_keys(ret, gc_copy_scamval(scamdict_keys(v)));
-            scamdict_set_vals(ret, gc_copy_scamval(scamdict_vals(v)));
-            return ret;
+            ScamDict* ret = ScamDict_new(ScamDict_enclosing((ScamDict*)v));
+            ScamDict_set_keys(ret, (ScamList*)gc_copy_ScamVal((ScamVal*)ScamDict_keys((ScamDict*)v)));
+            ScamDict_set_vals(ret, (ScamList*)gc_copy_ScamVal((ScamVal*)ScamDict_vals((ScamDict*)v)));
+            return (ScamVal*)ret;
         }
         default:
             v->is_root = 1;
@@ -170,9 +167,9 @@ scamval* gc_copy_scamval(scamval* v) {
 
 void gc_close(void) {
     for (size_t i = 0; i < count; i++) {
-        scamval* v = scamval_objs[i];
+        ScamVal* v = scamval_objs[i];
         if (v != NULL) {
-            gc_del_scamval(v);
+            gc_del_ScamVal(v);
         }
     }
     free(scamval_objs);
@@ -181,10 +178,10 @@ void gc_close(void) {
 void gc_print(void) {
     printf("Allocated space for %ld references\n", count);
     for (size_t i = 0; i < count; i++) {
-        scamval* v = scamval_objs[i];
+        ScamVal* v = scamval_objs[i];
         if (v != NULL) {
             printf("%.4ld: ", i);
-            scamval_print_debug(v);
+            ScamVal_print_debug(v);
             if (v->is_root)
                 printf(" (root)");
             printf("\n");
@@ -196,22 +193,22 @@ static size_t first_interesting_index(void) {
     // first 3 refs are for the global environment
     int reached_the_builtin_ports = 0;
     for (size_t i = 3; i < count; i++) {
-        scamval* v = scamval_objs[i];
+        ScamVal* v = scamval_objs[i];
         if (v == NULL) {
             return i;
         } 
-        // even indices should be builtins
+        /* Even indices should be builtins. */
         if (i % 2 == 0) {
             if (v->type != SCAM_SYM) {
                 return i;
             } else if (reached_the_builtin_ports) {
-                if (strcmp(scam_as_str(v), "stdout") != 0 &&
-                    strcmp(scam_as_str(v), "stdin")  != 0 &&
-                    strcmp(scam_as_str(v), "stderr") != 0) {
+                if (strcmp(ScamStr_unbox((ScamStr*)v), "stdout") != 0 &&
+                    strcmp(ScamStr_unbox((ScamStr*)v), "stdin")  != 0 &&
+                    strcmp(ScamStr_unbox((ScamStr*)v), "stderr") != 0) {
                     return i - 1;
                 }
             }
-        // odd indices should be symbols
+        /* Odd indices should be symbols. */
         } else {
             if (v->type == SCAM_PORT) {
                 reached_the_builtin_ports = 1;
@@ -226,10 +223,10 @@ static size_t first_interesting_index(void) {
 void gc_smart_print(void) {
     printf("Allocated space for %ld references\n", count);
     for (size_t i = first_interesting_index(); i < count; i++) {
-        scamval* v = scamval_objs[i];
+        ScamVal* v = scamval_objs[i];
         if (v != NULL) {
             printf("%.4ld: ", i);
-            scamval_print_debug(v);
+            ScamVal_print_debug(v);
             if (v->is_root)
                 printf(" (root)");
             printf("\n");

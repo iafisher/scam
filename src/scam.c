@@ -10,11 +10,11 @@
 #include "eval.h"
 #include "parse.h"
 
-void run_repl(scamval*);
-void run_debug_repl(scamval*);
+void run_repl(ScamDict*);
+void run_debug_repl(ScamDict*);
 
 int main(int argc, char** argv) {
-    scamval* env = scamdict_builtins();
+    ScamDict* env = ScamDict_builtins();
     char* cvalue = NULL;
     int load_flag = 0;
     int debug_flag = 0;
@@ -29,8 +29,8 @@ int main(int argc, char** argv) {
                 break;
             case 'c':
                 cvalue = optarg;
-                scamval* v = eval_str(cvalue, env);
-                scamval_println(v);
+                ScamVal* v = eval_str(cvalue, env);
+                ScamVal_println(v);
                 return 0;
             case '?':
                 return 1;
@@ -40,9 +40,9 @@ int main(int argc, char** argv) {
     }
     // evaluate files
     for (int i = optind; i < argc; i++) {
-        scamval* v = eval_file(argv[i], env);
+        ScamVal* v = eval_file(argv[i], env);
         if (v->type == SCAM_ERR) {
-            scamval_println(v);
+            ScamVal_println(v);
         }
         gc_unset_root(v);
     }
@@ -53,12 +53,12 @@ int main(int argc, char** argv) {
             run_repl(env);
         }
     }
-    gc_unset_root(env);
+    gc_unset_root((ScamVal*)env);
     gc_close();
     return 0;
 }
 
-void run_repl(scamval* env) {
+void run_repl(ScamDict* env) {
     while (1) {
         char* input = readline(">>> ");
         add_history(input);
@@ -66,21 +66,20 @@ void run_repl(scamval* env) {
             free(input);
             break;
         }
-        scamval* v = eval_str(input, env);
-        scamval_println(v);
+        ScamVal* v = eval_str(input, env);
+        ScamVal_println(v);
         gc_unset_root(v);
         free(input);
     }
 }
 
 void parse_repl(char*);
-void eval_repl(char*, scamval*);
+void eval_repl(char*, ScamDict*);
 
 void print_generic_help(void);
 
 enum { REPL_EVAL, REPL_PARSE };
-void run_debug_repl(scamval* env) {
-    // Run the REPL
+void run_debug_repl(ScamDict* env) {
     int mode = REPL_EVAL;
     char* buffer = NULL;
     size_t s_len = 0;
@@ -117,23 +116,22 @@ void run_debug_repl(scamval* env) {
 
 void parse_repl(char* command) {
     if (strstr(command, "open") == command && strlen(command) >= 6) {
-        scamval* ast = parse_file(command + 5);
-        scamval_print_ast(ast, 0);
-        gc_unset_root(ast);
+        ScamExpr* ast = parse_file(command + 5);
+        ScamVal_print_ast((ScamVal*)ast, 0);
+        gc_unset_root((ScamVal*)ast);
     } else if (strcmp(command, "help") == 0) {
         print_generic_help();
         puts("Parser commands:");
         puts("\topen <file path>: open a file for parsing");
         puts("\nAny other input is parsed and printed");
     } else {
-        //scamval* ast = parse_str(command);
-        scamval* ast = parse_str(command);
-        scamval_print_ast(ast, 0);
-        gc_unset_root(ast);
+        ScamExpr* ast = parse_str(command);
+        ScamVal_print_ast((ScamVal*)ast, 0);
+        gc_unset_root((ScamVal*)ast);
     }
 }
 
-void eval_repl(char* command, scamval* env) {
+void eval_repl(char* command, ScamDict* env) {
     if (strcmp(command, "heap") == 0) {
         gc_smart_print();
     } else if (strcmp(command, "heapall") == 0) {
@@ -148,8 +146,8 @@ void eval_repl(char* command, scamval* env) {
         puts("\tcollect: invoke the garbage collector");
         puts("\nAny other input is evaluated normally and printed");
     } else {
-        scamval* v = eval_str(command, env);
-        scamval_println(v);
+        ScamVal* v = eval_str(command, env);
+        ScamVal_println(v);
         gc_unset_root(v);
     }
 }
