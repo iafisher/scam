@@ -43,7 +43,7 @@ program:
     ;
 block:
     block statement_or_expression { $$ = $1; ScamSeq_append((ScamSeq*)$$, $2); }
-    | statement_or_expression { $$ = ScamExpr_from(2, ScamSym_new("begin"), $1); }
+    | statement_or_expression { $$ = (ScamVal*)ScamExpr_from(2, ScamSym_new("begin"), $1); }
     ;
 statement_or_expression:
     define_variable
