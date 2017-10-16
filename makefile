@@ -2,7 +2,7 @@ CC = gcc
 LEX = flex
 YACC = bison
 OBJS = build/builtins.o build/collector.o build/eval.o build/scamval.o build/grammar.o build/flex.o
-EXECS = scam tests run_test_script
+EXECS = scam tests run_test_script benchmark
 DEBUG = -g
 PROFILE = -pg
 CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
@@ -12,6 +12,12 @@ all: $(EXECS)
 
 scam: build/scam.o $(OBJS)
 	$(CC) $(OBJS) build/scam.o -o scam $(LFLAGS) 
+
+benchmark: build/benchmark.o $(OBJS)
+	$(CC) $(OBJS) build/benchmark.o -o benchmark $(LFLAGS) 
+
+build/benchmark.o: src/benchmark.c include/parse.h include/eval.h include/scamval.h include/collector.h
+	$(CC) $(CFLAGS) src/benchmark.c -o build/benchmark.o
 
 build/builtins.o: src/builtins.c include/collector.h include/eval.h
 	$(CC) $(CFLAGS) src/builtins.c -o build/builtins.o
