@@ -42,8 +42,8 @@ ScamDict* ScamDict_from(size_t n, ...) {
 }
 
 
-ScamDict* ScamDict_enclosing(const ScamDict* dct) { 
-    return dct->enclosing; 
+ScamDict* ScamDict_enclosing(const ScamDict* dct) {
+    return dct->enclosing;
 }
 
 

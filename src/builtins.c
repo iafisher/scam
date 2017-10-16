@@ -21,7 +21,7 @@
     } \
 }
 
-// Assert that no element of the args is equal to zero, unless only the first element is zero and 
+// Assert that no element of the args is equal to zero, unless only the first element is zero and
 // the args contains only two arguments
 #define ASSERT_NO_ZEROS(args) { \
     if (ScamSeq_len(args) > 2) { \
@@ -158,7 +158,7 @@ ScamVal* builtin_len(ScamSeq* args) {
         return (ScamVal*)ScamInt_new(ScamStr_len((ScamStr*)arg));
     } else {
         return (ScamVal*)ScamInt_new(ScamSeq_len((ScamSeq*)arg));
-    } 
+    }
 }
 
 ScamVal* builtin_empty(ScamSeq* args) {
@@ -168,7 +168,7 @@ ScamVal* builtin_empty(ScamSeq* args) {
         return (ScamVal*)ScamBool_new(ScamStr_len((ScamStr*)arg) == 0);
     } else {
         return (ScamVal*)ScamBool_new(ScamSeq_len((ScamSeq*)arg) == 0);
-    } 
+    }
 }
 
 ScamVal* builtin_list_get(ScamSeq* args) {
@@ -356,7 +356,7 @@ ScamVal* builtin_last(ScamSeq* args) {
         return builtin_str_last(args);
     } else {
         return builtin_list_last(args);
-    } 
+    }
 }
 
 ScamVal* builtin_list_init(ScamSeq* args) {
@@ -912,7 +912,7 @@ void add_builtin(ScamDict* env, char* sym, scambuiltin_fun bltin) {
     ScamDict_bind(env, (ScamVal*)ScamSym_new(sym), (ScamVal*)ScamBuiltin_new(bltin));
 }
 
-/* If a builtin doesn't change its arguments, then it should be registered as constant so that the 
+/* If a builtin doesn't change its arguments, then it should be registered as constant so that the
  * evaluator doesn't bother copying the argument list.
  */
 void add_const_builtin(ScamDict* env, char* sym, scambuiltin_fun bltin) {

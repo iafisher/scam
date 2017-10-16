@@ -121,8 +121,8 @@ ScamStr* ScamErr_eof(void) {
 }
 
 
-const char* ScamStr_unbox(const ScamStr* sbox) { 
-    return sbox->s; 
+const char* ScamStr_unbox(const ScamStr* sbox) {
+    return sbox->s;
 }
 
 

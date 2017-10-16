@@ -7,7 +7,7 @@
 /* Construct an internal sequence from a variable argument list. */
 static ScamSeq* ScamSeq_new_from(int type, size_t n, va_list vlist);
 
-/* Grow the size of the sequence in memory so that it is at least the given minimum size, and 
+/* Grow the size of the sequence in memory so that it is at least the given minimum size, and
  * possibly larger.
  */
 static void ScamSeq_grow(ScamSeq* seq, size_t min_new_sz);

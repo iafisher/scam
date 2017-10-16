@@ -47,12 +47,12 @@ block:
     ;
 statement_or_expression:
     define_variable
-    | define_function 
+    | define_function
     | expression
     ;
 define_variable:
     '(' DEFINE symbol expression ')' {
-        $$ = (ScamVal*)ScamExpr_from(3, ScamSym_new("define"), $3, $4); 
+        $$ = (ScamVal*)ScamExpr_from(3, ScamSym_new("define"), $3, $4);
     }
     ;
 define_function:
@@ -72,7 +72,7 @@ symbol_plus:
 expression:
     value
     | symbol
-    | '(' expression_plus ')' { $$ = $2; } 
+    | '(' expression_plus ')' { $$ = $2; }
     | '(' ')' { $$ = (ScamVal*)ScamExpr_new(); }
     ;
 expression_star:
@@ -98,8 +98,8 @@ dictionary_list:
     | { $$ = (ScamVal*)ScamExpr_new(); }
     ;
 dictionary_item:
-    expression ':' expression { 
-        $$ = (ScamVal*)ScamExpr_from(3, ScamSym_new("list"), $1, $3); 
+    expression ':' expression {
+        $$ = (ScamVal*)ScamExpr_from(3, ScamSym_new("list"), $1, $3);
     }
     ;
 %%

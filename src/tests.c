@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     // expressions and lists
     PARSETEST("(+ 1 1)", S(3, ScamSym_new("+"), ScamInt_new(1), ScamInt_new(1)));
     PARSETEST("[1 2 3]", S(4, ScamSym_new("list"), ScamInt_new(1), ScamInt_new(2), ScamInt_new(3)));
-    PARSETEST("{1:\"one\"}", S(2, ScamSym_new("dict"), 
+    PARSETEST("{1:\"one\"}", S(2, ScamSym_new("dict"),
                                   S(3, ScamSym_new("list"), ScamInt_new(1), ScamStr_new("one"))));
     // invalid expressions
     PARSETEST_ERR("(+ (define x 10) 3)");
@@ -253,7 +253,7 @@ int main(int argc, char* argv[]) {
     EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"romance\")", ScamBool_new(false));
     EVALTEST("(rfind [\"duplicate\" \"different\" \"duplicate\"] \"duplicate\")", ScamInt_new(2));
     // sort
-    EVALTEST("(sort [5 4 3 2 1])", 
+    EVALTEST("(sort [5 4 3 2 1])",
              L(5, ScamInt_new(1), ScamInt_new(2), ScamInt_new(3), ScamInt_new(4), ScamInt_new(5)));
     // map
     EVALTEST("(map (lambda (x) (* x 2)) [1 2 3 4 5])",

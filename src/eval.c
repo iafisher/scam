@@ -98,7 +98,7 @@ ScamVal* eval_lambda(ScamSeq* ast, ScamDict* env) {
         SCAM_ASSERT(ScamSeq_get(parameters_copy, i)->type == SCAM_SYM, ast,
                     "lambda parameter must be symbol");
     }
-    return (ScamVal*)ScamFunction_new(env, (ScamSeq*)ScamSeq_get(ast, 1), 
+    return (ScamVal*)ScamFunction_new(env, (ScamSeq*)ScamSeq_get(ast, 1),
                                            (ScamSeq*)ScamSeq_get(ast, 2));
 }
 
@@ -178,12 +178,12 @@ ScamVal* eval_apply(ScamVal* fun_val, ScamSeq* arglist) {
         size_t expected = ScamFunction_nparams(lamb);
         size_t got = ScamSeq_len(arglist);
         if (got != expected) {
-            return (ScamVal*)ScamErr_new("lambda function got %d argument(s), expected %d", 
+            return (ScamVal*)ScamErr_new("lambda function got %d argument(s), expected %d",
                                          got, expected);
         }
         ScamDict* inner_env = ScamFunction_env((ScamFunction*)fun_val);
         for (int i = 0; i < expected; i++) {
-            ScamDict_bind(inner_env, (ScamVal*)ScamFunction_param(lamb, i), 
+            ScamDict_bind(inner_env, (ScamVal*)ScamFunction_param(lamb, i),
                                      ScamSeq_pop(arglist, 0));
         }
         ScamVal* ret = eval((ScamVal*)ScamFunction_body(lamb), inner_env);

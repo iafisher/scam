@@ -8,8 +8,8 @@ static size_t count = 0;
 static size_t first_avail = 0;
 
 
-/* If you change either of these, make sure that the ScamDict_new function in dict.c will still 
- * work. 
+/* If you change either of these, make sure that the ScamDict_new function in dict.c will still
+ * work.
  */
 enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 static void gc_init();
@@ -80,7 +80,7 @@ static void gc_del_ScamVal(ScamVal* v) {
 }
 
 
-/* Sweep the entire heap, freeing items that have not been marked and resetting the marks on those 
+/* Sweep the entire heap, freeing items that have not been marked and resetting the marks on those
  * that have.
  */
 static void gc_sweep(void) {
@@ -163,7 +163,7 @@ ScamVal* gc_copy_ScamVal(ScamVal* v) {
             for (int i = 0; i < seq->count; i++) {
                 ret->arr[i] = gc_copy_ScamVal(seq->arr[i]);
                 gc_unset_root(ret->arr[i]);
-                /* count must always contain an accurate count of the allocated elements of the 
+                /* count must always contain an accurate count of the allocated elements of the
                  * list, in case the garbage collector is invoked in the middle of copying and needs
                  * to mark the elements of this list.
                  */
@@ -228,7 +228,7 @@ static size_t first_interesting_index(void) {
         ScamVal* v = scamval_objs[i];
         if (v == NULL) {
             return i;
-        } 
+        }
         /* Even indices should be builtins. */
         if (i % 2 == 0) {
             if (v->type != SCAM_SYM) {

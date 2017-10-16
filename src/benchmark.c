@@ -32,12 +32,12 @@ int main(int argc, char* argv[]) {
     eval_str("(define (f x) (* x 2))", env);
     /* (f 100) */
     benchmark(E(2, S("f"), I(100)), 100000, env, "Function application", fp);
-    
+
     /* ARRAY APPEND */
     eval_str("(define items [])", env);
     /* (append items 0) */
     benchmark(E(3, S("append"), S("items"), I(0)), 100000, env, "Array append", fp);
-   
+
     /* DICTIONARY INSERTION */
     eval_str("(define dct {}", env);
     clock_t begin = clock();
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     clock_t end = clock();
     double this = (end - begin + 0.0) / CLOCKS_PER_SEC;
     fprintf(fp, "Dictionary insertion: %f seconds, 10000 reps\n", this);
-    
+
     /* DICTIONARY LOOKUP */
     /* (get dct -1) */
     benchmark(E(3, S("get"), S("dct"), I(-1)), 10000, env, "Dictionary lookup", fp);

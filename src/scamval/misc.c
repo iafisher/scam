@@ -5,7 +5,7 @@
 
 
 static void ScamStr_write(const ScamStr* v, FILE* fp);
-static void ScamSeq_write(const ScamSeq* v, const char* start, const char* mid, const char* end, 
+static void ScamSeq_write(const ScamSeq* v, const char* start, const char* mid, const char* end,
                           FILE* fp);
 static void ScamDict_write(const ScamDict* v, FILE* fp);
 
@@ -84,13 +84,13 @@ int ScamBuiltin_is_const(const ScamBuiltin* f) {
 }
 
 
-FILE* ScamPort_unbox(ScamPort* v) { 
-    return v->fp; 
+FILE* ScamPort_unbox(ScamPort* v) {
+    return v->fp;
 }
 
 
-int ScamPort_status(const ScamPort* v) { 
-    return v->status; 
+int ScamPort_status(const ScamPort* v) {
+    return v->status;
 }
 
 
@@ -229,31 +229,31 @@ void ScamVal_print_ast(const ScamVal* ast, int indent) {
 
 int ScamVal_typecheck(const ScamVal* v, enum ScamType type) {
     switch (type) {
-        case SCAM_ANY: 
+        case SCAM_ANY:
             return 1;
-        case SCAM_SEQ: 
+        case SCAM_SEQ:
             return v->type == SCAM_LIST || v->type == SCAM_STR;
         case SCAM_CONTAINER:
             return v->type == SCAM_LIST || v->type == SCAM_STR || v->type == SCAM_DICT;
-        case SCAM_NUM: 
+        case SCAM_NUM:
             return v->type == SCAM_INT || v->type == SCAM_DEC;
-        case SCAM_CMP: 
+        case SCAM_CMP:
             return v->type == SCAM_STR || v->type == SCAM_INT || v->type == SCAM_DEC;
-        case SCAM_BASE_FUNCTION: 
+        case SCAM_BASE_FUNCTION:
             return v->type == SCAM_FUNCTION || v->type == SCAM_BUILTIN;
-        default: 
+        default:
             return v->type == type;
     }
 }
 
 
-int is_numeric_type(enum ScamType type) { 
-    return type == SCAM_INT || type == SCAM_DEC; 
+int is_numeric_type(enum ScamType type) {
+    return type == SCAM_INT || type == SCAM_DEC;
 }
 
 
-int is_seq_type(enum ScamType type) { 
-    return type == SCAM_LIST || type == SCAM_STR; 
+int is_seq_type(enum ScamType type) {
+    return type == SCAM_LIST || type == SCAM_STR;
 }
 
 
@@ -289,7 +289,7 @@ enum ScamType ScamSeq_narrowest_type(ScamSeq* args) {
 
 
 ScamStr* ScamErr_type(const char* name, size_t pos, enum ScamType got, enum ScamType expected) {
-    return ScamErr_new("'%s' got %s as arg %d, expected %s", name, scamtype_name(got), pos+1, 
+    return ScamErr_new("'%s' got %s as arg %d, expected %s", name, scamtype_name(got), pos+1,
                        scamtype_name(expected));
 }
 
