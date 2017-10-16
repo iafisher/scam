@@ -210,7 +210,7 @@ int ScamBuiltin_is_const(const ScamBuiltin*);
 ScamStr* ScamErr_new(const char*, ...);
 ScamStr* ScamErr_arity(const char* name, size_t got, size_t expected);
 ScamStr* ScamErr_min_arity(const char* name, size_t got, size_t expected);
-ScamStr* ScamErr_type(const char* name, size_t pos, int got, int expected);
+ScamStr* ScamErr_type(const char* name, size_t pos, enum ScamType got, enum ScamType expected);
 ScamStr* ScamErr_eof();
 
 
@@ -255,14 +255,14 @@ int ScamVal_gt(const ScamVal*, const ScamVal*);
 
 /*** TYPECHECKING ***/
 /* Return the names of types as strings. */
-const char* scamtype_name(int type);
-const char* scamtype_debug_name(int type);
+const char* scamtype_name(enum ScamType);
+const char* scamtype_debug_name(enum ScamType);
 
 /* Check if the value belongs to the given type. */
-int ScamVal_typecheck(const ScamVal*, int type);
+int ScamVal_typecheck(const ScamVal*, enum ScamType);
 
 /* Return the narrowest type applicable to both types. */
-int narrowest_type(int, int);
+enum ScamType narrowest_type(enum ScamType, enum ScamType);
 
 /* Return the narrowest type applicable to all elements of the sequence. */
-int ScamSeq_narrowest_type(ScamSeq*);
+enum ScamType ScamSeq_narrowest_type(ScamSeq*);

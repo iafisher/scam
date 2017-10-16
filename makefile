@@ -1,7 +1,7 @@
 CC = gcc
 LEX = flex
 YACC = bison
-OBJS = build/builtins.o build/collector.o build/eval.o build/scamval.o build/grammar.o build/flex.o
+OBJS = build/builtins.o build/collector.o build/eval.o build/grammar.o build/flex.o build/scamval/cmp.o build/scamval/dict.o build/scamval/misc.o build/scamval/num.o build/scamval/seq.o build/scamval/str.o
 EXECS = scam tests run_test_script benchmark
 DEBUG = -g
 PROFILE = -pg
@@ -31,8 +31,23 @@ build/eval.o: src/eval.c include/parse.h include/eval.h include/collector.h
 build/scam.o: src/scam.c include/collector.h include/eval.h include/parse.h
 	$(CC) $(CFLAGS) src/scam.c -o build/scam.o
 
-build/scamval.o: src/scamval.c src/type.def src/escape.def include/collector.h include/scamval.h
-	$(CC) $(CFLAGS) src/scamval.c -o build/scamval.o
+build/scamval/cmp.o: src/scamval/cmp.c include/scamval.h
+	$(CC) $(CFLAGS) src/scamval/cmp.c -o build/scamval/cmp.o
+
+build/scamval/dict.o: src/scamval/dict.c include/scamval.h include/collector.h
+	$(CC) $(CFLAGS) src/scamval/dict.c -o build/scamval/dict.o
+
+build/scamval/misc.o: src/scamval/misc.c src/escape.def include/scamval.h include/collector.h src/type.def
+	$(CC) $(CFLAGS) src/scamval/misc.c -o build/scamval/misc.o
+
+build/scamval/num.o: src/scamval/num.c include/scamval.h include/collector.h
+	$(CC) $(CFLAGS) src/scamval/num.c -o build/scamval/num.o
+
+build/scamval/seq.o: src/scamval/seq.c include/scamval.h include/collector.h
+	$(CC) $(CFLAGS) src/scamval/seq.c -o build/scamval/seq.o
+
+build/scamval/str.o: src/scamval/str.c src/escape.def include/scamval.h include/collector.h 
+	$(CC) $(CFLAGS) src/scamval/str.c -o build/scamval/str.o
 
 build/grammar.o: src/grammar.c src/flex.c
 	$(CC) -g -c src/grammar.c -o build/grammar.o -Iinclude
@@ -63,7 +78,7 @@ build/run_test_script.o: src/run_test_script.c include/collector.h include/eval.
 	$(CC) $(CFLAGS) src/run_test_script.c -o build/run_test_script.o
 
 clean:
-	rm build/*.o src/flex.c src/grammar.c include/grammar.h $(EXECS)
+	rm build/*.o build/scamval/*.o src/flex.c src/grammar.c include/grammar.h $(EXECS)
 
 include/collector.h: include/scamval.h
 
