@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 #include <stdio.h>
 
 
@@ -15,8 +16,8 @@ enum ScamType {
 #define SCAMVAL_HEADER \
     enum ScamType type; \
     /* Bookkeeping for the garbage collector. */ \
-    int seen; \
-    int is_root;
+    bool seen; \
+    bool is_root;
 
 
 /* Used by SCAM_NULL, inherited by everything else. */
@@ -30,6 +31,13 @@ typedef struct {
     SCAMVAL_HEADER;
     long long n;
 } ScamInt;
+
+
+/* Used by SCAM_BOOL. */
+typedef struct {
+    SCAMVAL_HEADER;
+    bool b;
+} ScamBool;
 
 
 /* Used by SCAM_DEC. */
@@ -96,7 +104,7 @@ typedef ScamVal* (*scambuiltin_fun)(ScamSeq*);
 typedef struct {
     SCAMVAL_HEADER;
     scambuiltin_fun fun;
-    int constant;
+    bool constant;
 } ScamBuiltin;
 
 
@@ -110,9 +118,9 @@ ScamVal* ScamNull_new(void);
 /*** NUMERIC API ***/
 ScamInt* ScamInt_new(long long);
 ScamDec* ScamDec_new(double);
-ScamInt* ScamBool_new(int);
+ScamBool* ScamBool_new(bool);
 long long ScamInt_unbox(const ScamInt*);
-long long ScamBool_unbox(const ScamInt*);
+bool ScamBool_unbox(const ScamBool*);
 double ScamDec_unbox(const ScamDec*);
 
 

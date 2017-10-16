@@ -2,19 +2,23 @@
 #include <string.h>
 #include "collector.h"
 
+
 static ScamVal** scamval_objs = NULL;
 static size_t count = 0;
 static size_t first_avail = 0;
 
-// if you change either of these, make sure that the scamdict function in scamval.c will still work
-enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 
+/* If you change either of these, make sure that the ScamDict_new function in dict.c will still 
+ * work. 
+ */
+enum { HEAP_INIT = 1024, HEAP_GROW = 2 };
 static void gc_init();
 
-// Mark all objects which can be reached from the given object
+
+/* Mark all objects which can be reached from the given object. */
 static void gc_mark(ScamVal* v) {
     if (v != NULL && !v->seen) {
-        v->seen = 1;
+        v->seen = true;
         switch (v->type) {
             case SCAM_LIST:
             case SCAM_SEXPR:
@@ -48,6 +52,7 @@ static void gc_mark(ScamVal* v) {
     }
 }
 
+
 static void gc_del_ScamVal(ScamVal* v) {
     switch (v->type) {
         case SCAM_LIST:
@@ -74,8 +79,10 @@ static void gc_del_ScamVal(ScamVal* v) {
     free(v);
 }
 
-// Sweep the entire heap, freeing items that have not been marked and resetting the marks on those 
-// that have
+
+/* Sweep the entire heap, freeing items that have not been marked and resetting the marks on those 
+ * that have.
+ */
 static void gc_sweep(void) {
     for (size_t i = 0; i < count; i++) {
         ScamVal* v = scamval_objs[i];
@@ -87,11 +94,12 @@ static void gc_sweep(void) {
                     first_avail = i;
                 }
             } else {
-                v->seen = 0;
+                v->seen = false;
             }
         }
     }
 }
+
 
 void gc_collect(void) {
     for (size_t i = 0; i < count; i++) {
@@ -103,13 +111,16 @@ void gc_collect(void) {
     gc_sweep();
 }
 
+
 void gc_unset_root(ScamVal* v) {
-    v->is_root = 0;
+    v->is_root = false;
 }
 
+
 void gc_set_root(ScamVal* v) {
-    v->is_root = 1;
+    v->is_root = true;
 }
+
 
 ScamVal* gc_new_ScamVal(int type, size_t sz) {
     if (scamval_objs == NULL) {
@@ -129,14 +140,15 @@ ScamVal* gc_new_ScamVal(int type, size_t sz) {
     }
     ScamVal* ret = gc_malloc(sz);
     ret->type = type;
-    ret->seen = 0;
-    ret->is_root = 1;
+    ret->seen = false;
+    ret->is_root = true;
     scamval_objs[first_avail] = ret;
     // update first_avail to be the first available heap location
     while (++first_avail < count && scamval_objs[first_avail] != NULL)
         ;
     return ret;
 }
+
 
 ScamVal* gc_copy_ScamVal(ScamVal* v) {
     switch (v->type) {
@@ -177,10 +189,11 @@ ScamVal* gc_copy_ScamVal(ScamVal* v) {
             return (ScamVal*)ret;
         }
         default:
-            v->is_root = 1;
+            v->is_root = true;
             return v;
     }
 }
+
 
 void gc_close(void) {
     for (size_t i = 0; i < count; i++) {
@@ -191,6 +204,7 @@ void gc_close(void) {
     }
     free(scamval_objs);
 }
+
 
 void gc_print(void) {
     printf("Allocated space for %ld references\n", count);
@@ -205,6 +219,7 @@ void gc_print(void) {
         }
     }
 }
+
 
 static size_t first_interesting_index(void) {
     // first 3 refs are for the global environment
@@ -237,6 +252,7 @@ static size_t first_interesting_index(void) {
     return count;
 }
 
+
 void gc_smart_print(void) {
     printf("Allocated space for %ld references\n", count);
     for (size_t i = first_interesting_index(); i < count; i++) {
@@ -251,6 +267,7 @@ void gc_smart_print(void) {
     }
 }
 
+
 void* gc_malloc(size_t size) {
     void* ret = malloc(size);
     if (ret == NULL) {
@@ -263,6 +280,7 @@ void* gc_malloc(size_t size) {
     }
     return ret;
 }
+
 
 void* gc_realloc(void* ptr, size_t size) {
     void* ret = realloc(ptr, size);
@@ -277,6 +295,7 @@ void* gc_realloc(void* ptr, size_t size) {
     return ret;
 }
 
+
 void* gc_calloc(size_t num, size_t size) {
     void* ret = calloc(num, size);
     if (ret == NULL) {
@@ -289,6 +308,7 @@ void* gc_calloc(size_t num, size_t size) {
     }
     return ret;
 }
+
 
 static void gc_init() {
     count = HEAP_INIT;

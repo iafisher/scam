@@ -22,7 +22,7 @@ ScamFunction* ScamFunction_new(ScamDict* env, ScamSeq* parameters, ScamSeq* body
 ScamBuiltin* ScamBuiltin_new(scambuiltin_fun bltin) {
     SCAMVAL_NEW(ret, ScamBuiltin, SCAM_BUILTIN);
     ret->fun = bltin;
-    ret->constant = 0;
+    ret->constant = false;
     return ret;
 }
 
@@ -30,7 +30,7 @@ ScamBuiltin* ScamBuiltin_new(scambuiltin_fun bltin) {
 ScamBuiltin* ScamBuiltin_new_const(scambuiltin_fun bltin) {
     SCAMVAL_NEW(ret, ScamBuiltin, SCAM_BUILTIN);
     ret->fun = bltin;
-    ret->constant = 1;
+    ret->constant = true;
     return ret;
 }
 
@@ -104,7 +104,7 @@ void ScamVal_write(const ScamVal* v, FILE* fp) {
     switch (v->type) {
         case SCAM_INT: fprintf(fp, "%lli", ScamInt_unbox((ScamInt*)v)); break;
         case SCAM_DEC: fprintf(fp, "%f", ScamDec_unbox((ScamDec*)v)); break;
-        case SCAM_BOOL: fprintf(fp, "%s", ScamBool_unbox((ScamInt*)v) ? "true" : "false"); break;
+        case SCAM_BOOL: fprintf(fp, "%s", ScamBool_unbox((ScamBool*)v) ? "true" : "false"); break;
         case SCAM_LIST: ScamSeq_write((ScamSeq*)v, "[", " ", "]", fp); break;
         case SCAM_SEXPR: ScamSeq_write((ScamSeq*)v, "(", " ", ")", fp); break;
         case SCAM_FUNCTION: fprintf(fp, "<Scam function>"); break;

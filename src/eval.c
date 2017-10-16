@@ -121,7 +121,7 @@ ScamVal* eval_if(ScamSeq* ast, ScamDict* env) {
     SCAM_ASSERT_ARITY("if", ast, 4);
     ScamVal* cond = eval(ScamSeq_get(ast, 1), env);
     if (cond->type == SCAM_BOOL) {
-        long long cond_val = ScamBool_unbox((ScamInt*)cond);
+        long long cond_val = ScamBool_unbox((ScamBool*)cond);
         gc_unset_root(cond);
         ScamVal* true_clause = ScamSeq_get(ast, 2);
         ScamVal* false_clause = ScamSeq_get(ast, 3);
@@ -141,7 +141,7 @@ ScamVal* eval_and(ScamSeq* ast, ScamDict* env) {
         if (v_type != SCAM_BOOL) {
             gc_unset_root(v);
             return (ScamVal*)ScamErr_type("and", i, v_type, SCAM_BOOL);
-        } else if (!ScamBool_unbox((ScamInt*)v)) {
+        } else if (!ScamBool_unbox((ScamBool*)v)) {
             gc_unset_root(v);
             return (ScamVal*)ScamBool_new(0);
         } else {
@@ -160,7 +160,7 @@ ScamVal* eval_or(ScamSeq* ast, ScamDict* env) {
         if (v_type != SCAM_BOOL) {
             gc_unset_root(v);
             return (ScamVal*)ScamErr_type("or", i, v_type, SCAM_BOOL);
-        } else if (ScamBool_unbox((ScamInt*)v)) {
+        } else if (ScamBool_unbox((ScamBool*)v)) {
             gc_unset_root(v);
             return (ScamVal*)ScamBool_new(1);
         } else {

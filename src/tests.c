@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
     //PARSETEST_ERR("012"); // octal literals are not supported
     //PARSETEST_ERR("0x10g");
     //PARSETEST_ERR("0x-57");
-    PARSETEST("true", ScamBool_new(1));
-    PARSETEST("false", ScamBool_new(0));
+    PARSETEST("true", ScamBool_new(true));
+    PARSETEST("false", ScamBool_new(false));
     // strings and symbols
     PARSETEST("matador", ScamSym_new("matador"));
     PARSETEST("true0", ScamSym_new("true0"));
@@ -139,49 +139,49 @@ int main(int argc, char* argv[]) {
     EVALTEST_ERR("(% 10 0 7 4)");
 
     /*** BOOLEAN OPERATORS ***/
-    EVALTEST("(and true true)", ScamBool_new(1));
-    EVALTEST("(and true false)", ScamBool_new(0));
-    EVALTEST("(and false true)", ScamBool_new(0));
-    EVALTEST("(and false false)", ScamBool_new(0));
-    EVALTEST("(and true true true true false)", ScamBool_new(0));
-    EVALTEST("(or true true)", ScamBool_new(1));
-    EVALTEST("(or true false)", ScamBool_new(1));
-    EVALTEST("(or false true)", ScamBool_new(1));
-    EVALTEST("(or false false)", ScamBool_new(0));
-    EVALTEST("(not true)", ScamBool_new(0));
-    EVALTEST("(not false)", ScamBool_new(1));
+    EVALTEST("(and true true)", ScamBool_new(true));
+    EVALTEST("(and true false)", ScamBool_new(false));
+    EVALTEST("(and false true)", ScamBool_new(false));
+    EVALTEST("(and false false)", ScamBool_new(false));
+    EVALTEST("(and true true true true false)", ScamBool_new(false));
+    EVALTEST("(or true true)", ScamBool_new(true));
+    EVALTEST("(or true false)", ScamBool_new(true));
+    EVALTEST("(or false true)", ScamBool_new(true));
+    EVALTEST("(or false false)", ScamBool_new(false));
+    EVALTEST("(not true)", ScamBool_new(false));
+    EVALTEST("(not false)", ScamBool_new(true));
     // test short-circuiting
-    EVALTEST("(and false (begin (/ 10 0) true))", ScamBool_new(0));
+    EVALTEST("(and false (begin (/ 10 0) true))", ScamBool_new(false));
     EVALTEST_ERR("(and (begin (/ 10 0) true) false)");
-    EVALTEST("(or true (begin (/ 10 0) true))", ScamBool_new(1));
+    EVALTEST("(or true (begin (/ 10 0) true))", ScamBool_new(true));
     EVALTEST_ERR("(or (begin (/ 10 0) false) true)");
 
     /*** COMPARISON AND EQUALITY ***/
     // numeric equality
-    EVALTEST("(= 1 1)", ScamBool_new(1));
-    EVALTEST("(= -81 -81.0)", ScamBool_new(1));
-    EVALTEST("(= 1 0.99999)", ScamBool_new(0));
-    EVALTEST("(= 1 \"1\")", ScamBool_new(0));
+    EVALTEST("(= 1 1)", ScamBool_new(true));
+    EVALTEST("(= -81 -81.0)", ScamBool_new(true));
+    EVALTEST("(= 1 0.99999)", ScamBool_new(false));
+    EVALTEST("(= 1 \"1\")", ScamBool_new(false));
     // string equality
-    EVALTEST("(=  \"money\"  \"money\")", ScamBool_new(1));
-    EVALTEST("(=  \"lucre\"  \" lucre \")", ScamBool_new(0));
-    EVALTEST("(=  \"\"  \"\")", ScamBool_new(1));
+    EVALTEST("(=  \"money\"  \"money\")", ScamBool_new(true));
+    EVALTEST("(=  \"lucre\"  \" lucre \")", ScamBool_new(false));
+    EVALTEST("(=  \"\"  \"\")", ScamBool_new(true));
     // boolean equality
-    EVALTEST("(= true true)", ScamBool_new(1));
-    EVALTEST("(= false false)", ScamBool_new(1));
-    EVALTEST("(= true false)", ScamBool_new(0));
-    EVALTEST("(= false true)", ScamBool_new(0));
+    EVALTEST("(= true true)", ScamBool_new(true));
+    EVALTEST("(= false false)", ScamBool_new(true));
+    EVALTEST("(= true false)", ScamBool_new(false));
+    EVALTEST("(= false true)", ScamBool_new(false));
     // list equality
-    EVALTEST("(= [] [])", ScamBool_new(1));
-    EVALTEST("(= [\"S\" [\"NP\" \"VP\"]] [\"S\" [\"VP\" \"NP\"]])", ScamBool_new(0));
-    EVALTEST("(= [1 2 3 4 5] [1 2 3 4 5])", ScamBool_new(1));
+    EVALTEST("(= [] [])", ScamBool_new(true));
+    EVALTEST("(= [\"S\" [\"NP\" \"VP\"]] [\"S\" [\"VP\" \"NP\"]])", ScamBool_new(false));
+    EVALTEST("(= [1 2 3 4 5] [1 2 3 4 5])", ScamBool_new(true));
 
     /*** LIST FUNCTIONS ***/
     EVALTEST("[1 2 3 4 5]", L(5, ScamInt_new(1), ScamInt_new(2), ScamInt_new(3), ScamInt_new(4), ScamInt_new(5)));
     EVALTEST("[[\"inception\"]]", L(1, L(1, ScamStr_new("inception"))));
     // empty?
-    EVALTEST("(empty? [])", ScamBool_new(1));
-    EVALTEST("(empty? [[]])", ScamBool_new(0));
+    EVALTEST("(empty? [])", ScamBool_new(true));
+    EVALTEST("(empty? [[]])", ScamBool_new(false));
     // len
     EVALTEST("(len [])", ScamInt_new(0));
     EVALTEST("(len [1 2 3])", ScamInt_new(3));
@@ -242,15 +242,15 @@ int main(int argc, char* argv[]) {
     EVALTEST("(find [\"Germanic\" \"Slavic\" \"Romance\"] \"Germanic\")", ScamInt_new(0));
     EVALTEST("(find [\"Germanic\" \"Slavic\" \"Romance\"] \"Slavic\")", ScamInt_new(1));
     EVALTEST("(find [\"Germanic\" \"Slavic\" \"Romance\"] \"Romance\")", ScamInt_new(2));
-    EVALTEST("(find [\"Germanic\" \"Slavic\" \"Romance\"] \"Indo-Iranian\")", ScamBool_new(0));
-    EVALTEST("(find [\"Germanic\" \"Slavic\" \"Romance\"] \"romance\")", ScamBool_new(0));
+    EVALTEST("(find [\"Germanic\" \"Slavic\" \"Romance\"] \"Indo-Iranian\")", ScamBool_new(false));
+    EVALTEST("(find [\"Germanic\" \"Slavic\" \"Romance\"] \"romance\")", ScamBool_new(false));
     EVALTEST("(find [\"duplicate\" \"different\" \"duplicate\"] \"duplicate\")", ScamInt_new(0));
     // rfind
     EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"Germanic\")", ScamInt_new(0));
     EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"Slavic\")", ScamInt_new(1));
     EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"Romance\")", ScamInt_new(2));
-    EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"Indo-Iranian\")", ScamBool_new(0));
-    EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"romance\")", ScamBool_new(0));
+    EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"Indo-Iranian\")", ScamBool_new(false));
+    EVALTEST("(rfind [\"Germanic\" \"Slavic\" \"Romance\"] \"romance\")", ScamBool_new(false));
     EVALTEST("(rfind [\"duplicate\" \"different\" \"duplicate\"] \"duplicate\")", ScamInt_new(2));
     // sort
     EVALTEST("(sort [5 4 3 2 1])", 
@@ -272,13 +272,13 @@ int main(int argc, char* argv[]) {
     EVALTEST("(upper \"humble\")", ScamStr_new("HUMBLE"));
     EVALTEST("(lower \"HUMBLE\")", ScamStr_new("humble"));
     // isupper and islower
-    EVALTEST("(isupper \"WHAT HATH GOD WROUGHT?\")", ScamBool_new(1));
-    EVALTEST("(isupper \"What HATH GOD WROUGHT?\")", ScamBool_new(0));
-    EVALTEST("(isupper \"...\")", ScamBool_new(0));
-    EVALTEST("(islower \"WHAT HATH GOD WROUGHT?\")", ScamBool_new(0));
-    EVALTEST("(islower \"What HATH GOD WROUGHT?\")", ScamBool_new(0));
-    EVALTEST("(islower \"what hath god wrought?\")", ScamBool_new(1));
-    EVALTEST("(islower \"...\")", ScamBool_new(0));
+    EVALTEST("(isupper \"WHAT HATH GOD WROUGHT?\")", ScamBool_new(true));
+    EVALTEST("(isupper \"What HATH GOD WROUGHT?\")", ScamBool_new(false));
+    EVALTEST("(isupper \"...\")", ScamBool_new(false));
+    EVALTEST("(islower \"WHAT HATH GOD WROUGHT?\")", ScamBool_new(false));
+    EVALTEST("(islower \"What HATH GOD WROUGHT?\")", ScamBool_new(false));
+    EVALTEST("(islower \"what hath god wrought?\")", ScamBool_new(true));
+    EVALTEST("(islower \"...\")", ScamBool_new(false));
     EVALTEST("(trim \"      a b       \")", ScamStr_new("a b"));
     EVALTEST("(split \" a b c  d\")", L(4, ScamStr_new("a"), ScamStr_new("b"), ScamStr_new("c"), ScamStr_new("d")));
 
@@ -305,11 +305,11 @@ int main(int argc, char* argv[]) {
 
     /*** IO FUNCTIONS ***/
     EVALDEF("(define fp (open \"resources/foo.txt\" \"r\"))");
-    EVALTEST("(port-good? fp)", ScamBool_new(1));
+    EVALTEST("(port-good? fp)", ScamBool_new(true));
     EVALTEST("(readline fp)", ScamStr_new("Lorem ipsum\n"));
-    EVALTEST("(port-good? fp)", ScamBool_new(1));
+    EVALTEST("(port-good? fp)", ScamBool_new(true));
     EVALTEST_ERR("(readline fp)");
-    EVALTEST("(port-good? fp)", ScamBool_new(0));
+    EVALTEST("(port-good? fp)", ScamBool_new(false));
     EVALDEF("(close fp)");
 
     /*** INTENTIONAL FAIL ***/

@@ -448,7 +448,7 @@ ScamVal* builtin_find(ScamSeq* args) {
             return (ScamVal*)ScamInt_new(i);
         }
     }
-    return (ScamVal*)ScamBool_new(0);
+    return (ScamVal*)ScamBool_new(false);
 }
 
 ScamVal* builtin_rfind(ScamSeq* args) {
@@ -460,7 +460,7 @@ ScamVal* builtin_rfind(ScamSeq* args) {
             return (ScamVal*)ScamInt_new(i);
         }
     }
-    return (ScamVal*)ScamBool_new(0);
+    return (ScamVal*)ScamBool_new(false);
 }
 
 ScamVal* builtin_upper(ScamSeq* args) {
@@ -485,7 +485,7 @@ ScamVal* builtin_isupper(ScamSeq* args) {
         char c = ScamStr_get(str_arg, i);
         if (isalpha(c)) {
             if (!isupper(c)) {
-                return (ScamVal*)ScamBool_new(0);
+                return (ScamVal*)ScamBool_new(false);
             } else {
                 seen_upper = 1;
             }
@@ -502,7 +502,7 @@ ScamVal* builtin_islower(ScamSeq* args) {
         char c = ScamStr_get(str_arg, i);
         if (isalpha(c)) {
             if (!islower(c)) {
-                return (ScamVal*)ScamBool_new(0);
+                return (ScamVal*)ScamBool_new(false);
             } else {
                 seen_lower = 1;
             }
@@ -647,7 +647,7 @@ ScamVal* builtin_port_good(ScamSeq* args) {
         FILE* fp = ScamPort_unbox(port_arg);
         return (ScamVal*)ScamBool_new(!ferror(fp) && !feof(fp));
     } else {
-        return (ScamVal*)ScamBool_new(0);
+        return (ScamVal*)ScamBool_new(false);
     }
 }
 
@@ -757,9 +757,9 @@ ScamVal* builtin_log(ScamSeq* args) {
 
 ScamVal* builtin_assert(ScamSeq* args) {
     TYPECHECK_ARGS("assert", args, 1, SCAM_BOOL);
-    ScamInt* cond = (ScamInt*)ScamSeq_get(args, 0);
+    ScamBool* cond = (ScamBool*)ScamSeq_get(args, 0);
     if (ScamBool_unbox(cond)) {
-        return (ScamVal*)ScamBool_new(1);
+        return (ScamVal*)ScamBool_new(true);
     } else {
         return (ScamVal*)ScamErr_new("failed assert");
     }
@@ -832,7 +832,7 @@ ScamVal* builtin_filter(ScamSeq* args) {
         ScamVal* cond = eval_apply(fun, arglist);
         gc_unset_root((ScamVal*)arglist);
         if (cond->type == SCAM_BOOL) {
-            if (!ScamBool_unbox((ScamInt*)cond)) {
+            if (!ScamBool_unbox((ScamBool*)cond)) {
                 ScamSeq_delete(list_arg, i);
             }
             gc_unset_root(cond);
@@ -894,7 +894,7 @@ ScamVal* builtin_lte(ScamSeq* args) {
 
 ScamVal* builtin_not(ScamSeq* args) {
     TYPECHECK_ARGS("not", args, 1, SCAM_BOOL);
-    return (ScamVal*)ScamBool_new(!ScamBool_unbox((ScamInt*)ScamSeq_get(args, 0)));
+    return (ScamVal*)ScamBool_new(!ScamBool_unbox((ScamBool*)ScamSeq_get(args, 0)));
 }
 
 ScamVal* builtin_error(ScamSeq* args) {

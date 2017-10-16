@@ -14,7 +14,7 @@ int ScamVal_eq(const ScamVal* v1, const ScamVal* v2) {
     } else if (v1->type == v2->type) {
         switch (v1->type) {
             case SCAM_BOOL:
-                return ScamBool_unbox((ScamInt*)v1) == ScamBool_unbox((ScamInt*)v2);
+                return ScamBool_unbox((ScamBool*)v1) == ScamBool_unbox((ScamBool*)v2);
             case SCAM_SEXPR:
             case SCAM_LIST:
                 return ScamSeq_eq((ScamSeq*)v1, (ScamSeq*)v2);

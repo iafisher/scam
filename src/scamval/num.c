@@ -16,9 +16,9 @@ ScamDec* ScamDec_new(double d) {
 }
 
 
-ScamInt* ScamBool_new(int b) {
-    SCAMVAL_NEW(ret, ScamInt, SCAM_BOOL);
-    ret->n = b;
+ScamBool* ScamBool_new(bool b) {
+    SCAMVAL_NEW(ret, ScamBool, SCAM_BOOL);
+    ret->b = b;
     return ret;
 }
 
@@ -28,8 +28,8 @@ long long ScamInt_unbox(const ScamInt* v) {
 }
 
 
-long long ScamBool_unbox(const ScamInt* v) { 
-    return v->n; 
+bool ScamBool_unbox(const ScamBool* v) { 
+    return v->b; 
 }
 
 
