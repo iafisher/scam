@@ -35,7 +35,7 @@ ScamDict* eval_dict(ScamSeq*, ScamDict*);
 
 ScamVal* eval(ScamVal* ast_or_val, ScamDict* env) {
     if (ast_or_val->type == SCAM_SYM) {
-        return ScamDict_lookup(env, (ScamStr*)ast_or_val);
+        return ScamDict_lookup(env, ast_or_val);
     } else if (ast_or_val->type == SCAM_SEXPR) {
         ScamSeq* ast = (ScamSeq*)ast_or_val;
         SCAM_ASSERT(ScamSeq_len(ast) > 0, ast, "empty expression");
@@ -106,7 +106,7 @@ ScamVal* eval_lambda(ScamSeq* ast, ScamDict* env) {
 ScamVal* eval_define(ScamSeq* ast, ScamDict* env) {
     SCAM_ASSERT_ARITY("define", ast, 3);
     SCAM_ASSERT(ScamSeq_get(ast, 1)->type == SCAM_SYM, ast, "cannot define non-symbol");
-    ScamStr* k = (ScamStr*)ScamSeq_get(ast, 1);
+    ScamVal* k = ScamSeq_get(ast, 1);
     ScamVal* v = eval(ScamSeq_get(ast, 2), env);
     if (v->type != SCAM_ERR) {
         ScamDict_bind(env, k, v);
@@ -183,7 +183,8 @@ ScamVal* eval_apply(ScamVal* fun_val, ScamSeq* arglist) {
         }
         ScamDict* inner_env = ScamFunction_env((ScamFunction*)fun_val);
         for (int i = 0; i < expected; i++) {
-            ScamDict_bind(inner_env, ScamFunction_param(lamb, i), ScamSeq_pop(arglist, 0));
+            ScamDict_bind(inner_env, (ScamVal*)ScamFunction_param(lamb, i), 
+                                     ScamSeq_pop(arglist, 0));
         }
         ScamVal* ret = eval((ScamVal*)ScamFunction_body(lamb), inner_env);
         gc_unset_root((ScamVal*)inner_env);

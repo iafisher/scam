@@ -42,6 +42,8 @@ static void gc_mark(ScamVal* v) {
                     }
                 }
                 break;
+            default:
+                break;
         }
     }
 }
@@ -65,6 +67,8 @@ static void gc_del_ScamVal(ScamVal* v) {
             for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
                 ScamDict_list_free(((ScamDict*)v)->data[i]);
             }
+            break;
+        default:
             break;
     }
     free(v);

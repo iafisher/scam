@@ -690,7 +690,7 @@ void ScamVal_write(const ScamVal* v, FILE* fp) {
         case SCAM_SYM: fprintf(fp, "%s", ScamStr_unbox((ScamStr*)v)); break;
         case SCAM_ERR: fprintf(fp, "Error: %s", ScamStr_unbox((ScamStr*)v)); break;
         case SCAM_DICT: ScamDict_write((ScamDict*)v, fp); break;
-        //default: fprintf(fp, "null");
+        default: break;
     }
 }
 
