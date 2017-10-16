@@ -135,4 +135,4 @@ ERROR
 >>> [(* 2 2) (* 3 3) (* 4 4)]
 [4 9 16]
 >>> {(* 2 2):"four"  (* 3 3):(concat "nin" "e") 16:"sixteen"}
-{4:"four" 9:"nine" 16:"sixteen"}
+{9:"nine" 4:"four" 16:"sixteen"}

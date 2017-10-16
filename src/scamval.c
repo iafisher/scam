@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -248,12 +249,12 @@ static int ScamSeq_eq(const ScamSeq* v1, const ScamSeq* v2) {
 }
 
 static int ScamDict_eq(const ScamDict* v1, const ScamDict* v2) {
-    for (size_t i = 0; i < ScamDict_len(v1); i++) {
-        ScamStr* key = ScamDict_key(v1, i);
-        ScamVal* val1 = ScamDict_val(v1, i);
-        ScamVal* val2 = ScamDict_lookup(v2, key);
-        if (!ScamVal_eq(val1, val2)) {
-            return 0;
+    for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
+        for (ScamDict_list* p = v1->data[i]; p != NULL; p = p->next) {
+            ScamVal* val2 = ScamDict_lookup(v2, p->key);
+            if (!ScamVal_eq(p->val, val2)) {
+                return 0;
+            }
         }
     }
     return 1;
@@ -548,18 +549,12 @@ void ScamPort_set_status(ScamPort* v, int new_status) {
 
 /*** DICTIONARY API ***/
 ScamDict* ScamDict_new(ScamDict* enclosing) {
-    SCAMVAL_NEW(ret, ScamDict, SCAM_ANY);
+    SCAMVAL_NEW(ret, ScamDict, SCAM_DICT);
     ret->enclosing = enclosing;
-    /* The order is very important here: if ret was constructed as a SCAM_DICT right away, then the 
-     * garbage collector might try to access syms or vals before they were allocated. The two calls 
-     * to ScamList_new are safe because if the first call invokes the collector, the second call
-     * cannot as the collector will allocate space for at least one additional object.
-     */
-    ret->syms = ScamList_new();
-    ret->vals = ScamList_new();
-    ret->type = SCAM_DICT;
-    gc_unset_root((ScamVal*)ret->syms);
-    gc_unset_root((ScamVal*)ret->vals);
+    ret->len = 0;
+    for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
+        ret->data[i] = NULL;
+    }
     return ret;
 }
 
@@ -570,7 +565,7 @@ ScamDict* ScamDict_from(size_t n, ...) {
     for (int i = 0; i < n; i++) {
         ScamSeq* key_val_pair = (ScamSeq*)va_arg(vlist, ScamVal*);
         if (key_val_pair->type == SCAM_LIST && ScamSeq_len(key_val_pair) == 2) {
-            ScamStr* key = (ScamStr*)ScamSeq_get(key_val_pair, 0);
+            ScamVal* key = ScamSeq_get(key_val_pair, 0);
             ScamVal* val = ScamSeq_get(key_val_pair, 1);
             ScamDict_bind(ret, key, val);
         } else {
@@ -582,67 +577,93 @@ ScamDict* ScamDict_from(size_t n, ...) {
     return ret;
 }
 
-ScamSeq* ScamDict_keys(const ScamDict* dct) { return dct->syms; }
-ScamSeq* ScamDict_vals(const ScamDict* dct) { return dct->vals; }
 ScamDict* ScamDict_enclosing(const ScamDict* dct) { 
     return dct->enclosing; 
 }
 
-void ScamDict_set_keys(ScamDict* dct, ScamSeq* new_keys) {
-    gc_unset_root((ScamVal*)ScamDict_keys(dct));
-    dct->syms = new_keys;
-    gc_unset_root((ScamVal*)new_keys);
-}
-
-void ScamDict_set_vals(ScamDict* dct, ScamSeq* new_vals) {
-    gc_unset_root((ScamVal*)ScamDict_vals(dct));
-    dct->vals = new_vals;
-    gc_unset_root((ScamVal*)new_vals);
-}
-
 size_t ScamDict_len(const ScamDict* dct) {
-    return ScamSeq_len(dct->syms);
+    return dct->len;
 }
 
-ScamStr* ScamDict_key(const ScamDict* dct, size_t i) {
-    return (ScamStr*)ScamSeq_get(ScamDict_keys(dct), i);
+static unsigned long long hash_int(long long x) {
+    /* Courtesy of stackoverflow.com/questions/664014/ */
+    x = (x ^ (x >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
+    x = (x ^ (x >> 27)) * UINT64_C(0x94d049bb133111eb);
+    x = x ^ (x >> 31);
+    return x;
 }
 
-ScamVal* ScamDict_val(const ScamDict* dct, size_t i) {
-    return ScamSeq_get(ScamDict_vals(dct), i);
-}
-
-void ScamDict_bind(ScamDict* dct, ScamStr* sym, ScamVal* val) {
-    gc_unset_root((ScamVal*)sym);
-    gc_unset_root((ScamVal*)val);
-    if (sym->type == SCAM_PORT || sym->type == SCAM_FUNCTION || sym->type == SCAM_BUILTIN || 
-        sym->type == SCAM_NULL) {
-        // unbindable types
-        return;
-        //return scamerr("cannot bind type '%s'", scamtype_name(sym->type));
+enum { HASH_MULTIPLIER = 31 };
+static unsigned long long hash_str(const char* str) {
+    /* This function is lightly adapted from section 2.9 of The Practice of Programming, by Brian
+     * Kernighan and Rob Pike.
+     */
+    unsigned long long h = 0;
+    for (const unsigned char* p = (const unsigned char*)str; *p != '\0'; p++) {
+        h = HASH_MULTIPLIER*h + *p;
     }
-    for (int i = 0; i < ScamDict_len(dct); i++) {
-        if (ScamVal_eq((ScamVal*)ScamDict_key(dct, i), (ScamVal*)sym)) {
-            gc_unset_root((ScamVal*)ScamDict_val(dct, i));
-            ScamSeq_set(ScamDict_vals(dct), i, val);
+    return h;
+}
+
+static unsigned long long hash(const ScamVal* v) {
+    if (v->type == SCAM_INT) {
+        return hash_int(ScamInt_unbox((ScamInt*)v));
+    } else if (v->type == SCAM_STR) {
+        return hash_str(ScamStr_unbox((ScamStr*)v));
+    } else {
+        /* Should have a better return value here... */
+        return 0;
+    }
+}
+
+static ScamDict_list* ScamDict_list_new(ScamDict_list* next, ScamVal* key, ScamVal* val) {
+    ScamDict_list* ret = gc_malloc(sizeof *ret);
+    ret->next = next;
+    ret->key = key;
+    ret->val = val;
+    return ret;
+}
+
+void ScamDict_list_free(ScamDict_list* p) {
+    if (p) {
+        ScamDict_list_free(p->next);
+        free(p);
+    }
+}
+
+void ScamDict_bind(ScamDict* dct, ScamVal* sym, ScamVal* val) {
+    if (sym->type != SCAM_STR && sym->type != SCAM_SYM && sym->type != SCAM_INT) {
+        /* Unbindable types (for now) */
+        return;
+        //return ScamErr_new("cannot bind type '%s'", scamtype_name(sym->type));
+    }
+    size_t hashval = hash(sym) % SCAM_DICT_SIZE;
+    ScamDict_list* head = dct->data[hashval];
+    for (ScamDict_list* p = head; p != NULL; p = p->next) {
+        if (ScamVal_eq(sym, p->key)) {
+            gc_unset_root((ScamVal*)val);
+            p->val = val;
             return;
         }
     }
-    ScamSeq_append(ScamDict_keys(dct), (ScamVal*)sym);
-    ScamSeq_append(ScamDict_vals(dct), val);
+    /* The dictionary takes responsibility for the deallocation of the key and value from now on. */
+    gc_unset_root((ScamVal*)sym);
+    gc_unset_root((ScamVal*)val);
+    dct->data[hashval] = ScamDict_list_new(head, sym, val);
+    dct->len++;
 }
 
-ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamStr* key) {
-    for (int i = 0; i < ScamDict_len(dct); i++) {
-        ScamStr* this_key = ScamDict_key(dct, i);
-        if (ScamVal_eq((ScamVal*)key, (ScamVal*)this_key)) {
-            return ScamDict_val(dct, i);
+ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamVal* key) {
+    size_t hashval = hash(key) % SCAM_DICT_SIZE;
+    for (ScamDict_list* p = dct->data[hashval]; p != NULL; p = p->next) {
+        if (ScamVal_eq(key, p->key)) {
+            return p->val;
         }
     }
     if (ScamDict_enclosing(dct) != NULL) {
         return ScamDict_lookup(ScamDict_enclosing(dct), key);
     } else {
-        if (key->type == SCAM_STR) {
+        if (key->type == SCAM_STR || key->type == SCAM_SYM) {
             return (ScamVal*)ScamErr_new("unbound variable '%s'", ScamStr_unbox((ScamStr*)key));
         } else {
             return (ScamVal*)ScamErr_new("unbound variable");
@@ -702,13 +723,17 @@ void ScamSeq_write(const ScamSeq* seq, const char* start, const char* mid, const
 }
 
 void ScamDict_write(const ScamDict* dct, FILE* fp) {
+    size_t remaining = ScamDict_len(dct);
     fputc('{', fp);
-    for (size_t i = 0; i < ScamDict_len(dct); i++) {
-        ScamVal_write((ScamVal*)ScamDict_key(dct, i), fp);
-        fputc(':', fp);
-        ScamVal_write(ScamDict_val(dct, i), fp);
-        if (i != ScamDict_len(dct) - 1) {
-            fputc(' ', fp);
+    for (size_t i = 0; i < SCAM_DICT_SIZE && remaining > 0; i++) {
+        for (ScamDict_list* p = dct->data[i]; p != NULL; p = p->next) {
+            ScamVal_write(p->key, fp);
+            fputc(':', fp);
+            ScamVal_write(p->val, fp);
+            remaining--;
+            if (remaining > 0) {
+                fputc(' ', fp);
+            }
         }
     }
     fputc('}', fp);

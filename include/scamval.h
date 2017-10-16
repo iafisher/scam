@@ -5,7 +5,7 @@
 /* The possible values for the type field of the ScamVal struct, populated with an X-macro.
  * Note that some of these types are never exposed to the user.
  */
-enum {
+enum ScamType {
 #define EXPAND_TYPE(type_val, type_name) \
     type_val,
 #include "../src/type.def"
@@ -13,7 +13,7 @@ enum {
 
 
 #define SCAMVAL_HEADER \
-    int type; \
+    enum ScamType type; \
     /* Bookkeeping for the garbage collector. */ \
     int seen; \
     int is_root;
@@ -55,14 +55,21 @@ typedef struct {
 } ScamStr;
 
 
+typedef struct ScamDict_list {
+    struct ScamDict_list* next;
+    ScamVal* key;
+    ScamVal* val;
+} ScamDict_list;
+
+
 /* Used by SCAM_DICT. */
+enum { SCAM_DICT_SIZE = 256 };
 typedef struct ScamDict_rec {
     SCAMVAL_HEADER;
     /* A pointer to the enclosing dictionary (if the dictionary is an environment). */
     struct ScamDict_rec* enclosing;
-    /* Symbols and values are stored as unsorted ScamVal lists (inefficient, I know). */
-    ScamSeq* syms;
-    ScamSeq* vals;
+    size_t len;
+    ScamDict_list* data[SCAM_DICT_SIZE];
 } ScamDict;
 
 
@@ -220,26 +227,16 @@ ScamDict* ScamDict_from(size_t, ...);
 ScamDict* ScamDict_builtins(void);
 
 /* Create a new binding in the dictionary, or update an existing one. */
-void ScamDict_bind(ScamDict* dct, ScamStr* sym, ScamVal* val);
+void ScamDict_bind(ScamDict* dct, ScamVal* sym, ScamVal* val);
 
 /* Lookup the symbol in the dictionary and return a copy of the value if it exists and an error if 
  * it doesn't.
  */
-ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamStr* sym);
+ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamVal* sym);
 size_t ScamDict_len(const ScamDict* dct);
 ScamDict* ScamDict_enclosing(const ScamDict*);
 
-/* Get references to the dictionary keys and values. */
-ScamSeq* ScamDict_keys(const ScamDict*);
-ScamSeq* ScamDict_vals(const ScamDict*);
-
-/* Get references to individual keys and values. */
-ScamStr* ScamDict_key(const ScamDict*, size_t);
-ScamVal* ScamDict_val(const ScamDict*, size_t);
-
-/* Set dictionary keys and values. */
-void ScamDict_set_keys(ScamDict*, ScamSeq* new_keys);
-void ScamDict_set_vals(ScamDict*, ScamSeq* new_vals);
+void ScamDict_list_free(ScamDict_list*);
 
 
 /*** SCAMVAL PRINTING ***/

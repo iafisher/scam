@@ -34,8 +34,12 @@ static void gc_mark(ScamVal* v) {
                 {
                     ScamDict* dct = (ScamDict*)v;
                     gc_mark((ScamVal*)(dct->enclosing));
-                    gc_mark((ScamVal*)(dct->syms));
-                    gc_mark((ScamVal*)(dct->vals));
+                    for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
+                        for (ScamDict_list* p = dct->data[i]; p != NULL; p = p->next) {
+                            gc_mark(p->key);
+                            gc_mark(p->val);
+                        }
+                    }
                 }
                 break;
         }
@@ -56,6 +60,11 @@ static void gc_del_ScamVal(ScamVal* v) {
         case SCAM_PORT:
             if (ScamPort_status((ScamPort*)v) == SCAMPORT_OPEN)
                 fclose(ScamPort_unbox((ScamPort*)v));
+            break;
+        case SCAM_DICT:
+            for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
+                ScamDict_list_free(((ScamDict*)v)->data[i]);
+            }
             break;
     }
     free(v);
@@ -154,9 +163,13 @@ ScamVal* gc_copy_ScamVal(ScamVal* v) {
             return (ScamVal*)ScamErr_new(ScamStr_unbox((ScamStr*)v));
         case SCAM_DICT:
         {
-            ScamDict* ret = ScamDict_new(ScamDict_enclosing((ScamDict*)v));
-            ScamDict_set_keys(ret, (ScamSeq*)gc_copy_ScamVal((ScamVal*)ScamDict_keys((ScamDict*)v)));
-            ScamDict_set_vals(ret, (ScamSeq*)gc_copy_ScamVal((ScamVal*)ScamDict_vals((ScamDict*)v)));
+            ScamDict* dct = (ScamDict*)v;
+            ScamDict* ret = ScamDict_new(ScamDict_enclosing(dct));
+            for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
+                for (ScamDict_list* p = dct->data[i]; p != NULL; p = p->next) {
+                    ScamDict_bind(ret, p->key, p->val);
+                }
+            }
             return (ScamVal*)ret;
         }
         default:

@@ -21,9 +21,9 @@
         printf("Failed example at line %d in %s:\n", ps.line_no, ps.fpath); \
         printf("  %s\n", ps.query + 3); \
         printf("Expected:\n"); \
-        printf("  %s\n", answer_str); \
-        printf("Got:\n"); \
         printf("  %s\n", this_str); \
+        printf("Got:\n"); \
+        printf("  %s\n\n", answer_str); \
     }
 
 typedef struct {
