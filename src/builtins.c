@@ -562,7 +562,7 @@ ScamVal* builtin_bind(ScamSeq* args) {
     ScamDict* dict_arg = (ScamDict*)ScamSeq_get(args, 0);
     ScamVal* key_arg = ScamSeq_get(args, 1);
     ScamVal* val_arg = ScamSeq_get(args, 2);
-    ScamDict_bind(dict_arg, key_arg, val_arg);
+    ScamDict_insert(dict_arg, key_arg, val_arg);
     return (ScamVal*)dict_arg;
 }
 
@@ -579,7 +579,7 @@ ScamVal* builtin_dict(ScamSeq* args) {
         if (ScamSeq_len(pair) == 2) {
             ScamVal* key = ScamSeq_get(pair, 0);
             ScamVal* val = ScamSeq_get(pair, 1);
-            ScamDict_bind(ret, key, val);
+            ScamDict_insert(ret, key, val);
         } else {
             gc_unset_root((ScamVal*)ret);
             return (ScamVal*)ScamErr_new("'dict' expects each argument to be a pair");
@@ -908,19 +908,19 @@ ScamVal* builtin_error(ScamSeq* args) {
     }
 }
 
-void add_builtin(ScamDict* env, char* sym, scambuiltin_fun bltin) {
-    ScamDict_bind(env, (ScamVal*)ScamSym_new(sym), (ScamVal*)ScamBuiltin_new(bltin));
+void add_builtin(ScamEnv* env, char* sym, scambuiltin_fun bltin) {
+    ScamEnv_insert(env, ScamSym_new(sym), (ScamVal*)ScamBuiltin_new(bltin));
 }
 
 /* If a builtin doesn't change its arguments, then it should be registered as constant so that the
  * evaluator doesn't bother copying the argument list.
  */
-void add_const_builtin(ScamDict* env, char* sym, scambuiltin_fun bltin) {
-    ScamDict_bind(env, (ScamVal*)ScamSym_new(sym), (ScamVal*)ScamBuiltin_new_const(bltin));
+void add_const_builtin(ScamEnv* env, char* sym, scambuiltin_fun bltin) {
+    ScamEnv_insert(env, ScamSym_new(sym), (ScamVal*)ScamBuiltin_new_const(bltin));
 }
 
-ScamDict* ScamDict_builtins(void) {
-    ScamDict* env = ScamDict_new(NULL);
+ScamEnv* ScamEnv_builtins(void) {
+    ScamEnv* env = ScamEnv_new(NULL);
     add_builtin(env, "begin", builtin_begin);
     add_const_builtin(env, "-", builtin_sub);
     add_const_builtin(env, "+", builtin_add);
@@ -991,8 +991,8 @@ ScamDict* ScamDict_builtins(void) {
     add_const_builtin(env, "id", builtin_id);
     add_builtin(env, "error", builtin_error);
     // stdin, stdout and stderr
-    ScamDict_bind(env, (ScamVal*)ScamSym_new("stdin"), (ScamVal*)ScamPort_new(stdin));
-    ScamDict_bind(env, (ScamVal*)ScamSym_new("stdout"), (ScamVal*)ScamPort_new(stdout));
-    ScamDict_bind(env, (ScamVal*)ScamSym_new("stderr"), (ScamVal*)ScamPort_new(stderr));
+    ScamEnv_insert(env, ScamSym_new("stdin"), (ScamVal*)ScamPort_new(stdin));
+    ScamEnv_insert(env, ScamSym_new("stdout"), (ScamVal*)ScamPort_new(stdout));
+    ScamEnv_insert(env, ScamSym_new("stderr"), (ScamVal*)ScamPort_new(stderr));
     return env;
 }

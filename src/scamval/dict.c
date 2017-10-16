@@ -11,8 +11,18 @@ static unsigned long long hash(const ScamVal* v);
 static ScamDict_list* ScamDict_list_new(ScamDict_list* next, ScamVal* key, ScamVal* val);
 
 
-ScamDict* ScamDict_new(ScamDict* enclosing) {
+ScamDict* ScamDict_new() {
     SCAMVAL_NEW(ret, ScamDict, SCAM_DICT);
+    ret->len = 0;
+    for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
+        ret->data[i] = NULL;
+    }
+    return ret;
+}
+
+
+ScamEnv* ScamEnv_new(ScamEnv* enclosing) {
+    SCAMVAL_NEW(ret, ScamEnv, SCAM_ENV);
     ret->enclosing = enclosing;
     ret->len = 0;
     for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
@@ -31,7 +41,7 @@ ScamDict* ScamDict_from(size_t n, ...) {
         if (key_val_pair->type == SCAM_LIST && ScamSeq_len(key_val_pair) == 2) {
             ScamVal* key = ScamSeq_get(key_val_pair, 0);
             ScamVal* val = ScamSeq_get(key_val_pair, 1);
-            ScamDict_bind(ret, key, val);
+            ScamDict_insert(ret, key, val);
         } else {
             gc_unset_root((ScamVal*)ret);
             return (ScamDict*)ScamErr_new("ScamDict_from takes key-value pairs as arguments");
@@ -42,8 +52,8 @@ ScamDict* ScamDict_from(size_t n, ...) {
 }
 
 
-ScamDict* ScamDict_enclosing(const ScamDict* dct) {
-    return dct->enclosing;
+ScamEnv* ScamEnv_enclosing(const ScamEnv* env) {
+    return env->enclosing;
 }
 
 
@@ -52,7 +62,7 @@ size_t ScamDict_len(const ScamDict* dct) {
 }
 
 
-void ScamDict_bind(ScamDict* dct, ScamVal* sym, ScamVal* val) {
+void ScamDict_insert(ScamDict* dct, ScamVal* sym, ScamVal* val) {
     if (sym->type != SCAM_STR && sym->type != SCAM_SYM && sym->type != SCAM_INT) {
         /* Unbindable types (for now) */
         return;
@@ -75,6 +85,11 @@ void ScamDict_bind(ScamDict* dct, ScamVal* sym, ScamVal* val) {
 }
 
 
+void ScamEnv_insert(ScamEnv* env, ScamStr* key, ScamVal* val) {
+    ScamDict_insert((ScamDict*)env, (ScamVal*)key, val);
+}
+
+
 ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamVal* key) {
     size_t hashval = hash(key) % SCAM_DICT_SIZE;
     for (ScamDict_list* p = dct->data[hashval]; p != NULL; p = p->next) {
@@ -82,13 +97,19 @@ ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamVal* key) {
             return p->val;
         }
     }
-    if (ScamDict_enclosing(dct) != NULL) {
-        return ScamDict_lookup(ScamDict_enclosing(dct), key);
+    return (ScamVal*)ScamErr_new("key not in dictionary");
+}
+
+
+ScamVal* ScamEnv_lookup(const ScamEnv* env, const ScamStr* key) {
+    ScamVal* val = ScamDict_lookup((ScamDict*)env, (const ScamVal*)key);
+    if (val->type != SCAM_ERR) {
+        return val;
     } else {
-        if (key->type == SCAM_STR || key->type == SCAM_SYM) {
-            return (ScamVal*)ScamErr_new("unbound variable '%s'", ScamStr_unbox((ScamStr*)key));
+        if (ScamEnv_enclosing(env) != NULL) {
+            return ScamEnv_lookup(ScamEnv_enclosing(env), key);
         } else {
-            return (ScamVal*)ScamErr_new("unbound variable");
+            return (ScamVal*)ScamErr_new("unbound variable '%s'", ScamStr_unbox((ScamStr*)key));
         }
     }
 }

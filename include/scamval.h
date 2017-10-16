@@ -5,6 +5,8 @@
 
 /* The possible values for the type field of the ScamVal struct, populated with an X-macro.
  * Note that some of these types are never exposed to the user.
+ *
+ * To define a new type, edit the src/type.def file.
  */
 enum ScamType {
 #define EXPAND_TYPE(type_val, type_name) \
@@ -70,21 +72,30 @@ typedef struct ScamDict_list {
 } ScamDict_list;
 
 
-/* Used by SCAM_DICT. */
 enum { SCAM_DICT_SIZE = 256 };
-typedef struct ScamDict_rec {
-    SCAMVAL_HEADER;
-    /* A pointer to the enclosing dictionary (if the dictionary is an environment). */
-    struct ScamDict_rec* enclosing;
-    size_t len;
+#define SCAMDICT_HEADER \
+    SCAMVAL_HEADER; \
+    size_t len; \
     ScamDict_list* data[SCAM_DICT_SIZE];
+
+
+/* Used by SCAM_DICT. */
+typedef struct {
+    SCAMDICT_HEADER;
 } ScamDict;
+
+
+/* Used by SCAM_ENV. */
+typedef struct ScamEnv_rec {
+    SCAMDICT_HEADER;
+    struct ScamEnv_rec* enclosing;
+} ScamEnv;
 
 
 /* Used by SCAM_FUNCTION. */
 typedef struct {
     SCAMVAL_HEADER;
-    ScamDict* env; /* A pointer to the environment the function was created in, for closures. */
+    ScamEnv* env; /* A pointer to the environment the function was created in, for closures. */
     ScamSeq* parameters;
     ScamSeq* body;
 } ScamFunction;
@@ -196,7 +207,7 @@ size_t ScamStr_len(const ScamStr*);
 
 
 /*** FUNCTION API ***/
-ScamFunction* ScamFunction_new(ScamDict* env, ScamSeq* parameters, ScamSeq* body);
+ScamFunction* ScamFunction_new(ScamEnv* env, ScamSeq* parameters, ScamSeq* body);
 ScamBuiltin* ScamBuiltin_new(scambuiltin_fun);
 
 /* Construct a constant scambuiltin (one that doesn't change its arguments). */
@@ -206,10 +217,10 @@ ScamStr* ScamFunction_param(const ScamFunction*, size_t);
 ScamSeq* ScamFunction_body(const ScamFunction*);
 
 /* Initialize an environment enclosed by the function's environment. */
-ScamDict* ScamFunction_env(const ScamFunction*);
+ScamEnv* ScamFunction_env(const ScamFunction*);
 
 /* Return a reference to the function's environment itself. */
-const ScamDict* ScamFunction_env_ref(const ScamFunction*);
+const ScamEnv* ScamFunction_env_ref(const ScamFunction*);
 scambuiltin_fun ScamBuiltin_function(const ScamBuiltin*);
 int ScamBuiltin_is_const(const ScamBuiltin*);
 
@@ -229,20 +240,24 @@ int ScamPort_status(const ScamPort*);
 void ScamPort_set_status(ScamPort*, int);
 
 
-/*** DICTIONARY API ***/
-ScamDict* ScamDict_new(ScamDict* enclosing);
+/*** DICTIONARY and ENVIRONMENT API ***/
+ScamDict* ScamDict_new();
+ScamEnv* ScamEnv_new(ScamEnv* enclosing);
 ScamDict* ScamDict_from(size_t, ...);
-ScamDict* ScamDict_builtins(void);
+ScamEnv* ScamEnv_builtins(void);
 
-/* Create a new binding in the dictionary, or update an existing one. */
-void ScamDict_bind(ScamDict* dct, ScamVal* sym, ScamVal* val);
+/* Insert a key-value pair into the dictionary, or update an existing one. */
+void ScamDict_insert(ScamDict* dct, ScamVal* sym, ScamVal* val);
+void ScamEnv_insert(ScamEnv* env, ScamStr* sym, ScamVal* val);
 
 /* Lookup the symbol in the dictionary and return a copy of the value if it exists and an error if 
  * it doesn't.
  */
-ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamVal* sym);
+ScamVal* ScamDict_lookup(const ScamDict* dct, const ScamVal* key);
+ScamVal* ScamEnv_lookup(const ScamEnv* env, const ScamStr* key);
+
 size_t ScamDict_len(const ScamDict* dct);
-ScamDict* ScamDict_enclosing(const ScamDict*);
+ScamEnv* ScamEnv_enclosing(const ScamEnv*);
 
 void ScamDict_list_free(ScamDict_list*);
 

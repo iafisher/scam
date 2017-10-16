@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
             printf("Error: unable to open file %s\n", ps.fpath);
             return 1;
         }
-        ScamDict* env = ScamDict_builtins();
+        ScamEnv* env = ScamEnv_builtins();
         while (ps_next(&ps)) {
             ASSERT(is_query(ps.query), ps, "expected \">>> ...\"")
             ScamVal* query_value = eval_str(ps.query + 3, env);

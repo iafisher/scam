@@ -13,7 +13,7 @@
 #define I ScamInt_new
 
 
-void benchmark(ScamVal* ast, int reps, ScamDict* env, const char* test_name, FILE* fp);
+void benchmark(ScamVal* ast, int reps, ScamEnv* env, const char* test_name, FILE* fp);
 
 
 int main(int argc, char* argv[]) {
@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    ScamDict* env = ScamDict_builtins();
+    ScamEnv* env = ScamEnv_builtins();
     /* FUNCTION APPLICATION */
     eval_str("(define (f x) (* x 2))", env);
     /* (f 100) */
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 }
 
 
-void benchmark(ScamVal* ast, int reps, ScamDict* env, const char* test_name, FILE* fp) {
+void benchmark(ScamVal* ast, int reps, ScamEnv* env, const char* test_name, FILE* fp) {
     clock_t begin = clock();
     for (size_t i = 0; i < reps; i++) {
         ScamVal* ast_copy = gc_copy_ScamVal(ast);

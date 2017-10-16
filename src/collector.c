@@ -34,15 +34,18 @@ static void gc_mark(ScamVal* v) {
                     gc_mark((ScamVal*)(f->env));
                 }
                 break;
+            case SCAM_ENV:
             case SCAM_DICT:
                 {
                     ScamDict* dct = (ScamDict*)v;
-                    gc_mark((ScamVal*)(dct->enclosing));
                     for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
                         for (ScamDict_list* p = dct->data[i]; p != NULL; p = p->next) {
                             gc_mark(p->key);
                             gc_mark(p->val);
                         }
+                    }
+                    if (v->type == SCAM_ENV) {
+                        gc_mark((ScamVal*)(((ScamEnv*)v)->enclosing));
                     }
                 }
                 break;
@@ -68,6 +71,7 @@ static void gc_del_ScamVal(ScamVal* v) {
             if (ScamPort_status((ScamPort*)v) == SCAMPORT_OPEN)
                 fclose(ScamPort_unbox((ScamPort*)v));
             break;
+        case SCAM_ENV:
         case SCAM_DICT:
             for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
                 ScamDict_list_free(((ScamDict*)v)->data[i]);
@@ -180,10 +184,21 @@ ScamVal* gc_copy_ScamVal(ScamVal* v) {
         case SCAM_DICT:
         {
             ScamDict* dct = (ScamDict*)v;
-            ScamDict* ret = ScamDict_new(ScamDict_enclosing(dct));
+            ScamDict* ret = ScamDict_new();
             for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
                 for (ScamDict_list* p = dct->data[i]; p != NULL; p = p->next) {
-                    ScamDict_bind(ret, p->key, p->val);
+                    ScamDict_insert(ret, p->key, p->val);
+                }
+            }
+            return (ScamVal*)ret;
+        }
+        case SCAM_ENV:
+        {
+            ScamEnv* env = (ScamEnv*)v;
+            ScamEnv* ret = ScamEnv_new(ScamEnv_enclosing(env));
+            for (size_t i = 0; i < SCAM_DICT_SIZE; i++) {
+                for (ScamDict_list* p = env->data[i]; p != NULL; p = p->next) {
+                    ScamDict_insert((ScamDict*)ret, p->key, p->val);
                 }
             }
             return (ScamVal*)ret;

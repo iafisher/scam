@@ -10,7 +10,7 @@ static void ScamSeq_write(const ScamSeq* v, const char* start, const char* mid, 
 static void ScamDict_write(const ScamDict* v, FILE* fp);
 
 
-ScamFunction* ScamFunction_new(ScamDict* env, ScamSeq* parameters, ScamSeq* body) {
+ScamFunction* ScamFunction_new(ScamEnv* env, ScamSeq* parameters, ScamSeq* body) {
     SCAMVAL_NEW(ret, ScamFunction, SCAM_FUNCTION);
     ret->env = env;
     ret->parameters = parameters;
@@ -64,12 +64,12 @@ ScamSeq* ScamFunction_body(const ScamFunction* f) {
 }
 
 
-ScamDict* ScamFunction_env(const ScamFunction* f) {
-    return ScamDict_new(f->env);
+ScamEnv* ScamFunction_env(const ScamFunction* f) {
+    return ScamEnv_new(f->env);
 }
 
 
-const ScamDict* ScamFunction_env_ref(const ScamFunction* f) {
+const ScamEnv* ScamFunction_env_ref(const ScamFunction* f) {
     return f->env;
 }
 
@@ -102,19 +102,45 @@ void ScamPort_set_status(ScamPort* v, int new_status) {
 void ScamVal_write(const ScamVal* v, FILE* fp) {
     if (!v) return;
     switch (v->type) {
-        case SCAM_INT: fprintf(fp, "%lli", ScamInt_unbox((ScamInt*)v)); break;
-        case SCAM_DEC: fprintf(fp, "%f", ScamDec_unbox((ScamDec*)v)); break;
-        case SCAM_BOOL: fprintf(fp, "%s", ScamBool_unbox((ScamBool*)v) ? "true" : "false"); break;
-        case SCAM_LIST: ScamSeq_write((ScamSeq*)v, "[", " ", "]", fp); break;
-        case SCAM_SEXPR: ScamSeq_write((ScamSeq*)v, "(", " ", ")", fp); break;
-        case SCAM_FUNCTION: fprintf(fp, "<Scam function>"); break;
-        case SCAM_BUILTIN: fprintf(fp, "<Scam builtin>"); break;
-        case SCAM_PORT: fprintf(fp, "<Scam port>"); break;
-        case SCAM_STR: ScamStr_write((ScamStr*)v, fp); break;
-        case SCAM_SYM: fprintf(fp, "%s", ScamStr_unbox((ScamStr*)v)); break;
-        case SCAM_ERR: fprintf(fp, "Error: %s", ScamStr_unbox((ScamStr*)v)); break;
-        case SCAM_DICT: ScamDict_write((ScamDict*)v, fp); break;
-        default: break;
+        case SCAM_INT:
+            fprintf(fp, "%lli", ScamInt_unbox((ScamInt*)v));
+            break;
+        case SCAM_DEC:
+            fprintf(fp, "%f", ScamDec_unbox((ScamDec*)v));
+            break;
+        case SCAM_BOOL:
+            fprintf(fp, "%s", ScamBool_unbox((ScamBool*)v) ? "true" : "false");
+            break;
+        case SCAM_LIST:
+            ScamSeq_write((ScamSeq*)v, "[", " ", "]", fp);
+            break;
+        case SCAM_SEXPR:
+            ScamSeq_write((ScamSeq*)v, "(", " ", ")", fp);
+            break;
+        case SCAM_FUNCTION:
+            fprintf(fp, "<Scam function>");
+            break;
+        case SCAM_BUILTIN:
+            fprintf(fp, "<Scam builtin>");
+            break;
+        case SCAM_PORT:
+            fprintf(fp, "<Scam port>");
+            break;
+        case SCAM_STR:
+            ScamStr_write((ScamStr*)v, fp);
+            break;
+        case SCAM_SYM:
+            fprintf(fp, "%s", ScamStr_unbox((ScamStr*)v));
+            break;
+        case SCAM_ERR:
+            fprintf(fp, "Error: %s", ScamStr_unbox((ScamStr*)v));
+            break;
+        case SCAM_ENV:
+        case SCAM_DICT:
+            ScamDict_write((ScamDict*)v, fp);
+            break;
+        default:
+            break;
     }
 }
 
@@ -234,7 +260,8 @@ int ScamVal_typecheck(const ScamVal* v, enum ScamType type) {
         case SCAM_SEQ:
             return v->type == SCAM_LIST || v->type == SCAM_STR;
         case SCAM_CONTAINER:
-            return v->type == SCAM_LIST || v->type == SCAM_STR || v->type == SCAM_DICT;
+            return v->type == SCAM_LIST || v->type == SCAM_STR || v->type == SCAM_DICT ||
+                   v->type == SCAM_ENV;
         case SCAM_NUM:
             return v->type == SCAM_INT || v->type == SCAM_DEC;
         case SCAM_CMP:
@@ -258,7 +285,7 @@ int is_seq_type(enum ScamType type) {
 
 
 int is_container_type(enum ScamType type) {
-    return type == SCAM_LIST || type == SCAM_STR || type == SCAM_DICT;
+    return type == SCAM_LIST || type == SCAM_STR || type == SCAM_DICT || type == SCAM_ENV;
 }
 
 

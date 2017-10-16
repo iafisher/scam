@@ -9,8 +9,8 @@
 void parsetest(char* line, const ScamVal* answer, int line_no);
 void parsetest_err(char* line, int line_no);
 
-void evaltest(char* line, const ScamVal* answer, ScamDict* env, int line_no);
-void evaltest_err(char* line, ScamDict* env, int line_no);
+void evaltest(char* line, const ScamVal* answer, ScamEnv* env, int line_no);
+void evaltest_err(char* line, ScamEnv* env, int line_no);
 
 int main(int argc, char* argv[]) {
     #define PARSETEST(line, answer) parsetest(line, (ScamVal*)answer, __LINE__);
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 
     puts("\n=== EVALUATOR TESTS ===");
     puts("(you should see two failed (+ 1 1) == 3 tests)\n");
-    ScamDict* env = ScamDict_builtins();
+    ScamEnv* env = ScamEnv_builtins();
 
     /*** DEFINE ***/
     EVALTEST("(define x 42) x", ScamInt_new(42));
@@ -346,7 +346,7 @@ void parsetest_err(char* line, int line_no) {
     gc_unset_root((ScamVal*)v);
 }
 
-void evaltest(char* line, const ScamVal* answer, ScamDict* env, int line_no) {
+void evaltest(char* line, const ScamVal* answer, ScamEnv* env, int line_no) {
     ScamVal* v = eval_str(line, env);
     if (!ScamVal_eq(v, answer)) {
         printf("Failed example, line %d in %s:\n", line_no, __FILE__);
@@ -367,7 +367,7 @@ void evaltest(char* line, const ScamVal* answer, ScamDict* env, int line_no) {
     gc_unset_root(v);
 }
 
-void evaltest_err(char* line, ScamDict* env, int line_no) {
+void evaltest_err(char* line, ScamEnv* env, int line_no) {
     ScamVal* v = eval_str(line, env);
     if (v->type != SCAM_ERR) {
         printf("Failed example, line %d in %s:\n", line_no, __FILE__);

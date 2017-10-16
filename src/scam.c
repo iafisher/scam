@@ -2,19 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
 #include <readline/readline.h>
 #include <readline/history.h>
-
 #include "collector.h"
 #include "eval.h"
 #include "parse.h"
 
-void run_repl(ScamDict*);
-void run_debug_repl(ScamDict*);
+
+void run_repl(ScamEnv*);
+void run_debug_repl(ScamEnv*);
+
 
 int main(int argc, char** argv) {
-    ScamDict* env = ScamDict_builtins();
+    ScamEnv* env = ScamEnv_builtins();
     char* cvalue = NULL;
     int load_flag = 0;
     int debug_flag = 0;
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void run_repl(ScamDict* env) {
+void run_repl(ScamEnv* env) {
     while (1) {
         char* input = readline(">>> ");
         add_history(input);
@@ -74,12 +74,12 @@ void run_repl(ScamDict* env) {
 }
 
 void parse_repl(char*);
-void eval_repl(char*, ScamDict*);
+void eval_repl(char*, ScamEnv*);
 
 void print_generic_help(void);
 
 enum { REPL_EVAL, REPL_PARSE };
-void run_debug_repl(ScamDict* env) {
+void run_debug_repl(ScamEnv* env) {
     int mode = REPL_EVAL;
     char* buffer = NULL;
     size_t s_len = 0;
@@ -131,7 +131,7 @@ void parse_repl(char* command) {
     }
 }
 
-void eval_repl(char* command, ScamDict* env) {
+void eval_repl(char* command, ScamEnv* env) {
     if (strcmp(command, "heap") == 0) {
         gc_smart_print();
     } else if (strcmp(command, "heapall") == 0) {

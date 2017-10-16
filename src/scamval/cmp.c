@@ -21,6 +21,7 @@ int ScamVal_eq(const ScamVal* v1, const ScamVal* v2) {
             case SCAM_SYM:
             case SCAM_STR:
                 return (strcmp(ScamStr_unbox((ScamStr*)v1), ScamStr_unbox((ScamStr*)v2)) == 0);
+            case SCAM_ENV:
             case SCAM_DICT:
                 return ScamDict_eq((ScamDict*)v1, (ScamDict*)v2);
             case SCAM_NULL:

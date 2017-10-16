@@ -78,7 +78,7 @@ build/run_test_script.o: src/run_test_script.c include/collector.h include/eval.
 	$(CC) $(CFLAGS) src/run_test_script.c -o build/run_test_script.o
 
 clean:
-	rm build/*.o build/scamval/*.o src/flex.c src/grammar.c include/grammar.h $(EXECS)
+	rm -f build/*.o build/scamval/*.o src/flex.c src/grammar.c include/grammar.h $(EXECS)
 
 include/collector.h: include/scamval.h
 
