@@ -58,17 +58,28 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+bool non_empty(const char* string) {
+    for (; *string != '\0'; string++) {
+        if (!isspace(*string)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void run_repl(ScamEnv* env) {
     while (1) {
         char* input = readline(">>> ");
-        add_history(input);
-        if (strcmp(input, "quit") == 0) {
-            free(input);
-            break;
+        if (non_empty(input)) {
+            add_history(input);
+            if (strcmp(input, "quit") == 0) {
+                free(input);
+                break;
+            }
+            ScamVal* v = eval_str(input, env);
+            ScamVal_println(v);
+            gc_unset_root(v);
         }
-        ScamVal* v = eval_str(input, env);
-        ScamVal_println(v);
-        gc_unset_root(v);
         free(input);
     }
 }
@@ -81,8 +92,6 @@ void print_generic_help(void);
 enum { REPL_EVAL, REPL_PARSE };
 void run_debug_repl(ScamEnv* env) {
     int mode = REPL_EVAL;
-    char* buffer = NULL;
-    size_t s_len = 0;
     print_generic_help();
     for (;;) {
         switch (mode) {
@@ -90,28 +99,26 @@ void run_debug_repl(ScamEnv* env) {
             case REPL_EVAL: printf("eval"); break;
             default: printf("unknown mode"); break;
         }
-        printf(">>> ");
-        int end = getline(&buffer, &s_len, stdin);
-        // remove trailing newline
-        if (end > 0) {
-            buffer[--end] = '\0';
+        char* input = readline(">>> ");
+        if (non_empty(input)) {
+            add_history(input);
+            if (strcmp(input, "quit") == 0) {
+                free(input);
+                break;
+            } else if (strcmp(input, "!eval") == 0) {
+                mode = REPL_EVAL;
+            } else if (strcmp(input, "!parse") == 0) {
+                mode = REPL_PARSE;
+            } else {
+                if (mode == REPL_PARSE) {
+                    parse_repl(input);
+                } else if (mode == REPL_EVAL) {
+                    eval_repl(input, env);
+                }
+            }
         }
-        if (strcmp(buffer, "quit") == 0) {
-            break;
-        } else if (strcmp(buffer, "!eval") == 0) {
-            mode = REPL_EVAL;
-            continue;
-        } else if (strcmp(buffer, "!parse") == 0) {
-            mode = REPL_PARSE;
-            continue;
-        }
-        if (mode == REPL_PARSE) {
-            parse_repl(buffer);
-        } else if (mode == REPL_EVAL) {
-            eval_repl(buffer, env);
-        }
+        free(input);
     }
-    if (buffer) free(buffer);
 }
 
 void parse_repl(char* command) {
