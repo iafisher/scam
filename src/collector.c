@@ -128,12 +128,12 @@ void gc_set_root(ScamVal* v) {
 
 ScamVal* gc_new_ScamVal(int type, size_t sz) {
     if (scamval_objs == NULL) {
-        // initialize internal heap for the first time
+        /* Initialize internal heap for the first time. */
         gc_init();
     } else if (first_avail == count) {
         gc_collect();
         if (first_avail == count) {
-            // grow internal heap
+            /* Grow internal heap. */
             size_t new_count = count * HEAP_GROW;
             scamval_objs = gc_realloc(scamval_objs, new_count*sizeof *scamval_objs);
             for (size_t i = count; i < new_count; i++) {
@@ -147,7 +147,7 @@ ScamVal* gc_new_ScamVal(int type, size_t sz) {
     ret->seen = false;
     ret->is_root = true;
     scamval_objs[first_avail] = ret;
-    // update first_avail to be the first available heap location
+    /* Update first_avail to be the first available heap location. */
     while (++first_avail < count && scamval_objs[first_avail] != NULL)
         ;
     return ret;
@@ -237,7 +237,7 @@ void gc_print(void) {
 
 
 static size_t first_interesting_index(void) {
-    // first 3 refs are for the global environment
+    /* The first 3 refs are for the global environment. */
     int reached_the_builtin_ports = 0;
     for (size_t i = 3; i < count; i++) {
         ScamVal* v = scamval_objs[i];

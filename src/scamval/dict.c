@@ -66,7 +66,7 @@ void ScamDict_insert(ScamDict* dct, ScamVal* sym, ScamVal* val) {
     if (sym->type != SCAM_STR && sym->type != SCAM_SYM && sym->type != SCAM_INT) {
         /* Unbindable types (for now) */
         return;
-        //return ScamErr_new("cannot bind type '%s'", scamtype_name(sym->type));
+        /*return ScamErr_new("cannot bind type '%s'", scamtype_name(sym->type));*/
     }
     size_t hashval = hash(sym) % SCAM_DICT_SIZE;
     ScamDict_list* head = dct->data[hashval];

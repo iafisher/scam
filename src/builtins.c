@@ -21,8 +21,9 @@
     } \
 }
 
-// Assert that no element of the args is equal to zero, unless only the first element is zero and
-// the args contains only two arguments
+/* Assert that no element of the args is equal to zero, unless only the first element is zero and
+ * the args contains only two arguments
+ */
 #define ASSERT_NO_ZEROS(args) { \
     if (ScamSeq_len(args) > 2) { \
         ScamVal* first = ScamSeq_get(args, 0); \
@@ -515,14 +516,14 @@ ScamVal* builtin_trim(ScamSeq* args) {
     TYPECHECK_ARGS("trim", args, 1, SCAM_STR);
     ScamStr* str_arg = (ScamStr*)ScamSeq_pop(args, 0);
     size_t n = ScamStr_len(str_arg);
-    // remove left whitespace
+    /* Remove left whitespace. */
     size_t left_ws = 0;
     while (isspace(ScamStr_get(str_arg, left_ws)) && left_ws < n)
         left_ws++;
     if (left_ws > 0) {
         ScamStr_remove(str_arg, 0, left_ws);
     }
-    // remove right whitespace
+    /* Remove right whitespace. */
     n -= left_ws;
     size_t right_ws = 0;
     while (isspace(ScamStr_get(str_arg, n - (right_ws + 1))) && right_ws < n)
@@ -550,7 +551,7 @@ ScamVal* builtin_split(ScamSeq* args) {
             }
         }
     }
-    // make sure to add the last word
+    /* Make sure to add the last word. */
     if (in_word) {
         ScamSeq_append(ret, (ScamVal*)ScamStr_substr(str_arg, start, ScamStr_len(str_arg)));
     }
@@ -934,7 +935,7 @@ ScamEnv* ScamEnv_builtins(void) {
     add_const_builtin(env, ">=", builtin_gte);
     add_const_builtin(env, "<=", builtin_lte);
     add_const_builtin(env, "not", builtin_not);
-    // sequence functions
+    /* Sequence functions */
     add_const_builtin(env, "len", builtin_len);
     add_const_builtin(env, "empty?", builtin_empty);
     add_const_builtin(env, "head", builtin_head);
@@ -951,21 +952,21 @@ ScamEnv* ScamEnv_builtins(void) {
     add_builtin(env, "concat", builtin_concat);
     add_const_builtin(env, "find", builtin_find);
     add_const_builtin(env, "rfind", builtin_rfind);
-    // string functions
+    /* String functions */
     add_builtin(env, "upper", builtin_upper);
     add_builtin(env, "lower", builtin_lower);
     add_const_builtin(env, "isupper", builtin_isupper);
     add_const_builtin(env, "islower", builtin_islower);
     add_builtin(env, "trim", builtin_trim);
     add_builtin(env, "split", builtin_split);
-    // dictionary functions
+    /* Dictionary functions */
     add_builtin(env, "bind", builtin_bind);
-    // constructors
+    /* Constructors */
     add_const_builtin(env, "list", builtin_list);
     add_const_builtin(env, "dict", builtin_dict);
     add_const_builtin(env, "str", builtin_str);
     add_const_builtin(env, "repr", builtin_repr);
-    // IO functions
+    /* IO functions */
     add_const_builtin(env, "print", builtin_print);
     add_const_builtin(env, "println", builtin_println);
     add_const_builtin(env, "open", builtin_open);
@@ -973,7 +974,7 @@ ScamEnv* ScamEnv_builtins(void) {
     add_const_builtin(env, "port-good?", builtin_port_good);
     add_builtin(env, "readline", builtin_readline);
     add_builtin(env, "readchar", builtin_readchar);
-    // math functions
+    /* Math functions */
     add_const_builtin(env, "ceil", builtin_ceil);
     add_const_builtin(env, "floor", builtin_floor);
     add_const_builtin(env, "divmod", builtin_divmod);
@@ -982,7 +983,7 @@ ScamEnv* ScamEnv_builtins(void) {
     add_const_builtin(env, "pow", builtin_pow);
     add_const_builtin(env, "ln", builtin_ln);
     add_const_builtin(env, "log", builtin_log);
-    // miscellaneous functions
+    /* Miscellaneous functions */
     add_const_builtin(env, "assert", builtin_assert);
     add_const_builtin(env, "range", builtin_range);
     add_builtin(env, "sort", builtin_sort);
@@ -990,7 +991,7 @@ ScamEnv* ScamEnv_builtins(void) {
     add_builtin(env, "filter", builtin_filter);
     add_const_builtin(env, "id", builtin_id);
     add_builtin(env, "error", builtin_error);
-    // stdin, stdout and stderr
+    /* stdin, stdout and stderr */
     ScamEnv_insert(env, ScamSym_new("stdin"), (ScamVal*)ScamPort_new(stdin));
     ScamEnv_insert(env, ScamSym_new("stdout"), (ScamVal*)ScamPort_new(stdout));
     ScamEnv_insert(env, ScamSym_new("stderr"), (ScamVal*)ScamPort_new(stderr));

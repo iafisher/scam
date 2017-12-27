@@ -32,12 +32,12 @@ typedef struct {
     char* fpath;
     char* query;
     char* answer;
-    size_t query_n, answer_n; // lengths of lines, used for getline
+    size_t query_n, answer_n; /* lengths of lines, used for getline */
 } program_state_t;
 
 void ps_init(program_state_t*, const char* file_path);
 void ps_free(program_state_t*);
-// Read the next pair of lines from the file, returning 0 if EOF was reached and 1 otherwise
+/* Read the next pair of lines from the file, returning 0 if EOF was reached and 1 otherwise. */
 int ps_next(program_state_t*);
 
 int is_good_line(const char*);
@@ -123,7 +123,7 @@ ssize_t get_good_line(char** lineptr, size_t* n, FILE* stream, int* line_no) {
     do {
         result = getline(lineptr, n, stream);
         if (result == -1) return result;
-        // remove the terminating newline
+        /* Remove the terminating newline. */
         (*lineptr)[result - 1] = '\0';
         if (line_no) (*line_no)++;
     } while (!is_good_line(*lineptr));

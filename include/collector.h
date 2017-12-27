@@ -40,7 +40,7 @@ void gc_print(void);
 void gc_smart_print(void);
 
 
-// Allocate and reallocate from the actual program heap, handling out of memory errors gracefully
+/* Allocate/reallocate from the actual program heap, handling out of memory errors gracefully. */
 void* gc_malloc(size_t);
 void* gc_realloc(void*, size_t);
 void* gc_calloc(size_t, size_t);

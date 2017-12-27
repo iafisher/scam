@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
                 break;
         }
     }
-    // evaluate files
+    /* Evaluate files. */
     for (int i = optind; i < argc; i++) {
         ScamVal* v = eval_file(argv[i], env);
         if (v->type == SCAM_ERR) {

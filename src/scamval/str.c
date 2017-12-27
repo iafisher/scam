@@ -17,11 +17,11 @@ ScamStr* ScamStr_new(const char* s) {
 
 ScamStr* ScamStr_from_literal(char* s) {
     size_t n = strlen(s);
-    // remove the quotes
+    /* Remove the quotes. */
     s[n - 1] = '\0';
     memmove(s, s + 1, n);
     n--;
-    // fix the backslash escapes
+    /* Fix the backslash escapes. */
     for (size_t i = 0; i < n; i++) {
         if (s[i] == '\\') {
             switch (s[i + 1]) {

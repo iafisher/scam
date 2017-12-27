@@ -23,7 +23,7 @@
     } \
 }
 
-// Forward declaration of various eval utilities
+/* Forward declaration of various eval utilities */
 ScamVal* eval_begin(ScamSeq*, ScamEnv*);
 ScamVal* eval_define(ScamSeq*, ScamEnv*);
 ScamVal* eval_lambda(ScamSeq*, ScamEnv*);
@@ -39,7 +39,7 @@ ScamVal* eval(ScamVal* ast_or_val, ScamEnv* env) {
     } else if (ast_or_val->type == SCAM_SEXPR) {
         ScamSeq* ast = (ScamSeq*)ast_or_val;
         SCAM_ASSERT(ScamSeq_len(ast) > 0, ast, "empty expression");
-        // handle special expressions and statements
+        /* Handle special expressions and statements. */
         if (ScamSeq_get(ast, 0)->type == SCAM_SYM) {
             const char* name = ScamStr_unbox((ScamStr*)ScamSeq_get(ast, 0));
             if (strcmp(name, "define") == 0) {
@@ -88,7 +88,7 @@ ScamVal* eval_file(char* fp, ScamEnv* env) {
     return ret;
 }
 
-// Evaluate a lambda expression
+/* Evaluate a lambda expression. */
 ScamVal* eval_lambda(ScamSeq* ast, ScamEnv* env) {
     SCAM_ASSERT_MIN_ARITY("lambda", ast, 3);
     ScamSeq* parameters_copy = (ScamSeq*)ScamSeq_get(ast, 1);
@@ -102,7 +102,7 @@ ScamVal* eval_lambda(ScamSeq* ast, ScamEnv* env) {
                                            (ScamSeq*)ScamSeq_get(ast, 2));
 }
 
-// Evaluate a define statement
+/* Evaluate a define statement. */
 ScamVal* eval_define(ScamSeq* ast, ScamEnv* env) {
     SCAM_ASSERT_ARITY("define", ast, 3);
     SCAM_ASSERT(ScamSeq_get(ast, 1)->type == SCAM_SYM, ast, "cannot define non-symbol");
@@ -116,7 +116,7 @@ ScamVal* eval_define(ScamSeq* ast, ScamEnv* env) {
     }
 }
 
-// Evaluate an if expression
+/* Evaluate an if expression. */
 ScamVal* eval_if(ScamSeq* ast, ScamEnv* env) {
     SCAM_ASSERT_ARITY("if", ast, 4);
     ScamVal* cond = eval(ScamSeq_get(ast, 1), env);
@@ -132,7 +132,7 @@ ScamVal* eval_if(ScamSeq* ast, ScamEnv* env) {
     }
 }
 
-// Evaluate an and expression
+/* Evaluate an and expression. */
 ScamVal* eval_and(ScamSeq* ast, ScamEnv* env) {
     size_t n = ScamSeq_len(ast) - 1;
     for (int i = 0; i < n; i++) {
@@ -151,7 +151,7 @@ ScamVal* eval_and(ScamSeq* ast, ScamEnv* env) {
     return (ScamVal*)ScamBool_new(1);
 }
 
-// Evaluate an or expression
+/* Evaluate an or expression. */
 ScamVal* eval_or(ScamSeq* ast, ScamEnv* env) {
     size_t n = ScamSeq_len(ast) - 1;
     for (int i = 0; i < n; i++) {
@@ -174,7 +174,7 @@ ScamVal* eval_or(ScamSeq* ast, ScamEnv* env) {
 ScamVal* eval_apply(ScamVal* fun_val, ScamSeq* arglist) {
     if (fun_val->type == SCAM_FUNCTION) {
         ScamFunction* lamb = (ScamFunction*)fun_val;
-        // make sure the right number of arguments were given
+        /* Make sure the right number of arguments were given. */
         size_t expected = ScamFunction_nparams(lamb);
         size_t got = ScamSeq_len(arglist);
         if (got != expected) {
