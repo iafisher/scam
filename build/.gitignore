@@ -1,4 +1,5 @@
 # Ignore everything...
 *
-# ...except this file
+# ...except this file and the scamval directory.
 !.gitignore
+!scamval
