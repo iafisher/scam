@@ -13,10 +13,10 @@
 #define I ScamInt_new
 
 
-void benchmark(ScamVal* ast, int reps, ScamEnv* env, const char* test_name, FILE* fp);
+void benchmark(ScamVal* ast, unsigned int reps, ScamEnv* env, const char* test_name, FILE* fp);
 
 
-int main(int argc, char* argv[]) {
+int main() {
     char fname[100];
     time_t t = time(NULL);
     struct tm* tptr = gmtime(&t);
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 }
 
 
-void benchmark(ScamVal* ast, int reps, ScamEnv* env, const char* test_name, FILE* fp) {
+void benchmark(ScamVal* ast, unsigned int reps, ScamEnv* env, const char* test_name, FILE* fp) {
     clock_t begin = clock();
     for (size_t i = 0; i < reps; i++) {
         ScamVal* ast_copy = gc_copy_ScamVal(ast);

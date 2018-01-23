@@ -67,7 +67,7 @@ static int ScamSeq_eq(const ScamSeq* v1, const ScamSeq* v2) {
     size_t n1 = ScamSeq_len(v1);
     size_t n2 = ScamSeq_len(v2);
     if (n1 == n2) {
-        for (int i = 0; i < n1; i++) {
+        for (size_t i = 0; i < n1; i++) {
             if (!ScamVal_eq(ScamSeq_get(v1, i), ScamSeq_get(v2, i))) {
                 return 0;
             }

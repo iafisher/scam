@@ -94,7 +94,7 @@ ScamVal* eval_lambda(ScamSeq* ast, ScamEnv* env) {
     ScamSeq* parameters_copy = (ScamSeq*)ScamSeq_get(ast, 1);
     SCAM_ASSERT(parameters_copy->type == SCAM_SEXPR, ast,
                 "arg 1 to 'lambda' should be a parameter list");
-    for (int i = 0; i < ScamSeq_len(parameters_copy); i++) {
+    for (size_t i = 0; i < ScamSeq_len(parameters_copy); i++) {
         SCAM_ASSERT(ScamSeq_get(parameters_copy, i)->type == SCAM_SYM, ast,
                     "lambda parameter must be symbol");
     }
@@ -135,7 +135,7 @@ ScamVal* eval_if(ScamSeq* ast, ScamEnv* env) {
 /* Evaluate an and expression. */
 ScamVal* eval_and(ScamSeq* ast, ScamEnv* env) {
     size_t n = ScamSeq_len(ast) - 1;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         ScamVal* v = eval(ScamSeq_pop(ast, 1), env);
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
@@ -154,7 +154,7 @@ ScamVal* eval_and(ScamSeq* ast, ScamEnv* env) {
 /* Evaluate an or expression. */
 ScamVal* eval_or(ScamSeq* ast, ScamEnv* env) {
     size_t n = ScamSeq_len(ast) - 1;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         ScamVal* v = eval(ScamSeq_pop(ast, 1), env);
         int v_type = v->type;
         if (v_type != SCAM_BOOL) {
@@ -182,7 +182,7 @@ ScamVal* eval_apply(ScamVal* fun_val, ScamSeq* arglist) {
                                          got, expected);
         }
         ScamEnv* inner_env = ScamFunction_env((ScamFunction*)fun_val);
-        for (int i = 0; i < expected; i++) {
+        for (size_t i = 0; i < expected; i++) {
             ScamEnv_insert(inner_env, ScamFunction_param(lamb, i), ScamSeq_pop(arglist, 0));
         }
         ScamVal* ret = eval((ScamVal*)ScamFunction_body(lamb), inner_env);
@@ -201,7 +201,7 @@ ScamVal* eval_apply(ScamVal* fun_val, ScamSeq* arglist) {
 }
 
 ScamSeq* eval_list(ScamSeq* ast, ScamEnv* env) {
-    for (int i = 0; i < ScamSeq_len(ast); i++) {
+    for (size_t i = 0; i < ScamSeq_len(ast); i++) {
         ScamVal* v = eval(ScamSeq_get(ast, i), env);
         if (v->type != SCAM_ERR) {
             gc_unset_root(v);

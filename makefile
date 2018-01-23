@@ -5,8 +5,8 @@ OBJS = build/builtins.o build/collector.o build/eval.o build/grammar.o build/fle
 EXECS = scam tests run_test_script benchmark
 DEBUG = -g
 PROFILE = -pg
-CFLAGS = -Wall $(DEBUG) -std=gnu99 -c -Iinclude
-LFLAGS = -Wall $(DEBUG) -lm -lfl -lreadline
+CFLAGS = -Wall -Wextra $(DEBUG) -std=gnu99 -c -Iinclude
+LFLAGS = -Wall -Wextra $(DEBUG) -lm -lfl -lreadline
 
 all: $(EXECS)
 

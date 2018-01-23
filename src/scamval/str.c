@@ -43,8 +43,9 @@ ScamStr* ScamStr_from_literal(char* s) {
 ScamStr* ScamStr_read(FILE* fp) {
     SCAMVAL_NEW(ret, ScamStr, SCAM_STR);
     ret->s = NULL;
-    ret->count = getline(&ret->s, &ret->mem_size, fp);
-    if (ret->count != -1) {
+    ssize_t nread = getline(&ret->s, &ret->mem_size, fp);
+    if (nread != -1) {
+        ret->count = nread;
         return ret;
     } else {
         gc_unset_root((ScamVal*)ret);
@@ -127,7 +128,7 @@ const char* ScamStr_unbox(const ScamStr* sbox) {
 
 
 void ScamStr_set(ScamStr* sbox, size_t i, char c) {
-    if (i >= 0 && i < sbox->count) {
+    if (i < sbox->count) {
         sbox->s[i] = c;
     }
 }
@@ -140,7 +141,7 @@ void ScamStr_map(ScamStr* sbox, int map_f(int)) {
 }
 
 char ScamStr_get(const ScamStr* sbox, size_t i) {
-    if (i >= 0 && i < ScamStr_len(sbox)) {
+    if (i < ScamStr_len(sbox)) {
         return sbox->s[i];
     } else {
         return EOF;
@@ -149,7 +150,7 @@ char ScamStr_get(const ScamStr* sbox, size_t i) {
 
 
 char ScamStr_pop(ScamStr* sbox, size_t i) {
-    if (i >= 0 && i < ScamStr_len(sbox)) {
+    if (i < ScamStr_len(sbox)) {
         char ret = sbox->s[i];
         ScamStr_remove(sbox, i, i+1);
         return ret;
@@ -160,7 +161,7 @@ char ScamStr_pop(ScamStr* sbox, size_t i) {
 
 
 void ScamStr_remove(ScamStr* sbox, size_t start, size_t end) {
-    if (start >= 0 && end <= ScamStr_len(sbox) && start < end) {
+    if (end <= ScamStr_len(sbox) && start < end) {
         memmove(sbox->s+start, sbox->s+end, sbox->count-end);
         sbox->count -= (end - start);
         sbox->s[sbox->count] = '\0';
@@ -169,14 +170,14 @@ void ScamStr_remove(ScamStr* sbox, size_t start, size_t end) {
 
 
 void ScamStr_truncate(ScamStr* sbox, size_t i) {
-    if (i >= 0 && i < ScamStr_len(sbox)) {
+    if (i < ScamStr_len(sbox)) {
         sbox->s[i] = '\0';
     }
 }
 
 
 ScamStr* ScamStr_substr(const ScamStr* sbox, size_t start, size_t end) {
-    if (start >= 0 && end <= ScamStr_len(sbox) && start <= end) {
+    if (end <= ScamStr_len(sbox) && start <= end) {
         char* s = gc_malloc(end - start + 1);
         strncpy(s, sbox->s+start, end-start);
         s[end - start] = '\0';
@@ -196,7 +197,7 @@ void ScamStr_concat(ScamStr* s1, ScamStr* s2) {
     size_t n1 = ScamStr_len(s1);
     size_t n2 = ScamStr_len(s2);
     ScamStr_resize(s1, n1+n2+1);
-    for (int i = 0; i <= n2; i++) {
+    for (size_t i = 0; i <= n2; i++) {
         s1->s[n1 + i] = s2->s[i];
     }
     s1->count = n1 + n2;

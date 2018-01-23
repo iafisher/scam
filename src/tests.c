@@ -12,7 +12,7 @@ void parsetest_err(char* line, int line_no);
 void evaltest(char* line, const ScamVal* answer, ScamEnv* env, int line_no);
 void evaltest_err(char* line, ScamEnv* env, int line_no);
 
-int main(int argc, char* argv[]) {
+int main() {
     #define PARSETEST(line, answer) parsetest(line, (ScamVal*)answer, __LINE__);
     #define PARSETEST_ERR(line) parsetest_err(line, __LINE__);
     #define EVALTEST(line, answer) evaltest(line, (ScamVal*)answer, env, __LINE__);

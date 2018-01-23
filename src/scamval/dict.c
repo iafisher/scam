@@ -36,7 +36,7 @@ ScamDict* ScamDict_from(size_t n, ...) {
     va_list vlist;
     va_start(vlist, n);
     ScamDict* ret = ScamDict_new(NULL);
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         ScamSeq* key_val_pair = (ScamSeq*)va_arg(vlist, ScamVal*);
         if (key_val_pair->type == SCAM_LIST && ScamSeq_len(key_val_pair) == 2) {
             ScamVal* key = ScamSeq_get(key_val_pair, 0);

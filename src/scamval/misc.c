@@ -242,7 +242,7 @@ void ScamVal_print_ast(const ScamVal* ast, int indent) {
             printf("EMPTY EXPR%s\n", ast->is_root ? " (root)" : "");
         } else {
             printf("EXPR%s\n", ast->is_root ? " (root)" : "");
-            for (int i = 0; i < ScamSeq_len((ScamSeq*)ast); i++) {
+            for (size_t i = 0; i < ScamSeq_len((ScamSeq*)ast); i++) {
                 ScamVal_print_ast(ScamSeq_get((ScamSeq*)ast, i), indent + 1);
             }
         }
@@ -308,7 +308,7 @@ enum ScamType ScamSeq_narrowest_type(ScamSeq* args) {
     size_t n = ScamSeq_len(args);
     if (n == 0) return SCAM_ANY;
     int type_so_far = ScamSeq_get(args, 0)->type;
-    for (int i = 1; i < n; i++) {
+    for (size_t i = 1; i < n; i++) {
         type_so_far = narrowest_type(ScamSeq_get(args, i)->type, type_so_far);
     }
     return type_so_far;

@@ -164,7 +164,7 @@ ScamVal* gc_copy_ScamVal(ScamVal* v) {
             ret->arr = gc_malloc(seq->count * sizeof *seq->arr);
             ret->count = 0;
             ret->mem_size = seq->count;
-            for (int i = 0; i < seq->count; i++) {
+            for (size_t i = 0; i < seq->count; i++) {
                 ret->arr[i] = gc_copy_ScamVal(seq->arr[i]);
                 gc_unset_root(ret->arr[i]);
                 /* count must always contain an accurate count of the allocated elements of the

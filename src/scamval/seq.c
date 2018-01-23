@@ -50,7 +50,7 @@ ScamSeq* ScamExpr_from(size_t n, ...) {
 
 
 ScamVal* ScamSeq_pop(ScamSeq* seq, size_t i) {
-    if (i >= 0 && i < seq->count) {
+    if (i < seq->count) {
         ScamVal* ret = seq->arr[i];
         memmove(seq->arr+i, seq->arr+i+1, (seq->count-i-1) * sizeof *seq->arr);
         seq->count--;
@@ -78,7 +78,7 @@ size_t ScamSeq_len(const ScamSeq* seq) {
 
 
 void ScamSeq_set(ScamSeq* seq, size_t i, ScamVal* v) {
-    if (i >= 0 && i < seq->count) {
+    if (i < seq->count) {
         seq->arr[i] = v;
     }
 }
@@ -116,7 +116,7 @@ void ScamSeq_concat(ScamSeq* seq1, ScamSeq* seq2) {
 
 ScamVal* ScamSeq_subseq(const ScamSeq* seq, size_t start, size_t end) {
     size_t n = ScamSeq_len(seq);
-    if (start >= 0 && end <= n && start <= end) {
+    if (end <= n && start <= end) {
         ScamSeq* ret = ScamSeq_new(seq->type);
         for (size_t i = start; i < end; i++) {
             ScamSeq_append(ret, gc_copy_ScamVal(ScamSeq_get(seq, i)));
@@ -131,7 +131,7 @@ ScamVal* ScamSeq_subseq(const ScamSeq* seq, size_t start, size_t end) {
 static ScamSeq* ScamSeq_new_from(int type, size_t n, va_list vlist) {
     SCAMVAL_NEW(ret, ScamSeq, type);
     ret->arr = gc_malloc(n * sizeof *ret->arr);
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         ret->arr[i] = va_arg(vlist, ScamVal*);
         gc_unset_root(ret->arr[i]);
     }
