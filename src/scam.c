@@ -70,6 +70,10 @@ bool non_empty(const char* string) {
 void run_repl(ScamEnv* env) {
     while (1) {
         char* input = readline(">>> ");
+        if (input == NULL) {
+            fputc('\n', stdout);
+            break;
+        }
         if (non_empty(input)) {
             add_history(input);
             if (strcmp(input, "quit") == 0) {
@@ -100,6 +104,10 @@ void run_debug_repl(ScamEnv* env) {
             default: printf("unknown mode"); break;
         }
         char* input = readline(">>> ");
+        if (input == NULL) {
+            fputc('\n', stdout);
+            break;
+        }
         if (non_empty(input)) {
             add_history(input);
             if (strcmp(input, "quit") == 0) {
