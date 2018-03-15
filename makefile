@@ -27,7 +27,7 @@ $(shell mkdir -p $(DEPDIR)/scamval >/dev/null)
 
 POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
 
-EXECS = scam tests run_test_script benchmark
+EXECS = scam tests run_test_script benchmark compile
 _OBJS = builtins.o collector.o eval.o grammar.o flex.o scamval/cmp.o scamval/dict.o scamval/misc.o \
 	scamval/num.o scamval/seq.o scamval/str.o
 # This just saves me the trouble of writing $(ODIR)/builtins.o, $(ODIR)/collector.o etc.
@@ -37,6 +37,9 @@ OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
 all: $(EXECS)
 
 scam: $(ODIR)/scam.o $(OBJS)
+	$(CC) $^ $(LFLAGS) -o $@
+
+compile: $(ODIR)/compile.o $(OBJS)
 	$(CC) $^ $(LFLAGS) -o $@
 
 benchmark: $(ODIR)/benchmark.o $(OBJS)
