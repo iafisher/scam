@@ -21,3 +21,6 @@ include/flex.h
 docs/*.log
 docs/*.aux
 docs/*.pdf
+
+# Build artifacts
+*.d
